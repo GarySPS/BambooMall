@@ -3,6 +3,7 @@ import { useUser } from "../contexts/UserContext";
 import AnimatedVipBadge from "../components/AnimatedVipBadge";
 import { useNavigate } from "react-router-dom";
 import { API_BASE_URL } from "../config";
+import { fetchResaleHistory } from "../utils/api";
 
 // Match your actual tier structure! Use from vipTiers.js if you have.
 function getVipLevel(balance) {
@@ -92,22 +93,22 @@ export default function BalancePage() {
   const [depositScreenshot, setDepositScreenshot] = useState(null);
   const [withdrawAmount, setWithdrawAmount] = useState("");
   const [withdrawAddress, setWithdrawAddress] = useState("");
-  const [submitState, setSubmitState] = useState("idle"); // idle, submitting, success, error
+  const [submitState, setSubmitState] = useState("idle"); 
+  
 
   const navigate = useNavigate();
 
   useEffect(() => {
-    if (user?.id) {
-      fetchWalletFromBackend(user.id)
-        .then(wallet => updateWallet({ usdt: wallet.balance }))
-        .catch(() => updateWallet({ usdt: 0 }));
+  if (user?.id) {
+    fetchWalletFromBackend(user.id)
+      .then(wallet => updateWallet({ usdt: wallet.balance }))
+      .catch(() => updateWallet({ usdt: 0 }));
 
-      fetch(`/api/orders/history/${user.id}`)
-        .then(res => res.json())
-        .then(data => setResaleHistory(Array.isArray(data.orders) ? data.orders : []))
-        .catch(() => setResaleHistory([]));
-    }
-  }, [user, updateWallet]);
+    fetchResaleHistory(user.id)
+      .then(data => setResaleHistory(Array.isArray(data.orders) ? data.orders : []))
+      .catch(() => setResaleHistory([]));
+  }
+}, [user?.id]);
 
   // Auto-close deposit modal after success
   useEffect(() => {
