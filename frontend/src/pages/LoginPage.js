@@ -2,6 +2,7 @@ import React, { useState } from "react";
 import { useUser } from "../contexts/UserContext";
 import { useNavigate } from "react-router-dom";
 import { ReactComponent as BambooLogo } from "../components/logo.svg";
+import { API_BASE_URL } from "../config";  // <--- ADD THIS LINE
 
 export default function LoginPage() {
   const [userOrEmail, setUserOrEmail] = useState("");
@@ -15,7 +16,7 @@ export default function LoginPage() {
     setError("");
     if (!userOrEmail.trim() || !password) return;
     try {
-      const res = await fetch("/api/users/login", {
+      const res = await fetch(`${API_BASE_URL}/users/login`, {  // <--- FIXED LINE
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email: userOrEmail.trim(), password }),
@@ -23,9 +24,8 @@ export default function LoginPage() {
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || "Login failed");
       login(data.user); // Save full user object to context
-      // Optional: go to /admin if admin, otherwise home
       if (data.user.is_admin) navigate("/admin");
-     else navigate("/");
+      else navigate("/");
     } catch (err) {
       setError(err.message);
     }
