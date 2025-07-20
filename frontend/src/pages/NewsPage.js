@@ -4,14 +4,27 @@ export default function NewsPage() {
   const [news, setNews] = useState([]);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
+    useEffect(() => {
     fetch("/api/news")
       .then(res => res.json())
       .then(data => {
-        setNews(data);
+        // Log and adapt for both {news: []} and [] structures
+        console.log("NEWS API:", data);
+        if (Array.isArray(data)) {
+          setNews(data);
+        } else if (Array.isArray(data.news)) {
+          setNews(data.news);
+        } else {
+          setNews([]);
+        }
+        setLoading(false);
+      })
+      .catch(() => {
+        setNews([]);
         setLoading(false);
       });
   }, []);
+
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-green-50 to-white px-2 pb-24">

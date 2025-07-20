@@ -232,54 +232,55 @@ export default function BalancePage() {
               No resale orders yet.
             </p>
           ) : (
-            <ul className="flex flex-col gap-5">
-              {resaleHistory.map((order) => (
-                <li
-                  key={order.id}
-                  className="bg-gradient-to-br from-white to-emerald-50/80 rounded-2xl border border-gray-100 shadow flex flex-col sm:flex-row items-center gap-4 px-5 py-4 transition-all hover:shadow-lg"
-                >
-                  <div className="w-20 h-20 flex-shrink-0 flex items-center justify-center rounded-xl bg-gray-50 border border-gray-100 overflow-hidden">
-  {order.image ? (
-    <img src={order.image} alt="" className="object-cover w-full h-full" />
-  ) : (
-    <span className="text-4xl text-emerald-400 font-bold">🛒</span>
-  )}
-</div>
-<div className="flex items-center gap-3">
-  <span className="font-semibold text-lg text-green-800">{order.title}</span>
-{order.status === "sold" && (
-                        <span className="px-2 py-0.5 rounded-lg bg-green-100 text-green-700 text-xs font-semibold ml-2 animate-pulse">SOLD</span>
-                      )}
-                      {order.status === "refund_pending" && (
-                        <span className="px-2 py-0.5 rounded-lg bg-red-100 text-red-700 text-xs font-semibold ml-2">REFUND PENDING</span>
-                      )}
-                      {order.status === "selling" && (
-                        <span className="px-2 py-0.5 rounded-lg bg-yellow-100 text-yellow-700 text-xs font-semibold ml-2">IN PROGRESS</span>
-                      )}
-                    </div>
-                    <div className="text-xs text-gray-400 font-mono">
-                      {order.created_at ? new Date(order.created_at).toLocaleString() : ""}
-                    </div>
-                    <div className="flex flex-wrap items-center gap-4 mt-1 text-base">
-                      <span className="font-medium text-gray-800">
-                        Amount: <span className="text-green-700">${order.amount}</span>
-                      </span>
-                      <span className="font-medium text-gray-600">
-                        {order.status === "sold" ? (
-                          <>Profit: <span className="text-emerald-600">+${order.earn ?? order.profit ?? 0}</span></>
-                        ) : (
-                          order.status === "refund_pending" ? (
-                            <span className="text-red-500">Refund Pending</span>
-                          ) : (
-                            <span className="text-gray-400">Selling…</span>
-                          )
-                        )}
-                      </span>
-                    </div>
-                  </div>
-                </li>
-              ))}
-            </ul>
+           <ul className="flex flex-col gap-5">
+  {resaleHistory.map((order) => (
+    <li
+      key={order.id}
+      className="bg-gradient-to-br from-white to-emerald-50/80 rounded-2xl border border-gray-100 shadow flex flex-col sm:flex-row items-center gap-4 px-5 py-4 transition-all hover:shadow-lg"
+    >
+      <div className="w-20 h-20 flex-shrink-0 flex items-center justify-center rounded-xl bg-gray-50 border border-gray-100 overflow-hidden">
+        {order.image ? (
+          <img src={order.image} alt="" className="object-cover w-full h-full" />
+        ) : (
+          <span className="text-4xl text-emerald-400 font-bold">🛒</span>
+        )}
+      </div>
+      <div className="flex-1 w-full flex flex-col gap-1">
+        <div className="flex items-center gap-3">
+          <span className="font-semibold text-lg text-green-800">{order.title}</span>
+          {order.status === "sold" && (
+            <span className="px-2 py-0.5 rounded-lg bg-green-100 text-green-700 text-xs font-semibold ml-2 animate-pulse">SOLD</span>
+          )}
+          {order.status === "refund_pending" && (
+            <span className="px-2 py-0.5 rounded-lg bg-red-100 text-red-700 text-xs font-semibold ml-2">REFUND PENDING</span>
+          )}
+          {order.status === "selling" && (
+            <span className="px-2 py-0.5 rounded-lg bg-yellow-100 text-yellow-700 text-xs font-semibold ml-2">IN PROGRESS</span>
+          )}
+        </div>
+        <div className="text-xs text-gray-400 font-mono">
+          {order.created_at ? new Date(order.created_at).toLocaleString() : ""}
+        </div>
+        <div className="flex flex-wrap items-center gap-4 mt-1 text-base">
+          <span className="font-medium text-gray-800">
+            Amount: <span className="text-green-700">${order.amount}</span>
+          </span>
+          <span className="font-medium text-gray-600">
+            {order.status === "sold" ? (
+              <>Profit: <span className="text-emerald-600">+${order.earn ?? order.profit ?? 0}</span></>
+            ) : (
+              order.status === "refund_pending" ? (
+                <span className="text-red-500">Refund Pending</span>
+              ) : (
+                <span className="text-gray-400">Selling…</span>
+              )
+            )}
+          </span>
+        </div>
+      </div>
+    </li>
+  ))}
+</ul>
           )}
         </div>
       </div>
