@@ -68,10 +68,11 @@ export async function fetchWalletBalance(userId) {
 }
 
 export async function fetchResaleHistory(userId) {
-  const res = await fetch(`${API_BASE_URL}/orders/history?user=${userId}`);
+  const res = await fetch(`${API_BASE_URL}/orders/history/${userId}`);
   if (!res.ok) throw new Error("Failed to fetch history");
-  return res.json();
+  return await res.json();
 }
+
 
 export async function topUpWallet(userId, amount, method) {
   const res = await fetch(`${API_BASE_URL}/wallet/topup`, {
