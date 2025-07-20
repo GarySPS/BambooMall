@@ -17,6 +17,7 @@ import LoginPage from "./pages/LoginPage";
 import SignupPage from "./pages/SignupPage";
 import OTPPage from "./pages/OTPPage";
 import ForgotPasswordPage from "./pages/ForgotPasswordPage";
+import PrivateRoute from "./components/PrivateRoute";
 
 // --- Admin Layout & Pages ---
 import AdminLayout from "./components/AdminLayout";
@@ -38,7 +39,7 @@ function AppContent() {
       <Routes>
         {/* --- ADMIN ROUTES WITH SIDEBAR --- */}
         <Route path="/admin" element={<AdminLayout />}>
-          <Route index element={<AdminUserPage />} /> {/* Default admin page */}
+          <Route index element={<AdminUserPage />} />
           <Route path="users" element={<AdminUserPage />} />
           <Route path="kyc" element={<AdminKYCPage />} />
           <Route path="deposit" element={<AdminDepositPage />} />
@@ -46,24 +47,26 @@ function AppContent() {
           <Route path="orders" element={<AdminOrderPage />} />
         </Route>
 
-        {/* --- AUTH & USER ROUTES --- */}
+        {/* --- AUTH ROUTES (public) --- */}
         <Route path="/login" element={<LoginPage />} />
         <Route path="/signup" element={<SignupPage />} />
         <Route path="/otp" element={<OTPPage />} />
         <Route path="/forgot" element={<ForgotPasswordPage />} />
 
-        {/* --- MAIN SITE ROUTES --- */}
-        <Route path="/" element={<HomePage />} />
-        <Route path="/products" element={<ProductsPage />} />
-        <Route path="/products/:id" element={<ProductDetailPage />} />
-        <Route path="/cart" element={<CartPage />} />
-        <Route path="/balance" element={<BalancePage />} />
-        <Route path="/profile" element={<ProfilePage />} />
-        <Route path="/news" element={<NewsPage />} />
-        <Route path="/about-us" element={<AboutUsPage />} />
-        <Route path="/membership" element={<MembershipPage />} />
-        <Route path="/blog" element={<BlogPage />} />
-        <Route path="/faq" element={<FAQPage />} />
+        {/* --- MAIN SITE ROUTES (PROTECTED) --- */}
+        <Route element={<PrivateRoute />}>
+          <Route path="/" element={<HomePage />} />
+          <Route path="/products" element={<ProductsPage />} />
+          <Route path="/products/:id" element={<ProductDetailPage />} />
+          <Route path="/cart" element={<CartPage />} />
+          <Route path="/balance" element={<BalancePage />} />
+          <Route path="/profile" element={<ProfilePage />} />
+          <Route path="/news" element={<NewsPage />} />
+          <Route path="/about-us" element={<AboutUsPage />} />
+          <Route path="/membership" element={<MembershipPage />} />
+          <Route path="/blog" element={<BlogPage />} />
+          <Route path="/faq" element={<FAQPage />} />
+        </Route>
       </Routes>
     </>
   );
