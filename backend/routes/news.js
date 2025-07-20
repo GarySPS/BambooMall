@@ -5,8 +5,9 @@ const parser = new Parser();
 
 // TEST: Use BBC first to check everything works
 const sources = [
-  { name: "Alibaba Newsroom", url: "https://news.alibaba.com/rss" }
-];
+  { name: "BBC", url: "http://feeds.bbci.co.uk/news/world/rss.xml" }
+  ];
+
 
 router.get('/', async (req, res) => {
   try {
