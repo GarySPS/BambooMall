@@ -1,7 +1,8 @@
 import React, { useEffect, useState } from "react";
 import { FaExchangeAlt, FaCheck, FaTimes } from "react-icons/fa";
+import { API_BASE_URL } from "../config";
 
-const API_URL = "http://localhost:4000/api/admin";
+const API_URL = `${API_BASE_URL}/admin`;
 
 export default function AdminWithdrawPage() {
   const [users, setUsers] = useState([]);

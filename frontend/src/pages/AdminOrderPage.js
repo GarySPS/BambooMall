@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { FaCheck, FaTimes, FaClipboardList } from "react-icons/fa";
-const API_URL = "http://localhost:4000/api/admin";
+import { API_BASE_URL } from "../config";
+const API_URL = `${API_BASE_URL}/admin`;
 
 export default function AdminOrderPage() {
   const [users, setUsers] = useState([]);

@@ -2,6 +2,7 @@ import React, { useState, useEffect } from "react";
 import { useUser } from "../contexts/UserContext";
 import AnimatedVipBadge from "../components/AnimatedVipBadge";
 import { useNavigate } from "react-router-dom";
+import { API_BASE_URL } from "../config";
 
 // Match your actual tier structure! Use from vipTiers.js if you have.
 function getVipLevel(balance) {
@@ -15,7 +16,7 @@ function getVipLevel(balance) {
 
 // --- The rest of your helpers below here (no changes needed) ---
 async function fetchWalletFromBackend(user_id) {
-  const res = await fetch(`/api/wallet/${user_id}`);
+  const res = await fetch(`${API_BASE_URL}/wallet/${user_id}`);
   if (!res.ok) throw new Error("Failed to fetch wallet");
   const data = await res.json();
   return data.wallet;
@@ -23,7 +24,7 @@ async function fetchWalletFromBackend(user_id) {
 async function uploadDepositScreenshot(file) {
   const formData = new FormData();
   formData.append("file", file);
-  const res = await fetch("/api/upload/deposit", {
+  const res = await fetch(`${API_BASE_URL}/upload/deposit`, {
     method: "POST",
     body: formData,
   });
@@ -32,7 +33,7 @@ async function uploadDepositScreenshot(file) {
   return data.url;
 }
 async function submitDepositToBackend({ user_id, amount, screenshot_url, note }) {
-  const res = await fetch("/api/wallet/deposit", {
+  const res = await fetch(`${API_BASE_URL}/wallet/deposit`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ user_id, amount, screenshot_url, note }),
@@ -41,7 +42,7 @@ async function submitDepositToBackend({ user_id, amount, screenshot_url, note })
   return await res.json();
 }
 async function submitWithdrawToBackend({ user_id, amount, address, note }) {
-  const res = await fetch("/api/wallet/withdraw", {
+  const res = await fetch(`${API_BASE_URL}/wallet/withdraw`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ user_id, amount, address, note }),
@@ -49,6 +50,7 @@ async function submitWithdrawToBackend({ user_id, amount, address, note }) {
   if (!res.ok) throw new Error("Withdraw API failed");
   return await res.json();
 }
+
 
 // --- Payment Info (unchanged) ---
 const USDC_INFO = { qr: "/images/qr-usdc-demo.png", address: "0x1234abcd5678efgh9012ijklmnopqrstuvwx", network: "Ethereum ERC20" };

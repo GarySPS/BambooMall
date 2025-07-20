@@ -1,8 +1,9 @@
 import React, { useEffect, useState } from "react";
 import { FaShieldAlt, FaCheck, FaTimes } from "react-icons/fa";
+import { API_BASE_URL } from "../config";
 
-const API_URL = "http://localhost:4000/api/admin";
-const KYC_API_URL = "http://localhost:4000/api/kyc";
+const API_URL = `${API_BASE_URL}/admin`;
+const KYC_API_URL = `${API_BASE_URL}/kyc`;
 
 export default function AdminKYCPage() {
   const [users, setUsers] = useState([]);
