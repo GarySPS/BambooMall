@@ -1,30 +1,29 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 import FeaturedProductsCarousel from '../components/FeaturedProductsCarousel';
-import AnimatedVipBadge from '../components/AnimatedVipBadge'; // If you have it
+import AnimatedVipBadge from '../components/AnimatedVipBadge';
 import { FaStar, FaBolt, FaCheckCircle, FaCrown, FaTiktok } from 'react-icons/fa';
 
 const testimonials = [
   {
     name: "Jessica (VIP2 Member)",
-    avatar: "/demo_avatar1.jpg", // ✅ Correct
+    avatar: "/demo_avatar1.jpg",
     badge: "VIP2",
     text: "I started with just $1000, now I'm VIP2! Real factory prices and resale profits. Highly recommended.",
   },
   {
     name: "Json (VIP1 Member)",
-    avatar: "/demo_avatar2.jpg", // ✅ Correct
+    avatar: "/demo_avatar2.jpg",
     badge: "VIP1",
     text: "The VIP perks are real! Extra discounts on top of factory prices—BambooMall is my favorite.",
   },
   {
     name: "David (VIP0 Member)",
-    avatar: "/demo_avatar3.jpg", // ✅ Correct
+    avatar: "/demo_avatar3.jpg",
     badge: "VIP0",
     text: "Fast resale, quick profit, and real product quality. The membership badge looks so cool on my profile.",
   },
 ];
-
 
 export default function HomePage() {
   return (
@@ -33,9 +32,9 @@ export default function HomePage() {
       {/* Hero Banner */}
       <section className="py-20 text-center bg-green-700 text-white relative overflow-hidden">
         <div
-  className="absolute inset-0 opacity-10 bg-cover bg-center pointer-events-none"
-  style={{ backgroundImage: "url('/hero-bg.png')" }}
-></div>
+          className="absolute inset-0 opacity-10 bg-cover bg-center pointer-events-none"
+          style={{ backgroundImage: "url('/hero-bg.png')" }}
+        />
         <div className="relative z-10">
           <h1 className="text-5xl md:text-6xl font-extrabold mb-4 drop-shadow-lg font-[Montserrat]">
             BambooMall
@@ -57,7 +56,9 @@ export default function HomePage() {
         <div className="bg-white rounded-2xl shadow-xl p-7 flex flex-col items-center border border-green-100">
           <FaBolt className="text-3xl text-green-700 mb-2" />
           <h3 className="font-bold text-xl text-green-700 mb-2">Exclusive Factory Prices</h3>
-          <p className="text-green-600 mb-4">Order direct from top factories—skip the middleman and maximize your resale profit.</p>
+          <p className="text-green-600 mb-4">
+            Order direct from top factories—skip the middleman and maximize your resale profit.
+          </p>
           <Link className="text-green-700 font-semibold hover:underline" to="/about-us">
             Learn More →
           </Link>
@@ -65,7 +66,9 @@ export default function HomePage() {
         <div className="bg-white rounded-2xl shadow-xl p-7 flex flex-col items-center border border-green-100">
           <FaCrown className="text-3xl text-yellow-400 mb-2" />
           <h3 className="font-bold text-xl text-green-700 mb-2">VIP Membership Perks</h3>
-          <p className="text-green-600 mb-4">Level up as your wallet grows—get instant extra discounts and show off your animated VIP badge.</p>
+          <p className="text-green-600 mb-4">
+            Level up as your wallet grows—get instant extra discounts and show off your animated VIP badge.
+          </p>
           <Link className="text-green-700 font-semibold hover:underline" to="/membership">
             View VIP Levels →
           </Link>
@@ -73,10 +76,39 @@ export default function HomePage() {
         <div className="bg-white rounded-2xl shadow-xl p-7 flex flex-col items-center border border-green-100">
           <FaCheckCircle className="text-3xl text-green-700 mb-2" />
           <h3 className="font-bold text-xl text-green-700 mb-2">Instant Resale Profits</h3>
-          <p className="text-green-600 mb-4">Buy, resell, and withdraw your profit instantly with our wallet-based simulation system.</p>
+          <p className="text-green-600 mb-4">
+            Buy, resell, and withdraw your profit instantly with our wallet-based simulation system.
+          </p>
           <Link className="text-green-700 font-semibold hover:underline" to="/faq">
             How It Works →
           </Link>
+        </div>
+      </section>
+
+      {/* Video/Promo Improved Section */}
+      <section className="max-w-4xl mx-auto py-14 px-4">
+        <div className="rounded-2xl bg-white shadow-xl flex flex-col items-center gap-6 py-6 px-4">
+          <div className="relative w-full md:w-[600px]">
+            <video
+              src="/bamboomall-tiktok-video.mp4"
+              className="w-full rounded-xl shadow-lg"
+              autoPlay
+              loop
+              muted
+              playsInline
+              controls
+            />
+            <FaTiktok className="absolute top-2 left-2 text-2xl text-white bg-black/50 rounded-full p-1" />
+          </div>
+          <div className="text-center">
+            <h3 className="text-2xl font-bold text-green-700 mb-2">See Our Real Factory Deals in Action!</h3>
+            <p className="text-green-600 mb-4">
+              Watch this video for a quick walkthrough of BambooMall and how VIP members profit more every day.
+            </p>
+            <Link to="/about-us" className="inline-block text-green-700 font-semibold hover:underline">
+              More About BambooMall →
+            </Link>
+          </div>
         </div>
       </section>
 
@@ -88,29 +120,6 @@ export default function HomePage() {
           <Link to="/products" className="inline-block bg-green-700 text-white px-6 py-2 rounded-full font-medium shadow hover:bg-green-800 transition">
             See All Products →
           </Link>
-        </div>
-      </section>
-
-      {/* Video/Promo (optional: TikTok or real factory video) */}
-      <section className="max-w-4xl mx-auto py-14 px-4">
-        <div className="rounded-2xl bg-white shadow-lg p-4 flex flex-col md:flex-row gap-6 items-center">
-          <div className="flex-shrink-0 w-full md:w-80 h-48 md:h-56 overflow-hidden rounded-xl bg-black flex items-center justify-center relative">
-            {/* Replace below src with your actual promo video/TikTok embed or animated placeholder */}
-            <iframe
-              src="https://www.tiktok.com/embed/7364031572937630978"
-              className="w-full h-full"
-              allow="autoplay"
-              title="BambooMall TikTok Demo"
-            ></iframe>
-            <FaTiktok className="absolute bottom-2 right-2 text-3xl text-white opacity-60" />
-          </div>
-          <div className="flex-1 text-center md:text-left">
-            <h3 className="text-2xl font-bold text-green-700 mb-2">See Our Real Factory Deals in Action!</h3>
-            <p className="text-green-600 mb-4">Watch our video for a quick walkthrough of the BambooMall system and how VIP members profit more every day.</p>
-            <Link to="/about-us" className="inline-block text-green-700 font-semibold hover:underline">
-              More About BambooMall →
-            </Link>
-          </div>
         </div>
       </section>
 
@@ -134,7 +143,7 @@ export default function HomePage() {
         </Link>
       </section>
 
-      {/* Testimonials */}
+      {/* Success Stories / Testimonials */}
       <section className="max-w-6xl mx-auto py-16 px-4">
         <h2 className="text-center text-3xl font-bold text-green-700 mb-8">Success Stories</h2>
         <div className="grid md:grid-cols-3 gap-8">
@@ -146,8 +155,7 @@ export default function HomePage() {
                 className="w-16 h-16 rounded-full border-4 border-green-100 mb-3 object-cover"
               />
               <div className="flex items-center gap-2 mb-2">
-                {/* AnimatedVipBadge (if available) */}
-                {t.badge && <AnimatedVipBadge level={t.badge} />}
+                {t.badge && <AnimatedVipBadge level={t.badge} size={32} />}
                 <span className="font-semibold text-green-700">{t.name}</span>
               </div>
               <p className="text-green-600 text-center italic">{t.text}</p>
