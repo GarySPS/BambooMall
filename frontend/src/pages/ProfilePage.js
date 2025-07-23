@@ -267,7 +267,17 @@ export default function ProfilePage() {
   const mainFont = "font-[Inter]";
 
   return (
-    <div className="min-h-screen bg-[#F2E5C0] px-4 pt-3 pb-8 flex flex-col items-center">
+    <div
+  className="min-h-screen px-4 pt-3 pb-8 flex flex-col items-center"
+  style={{
+    backgroundImage: "url('/profilebg.jpg')",
+    backgroundSize: "cover",
+    backgroundRepeat: "no-repeat",
+    backgroundPosition: "center center",
+    backgroundAttachment: "fixed",  // Optional: makes background fixed when scrolling
+    minHeight: "100vh"
+  }}
+>
       <div className="w-full max-w-2xl flex flex-col gap-10">
 
         {/* Profile Card */}
