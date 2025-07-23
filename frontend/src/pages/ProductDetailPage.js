@@ -101,6 +101,8 @@ export default function ProductDetailPage() {
   const navigate = useNavigate();
   const [showNotice, setShowNotice] = React.useState("");
   const [buying, setBuying] = React.useState(false);
+  const [showConfirm, setShowConfirm] = React.useState(false);
+
 
   const vipDiscount = getVipDiscount(wallet);
 
@@ -186,7 +188,7 @@ export default function ProductDetailPage() {
 });
 
       setBuying(false);
-      navigate("/cart", { state: { notice: "Your order is submitted! Waiting for admin approval." } });
+      navigate("/cart", { state: { notice: "Your order is submitted!" } });
     } catch (err) {
       setBuying(false);
       setShowNotice("Order failed. Try again.");
@@ -381,15 +383,42 @@ export default function ProductDetailPage() {
             (Min. {product.min_order || product.minQty || 1})
           </span>
         </div>
-        <button
-          className={`mt-3 w-full bg-green-600 hover:bg-green-700 text-white rounded-xl py-2 font-bold text-lg shadow transition ${
-            buying ? "opacity-60 cursor-wait" : ""
-          }`}
-          onClick={handleResale}
-          disabled={buying}
-        >
-          {buying ? "Processing..." : "Buy & Resale"}
-        </button>
+        {!showConfirm ? (
+  <button
+    className={`mt-3 w-full bg-green-600 hover:bg-green-700 text-white rounded-xl py-2 font-bold text-lg shadow transition ${
+      buying ? "opacity-60 cursor-wait" : ""
+    }`}
+    onClick={() => setShowConfirm(true)}
+    disabled={buying}
+  >
+    {buying ? "Processing..." : "Buy & Resale"}
+  </button>
+) : (
+  <div className="flex flex-col gap-3 mt-3">
+    <div className="text-center font-semibold text-blue-900 mb-2">
+      Are you sure you want to buy and resale this product?
+    </div>
+    <div className="flex gap-3">
+      <button
+        className="w-1/2 bg-green-600 hover:bg-green-700 text-white rounded-xl py-2 font-bold shadow transition"
+        onClick={async () => {
+  await handleResale();
+  setShowConfirm(false);
+}}
+        disabled={buying}
+      >
+        Confirm
+      </button>
+      <button
+        className="w-1/2 bg-gray-300 hover:bg-gray-400 text-gray-900 rounded-xl py-2 font-bold shadow transition"
+        onClick={() => setShowConfirm(false)}
+        disabled={buying}
+      >
+        Cancel
+      </button>
+    </div>
+  </div>
+)}
       </div>
     </div>
   );

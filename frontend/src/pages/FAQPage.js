@@ -7,7 +7,7 @@ const faqs = [
   },
   {
     q: "How do discounts and VIP badges work?",
-    a: "Every product has an admin-set discount (1–20%). You earn extra discounts automatically when your wallet balance reaches VIP levels. Your badge updates instantly."
+    a: "Every product has discount (1–20%). You earn extra discounts automatically when your wallet balance reaches VIP levels. Your badge updates instantly."
   },
   {
     q: "How do I earn profit from resale?",

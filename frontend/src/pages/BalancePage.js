@@ -395,7 +395,7 @@ export default function BalancePage() {
                 </div>
                 {submitState === "success" && (
                   <div className="mt-2 text-green-600 font-bold text-center">
-                    Deposit submitted! Please wait for admin approval.
+                    Deposit submitted!
                   </div>
                 )}
                 {submitState === "error" && (
@@ -438,7 +438,7 @@ export default function BalancePage() {
                 disabled={submitState === "submitting" || submitState === "success"}
               />
               <div className="text-xs text-gray-500 mb-2">
-                * Please double-check your address! Admin will review and transfer manually.
+                * Please double-check your address!
               </div>
               <div className="flex gap-3 mt-3">
                 <button
@@ -468,7 +468,7 @@ export default function BalancePage() {
               </div>
               {submitState === "success" && (
                 <div className="mt-2 text-yellow-700 font-bold text-center">
-                  Withdraw request submitted! Admin will transfer manually.
+                  Withdraw request submitted!
                 </div>
               )}
               {submitState === "error" && (

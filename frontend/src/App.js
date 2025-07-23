@@ -18,6 +18,8 @@ import SignupPage from "./pages/SignupPage";
 import OTPPage from "./pages/OTPPage";
 import ForgotPasswordPage from "./pages/ForgotPasswordPage";
 import PrivateRoute from "./components/PrivateRoute";
+import { ToastContainer } from "react-toastify";
+import "react-toastify/dist/ReactToastify.css";
 
 // --- Admin Layout & Pages ---
 import AdminLayout from "./components/AdminLayout";
@@ -76,6 +78,7 @@ export default function App() {
   return (
     <UserProvider>
       <Router>
+        <ToastContainer position="top-center" autoClose={1800} />
         <AppContent />
       </Router>
     </UserProvider>

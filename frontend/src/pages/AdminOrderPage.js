@@ -132,43 +132,46 @@ export default function AdminOrderPage() {
                           </span>
                         </td>
                         <td className="px-3 py-3 flex flex-wrap gap-2">
-                          {o.resale_status === "pending" && (
-                            <>
-                              <button
-                                className="flex items-center gap-1 bg-green-600 hover:bg-green-800 text-white px-2.5 py-1 rounded-lg text-xs font-semibold transition shadow active:scale-95"
-                                onClick={() => handleApproveResale(u.id, o.id, true)}
-                              >
-                                <FaCheck />
-                                Approve Sold
-                              </button>
-                              <button
-                                className="flex items-center gap-1 bg-red-500 hover:bg-red-700 text-white px-2.5 py-1 rounded-lg text-xs font-semibold transition shadow active:scale-95"
-                                onClick={() => handleApproveResale(u.id, o.id, false)}
-                              >
-                                <FaTimes />
-                                Deny
-                              </button>
-                            </>
-                          )}
-                          {o.refund_status === "pending" && (
-                            <>
-                              <button
-                                className="flex items-center gap-1 bg-green-600 hover:bg-green-800 text-white px-2.5 py-1 rounded-lg text-xs font-semibold transition shadow active:scale-95"
-                                onClick={() => handleApproveRefund(u.id, o.id, true)}
-                              >
-                                <FaCheck />
-                                Approve Refund
-                              </button>
-                              <button
-                                className="flex items-center gap-1 bg-red-500 hover:bg-red-700 text-white px-2.5 py-1 rounded-lg text-xs font-semibold transition shadow active:scale-95"
-                                onClick={() => handleApproveRefund(u.id, o.id, false)}
-                              >
-                                <FaTimes />
-                                Deny
-                              </button>
-                            </>
-                          )}
-                        </td>
+  {/* Only show resale actions if NO refund in progress or completed */}
+  {o.resale_status === "pending" && o.refund_status !== "pending" && o.refund_status !== "refunded" && (
+    <>
+      <button
+        className="flex items-center gap-1 bg-green-600 hover:bg-green-800 text-white px-2.5 py-1 rounded-lg text-xs font-semibold transition shadow active:scale-95"
+        onClick={() => handleApproveResale(u.id, o.id, true)}
+      >
+        <FaCheck />
+        Approve Sold
+      </button>
+      <button
+        className="flex items-center gap-1 bg-red-500 hover:bg-red-700 text-white px-2.5 py-1 rounded-lg text-xs font-semibold transition shadow active:scale-95"
+        onClick={() => handleApproveResale(u.id, o.id, false)}
+      >
+        <FaTimes />
+        Deny
+      </button>
+    </>
+  )}
+
+  {/* Only show refund actions if NOT already sold */}
+  {o.refund_status === "pending" && o.resale_status !== "sold" && (
+    <>
+      <button
+        className="flex items-center gap-1 bg-green-600 hover:bg-green-800 text-white px-2.5 py-1 rounded-lg text-xs font-semibold transition shadow active:scale-95"
+        onClick={() => handleApproveRefund(u.id, o.id, true)}
+      >
+        <FaCheck />
+        Approve Refund
+      </button>
+      <button
+        className="flex items-center gap-1 bg-red-500 hover:bg-red-700 text-white px-2.5 py-1 rounded-lg text-xs font-semibold transition shadow active:scale-95"
+        onClick={() => handleApproveRefund(u.id, o.id, false)}
+      >
+        <FaTimes />
+        Deny
+      </button>
+    </>
+  )}
+</td>
                       </tr>
                     ))
                   )

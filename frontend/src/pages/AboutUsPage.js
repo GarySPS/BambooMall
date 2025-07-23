@@ -1,106 +1,207 @@
 import React, { useState } from "react";
+import {
+  FaShieldAlt,
+  FaIndustry,
+  FaGlobeAsia,
+  FaMedal,
+  FaChartBar,
+  FaUserFriends,
+} from "react-icons/fa";
+import CertAwards from "../components/CertAwards";
 
 export default function AboutUsPage() {
   const [tab, setTab] = useState("about");
 
   return (
-    <div className="max-w-2xl mx-auto py-20 px-4">
-      <div className="flex gap-6 mb-8 justify-center">
-        <button
-          className={`py-2 px-6 rounded-t font-bold ${tab === "about" ? "bg-green-700 text-white" : "bg-green-100 text-green-700"}`}
-          onClick={() => setTab("about")}
-        >
-          About
-        </button>
-        <button
-          className={`py-2 px-6 rounded-t font-bold ${tab === "contact" ? "bg-green-700 text-white" : "bg-green-100 text-green-700"}`}
-          onClick={() => setTab("contact")}
-        >
-          Contact
-        </button>
+    <div className="w-full min-h-screen bg-[#F2E5C0] pb-24">
+      <div className="max-w-3xl mx-auto pt-16 px-4">
+        <div className="flex gap-6 mb-8 justify-center">
+          <button
+            className={`py-2 px-6 rounded-t font-bold ${
+              tab === "about" ? "bg-green-700 text-white" : "bg-green-100 text-green-700"
+            }`}
+            onClick={() => setTab("about")}
+          >
+            About
+          </button>
+          <button
+            className={`py-2 px-6 rounded-t font-bold ${
+              tab === "contact" ? "bg-green-700 text-white" : "bg-green-100 text-green-700"
+            }`}
+            onClick={() => setTab("contact")}
+          >
+            Contact
+          </button>
+        </div>
       </div>
 
-      <div className="bg-white rounded-xl shadow p-6">
-        {tab === "about" && (
-          <>
-            <h1 className="text-3xl font-bold text-green-700 mb-4">About BambooMall</h1>
-            <p className="mb-4 text-lg text-gray-700">
-              <b>BambooMall</b> is a fully licensed B2B global marketplace, headquartered in the heart of China's leading export zone. Our mission is to empower small businesses and bulk buyers worldwide with direct, trustworthy access to Asia’s most reputable factories and original suppliers.
+      {/* --- About Tab --- */}
+      {tab === "about" && (
+        <>
+          <div className="max-w-3xl mx-auto px-4">
+            <h1 className="text-3xl font-extrabold text-green-700 mb-4 tracking-tight">
+              Welcome to BambooMall
+            </h1>
+            <p className="mb-7 text-lg text-gray-700 leading-relaxed">
+              <b>BambooMall</b> is the new standard for global B2B wholesale, connecting small businesses and entrepreneurs directly to Asia’s most trusted factories—without the old barriers or risks.
             </p>
-            <p className="mb-4">
-              <b>Why BambooMall?</b>
-              <ul className="list-disc pl-6 mt-2 mb-2 text-gray-800">
-                <li>
-                  <b>Official License & Global Credibility:</b> Operated under BambooMall Commerce (Shenzhen) Ltd., our license is verified by China’s e-commerce regulatory authorities.
-                </li>
-                <li>
-                  <b>Factory-Direct Sourcing:</b> We partner only with audited suppliers, providing authentic products, secure payments, and logistics support from China to your country.
-                </li>
-                <li>
-                  <b>Built for Small Businesses:</b> Minimum order quantities start from just 5 units for most products—perfect for growing resellers and micro-entrepreneurs.
-                </li>
-                <li>
-                  <b>Quality Guarantee:</b> Every shipment passes our multi-step inspection process to ensure quality and reliability.
-                </li>
-                <li>
-                  <b>All-in-One Dashboard:</b> Transparent orders, wallet balance, and membership rewards, all in one easy system.
-                </li>
-                <li>
-                  <b>Confidential, Multilingual Support:</b> Our global team offers support in English, Burmese, Chinese, and more.
-                </li>
-              </ul>
-            </p>
-            <p className="mb-4 text-gray-700">
-              <b>Our Vision:</b> To become the most reliable bridge between Asian factories and the next generation of global retailers—simplifying cross-border trade for everyone, everywhere.
-            </p>
-            <div className="mt-6 p-4 rounded bg-green-50 text-sm">
-              <b>BambooMall Commerce (Shenzhen) Ltd.</b><br/>
-              <span className="block">Room 501, Building 3, No. 1188, Nanshan Avenue, Nanshan District, Shenzhen, Guangdong, China 518052</span>
-              <span className="block mt-1 text-gray-500">Business License: 91440300MA5FP7W02K<br/>VAT Number: 440300112233445</span>
-            </div>
-            <div className="mt-6 text-xs text-gray-400">
-              *All products displayed are for demo/sample purposes in project mode. Final commercial launch includes official supplier verification and compliance.
-            </div>
-          </>
-        )}
+          </div>
 
-        {tab === "contact" && (
-          <>
-            <h1 className="text-3xl font-bold text-green-700 mb-4">Contact Us</h1>
-            <p className="mb-2">
-              Need support, partnership, or have questions? BambooMall customer care is ready to help, 8am–10pm (GMT+6:30), Monday to Saturday.
-            </p>
-            <div className="flex flex-col items-center gap-4 mb-4">
-              <a
-                href="https://wa.me/8613800138000"
-                className="flex items-center gap-2 bg-green-500 hover:bg-green-600 text-white px-5 py-3 rounded-xl shadow transition text-lg font-bold"
-                target="_blank" rel="noopener noreferrer"
-              >
-                <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 24 24"><path d="M12.04 2.003C6.494 2.003 2 6.49 2 12.04c0 1.918.498 3.707 1.44 5.3L2 22l4.758-1.407c1.524.83 3.212 1.269 4.987 1.269h.012c5.547 0 10.04-4.488 10.04-10.038 0-2.678-1.045-5.195-2.945-7.087A9.944 9.944 0 0 0 12.04 2.003zm0 1.6a8.362 8.362 0 0 1 5.927 2.454A8.372 8.372 0 0 1 20 12.04c0 4.627-3.76 8.39-8.388 8.39-1.635 0-3.225-.471-4.584-1.362l-.33-.208-2.829.838.85-2.749-.215-.337a8.357 8.357 0 0 1-1.352-4.59c0-4.628 3.762-8.39 8.388-8.39zm-3.65 4.423c-.27.002-.528.091-.736.252-.327.252-1.02 1.01-1.02 2.423 0 1.413 1.046 2.776 1.193 2.968.146.192 2.043 3.232 5.168 4.401.723.277 1.287.442 1.729.566.442.123.843.106 1.16.065.317-.041 1.014-.415 1.157-.816.144-.402.144-.746.1-.815-.043-.07-.159-.115-.334-.202-.176-.087-1.044-.515-1.205-.574-.16-.059-.277-.087-.394.087-.115.174-.453.573-.555.691-.101.116-.202.13-.377.043-.174-.087-.736-.27-1.402-.857-.518-.462-.868-1.027-.97-1.201-.101-.174-.011-.267.076-.354.078-.077.174-.202.261-.303.087-.101.115-.174.173-.289.058-.116.029-.217-.014-.303-.043-.087-.38-.918-.522-1.256-.14-.337-.28-.291-.38-.297zm7.098 5.978c-.13-.002-.262.02-.392.065-.212.073-1.24.614-1.43.683-.19.07-.347.101-.492.045-.145-.056-.671-.263-1.279-.55a8.156 8.156 0 0 1-2.293-1.728 8.188 8.188 0 0 1-1.728-2.294c-.287-.607-.494-1.134-.549-1.278-.055-.145-.024-.303.045-.492.069-.19.611-1.218.683-1.43.073-.212.152-.335.261-.379.109-.044.24-.019.392.065.153.083.479.227.758.38.28.153.479.268.671.344.193.076.302.187.376.29.073.102.087.186.014.303-.073.116-.124.192-.174.29-.05.098-.139.207-.26.303-.118.098-.203.174-.24.271-.037.098.018.21.088.318.07.107.337.454.968.931.63.478 1.018.715 1.127.79.11.074.192.123.314.043.121-.079.453-.52.55-.687.097-.168.192-.164.319-.117.127.048 1.031.485 1.205.573.175.088.291.133.334.202.044.07.044.413-.099.815-.144.403-.84.776-1.158.818a1.582 1.582 0 0 1-.161.011z"/></svg>
-                WhatsApp
-              </a>
-              <a
-                href="https://t.me/bamboomall_support"
-                className="flex items-center gap-2 bg-blue-400 hover:bg-blue-500 text-white px-5 py-3 rounded-xl shadow transition text-lg font-bold"
-                target="_blank" rel="noopener noreferrer"
-              >
-                <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 24 24"><path d="M9.98 13.683l-.399 3.535c.57 0 .816-.242 1.117-.533l2.677-2.548 5.553 4.049c1.015.559 1.736.264 1.986-.93L23.85 6.694c.342-1.468-.525-2.043-1.488-1.711L2.426 10.75c-1.433.484-1.418 1.167-.244 1.478l4.363 1.363 10.139-6.386c.477-.316.911-.14.553.176l-8.203 7.176z"/></svg>
-                Telegram
-              </a>
+          {/* ---- NovaChain-Style Certificate & Awards Section ---- */}
+          <CertAwards />
+
+          <div className="max-w-3xl mx-auto grid sm:grid-cols-2 gap-4 mb-6 px-4">
+            <div className="flex items-start gap-3 bg-green-50 border border-green-100 rounded-xl p-4">
+              <FaShieldAlt className="text-green-600 text-2xl mt-1" />
+              <div>
+                <div className="font-bold text-green-900">
+                  Officially Licensed & Audited
+                </div>
+                <div className="text-sm text-gray-700">
+                  Operated under BambooMall Commerce (Shenzhen) Ltd., registered and licensed in China’s export capital. Every supplier is verified for legal and production status.
+                </div>
+              </div>
             </div>
-            <div className="mb-2">
-              Email: <a href="mailto:support@bamboomall.com" className="text-green-700 underline">support@bamboomall.com</a><br />
-              Phone: +86 138-0013-8000
+            <div className="flex items-start gap-3 bg-green-50 border border-green-100 rounded-xl p-4">
+              <FaIndustry className="text-green-600 text-2xl mt-1" />
+              <div>
+                <div className="font-bold text-green-900">Direct from Factory Floor</div>
+                <div className="text-sm text-gray-700">
+                  Work with original manufacturers—no brokers, no extra markups. Sourcing is transparent, prices are real, and every shipment is traceable to its source.
+                </div>
+              </div>
             </div>
-            <div className="mb-2 text-gray-700">
-              <b>Office:</b> Room 501, Building 3, No. 1188, Nanshan Avenue, Nanshan District, Shenzhen, Guangdong, China 518052
+            <div className="flex items-start gap-3 bg-green-50 border border-green-100 rounded-xl p-4">
+              <FaGlobeAsia className="text-green-600 text-2xl mt-1" />
+              <div>
+                <div className="font-bold text-green-900">Built for International Small Business</div>
+                <div className="text-sm text-gray-700">
+                  Order as little as 5 units per product. Ideal for modern resellers, online shops, TikTok sellers, and entrepreneurs launching new brands.
+                </div>
+              </div>
             </div>
-            <div className="mt-4 text-xs text-gray-400">
-              All chats are confidential. We’ll reply as soon as possible!
+            <div className="flex items-start gap-3 bg-green-50 border border-green-100 rounded-xl p-4">
+              <FaMedal className="text-green-600 text-2xl mt-1" />
+              <div>
+                <div className="font-bold text-green-900">Every Shipment Inspected</div>
+                <div className="text-sm text-gray-700">
+                  Each order passes our in-house and factory checks before export. We protect your business from fakes, mistakes, and surprises.
+                </div>
+              </div>
             </div>
-          </>
-        )}
-      </div>
+            <div className="flex items-start gap-3 bg-green-50 border border-green-100 rounded-xl p-4">
+              <FaChartBar className="text-green-600 text-2xl mt-1" />
+              <div>
+                <div className="font-bold text-green-900">All-in-One Dashboard</div>
+                <div className="text-sm text-gray-700">
+                  Your orders, wallet, membership level, and support—all visible at a glance. Simple, fast, and always transparent.
+                </div>
+              </div>
+            </div>
+            <div className="flex items-start gap-3 bg-green-50 border border-green-100 rounded-xl p-4">
+              <FaUserFriends className="text-green-600 text-2xl mt-1" />
+              <div>
+                <div className="font-bold text-green-900">Global, Confidential Support</div>
+                <div className="text-sm text-gray-700">
+                  Our team answers in English, Burmese, Chinese &amp; more. All chats are private, all issues handled—no matter where you are.
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Vision / Highlighted Block */}
+          <div className="max-w-3xl mx-auto bg-green-100 border border-green-200 rounded-xl p-5 mt-2 mb-6 text-green-900 text-base shadow-sm px-4">
+            <span className="font-extrabold text-xl block mb-2 tracking-tight">
+              Our Vision
+            </span>
+            <span>
+              We believe the next era of global business is powered by direct connection, real trust, and technology that works for everyone.
+              <br />
+              <br />
+              <span className="font-semibold">
+                BambooMall bridges Asia’s real factories with the new generation of global sellers. Fast. Reliable. Personal.
+              </span>
+            </span>
+          </div>
+          <div className="max-w-3xl mx-auto mt-6 p-4 rounded bg-green-50 text-sm font-mono px-4">
+            <b>BambooMall Commerce (Shenzhen) Ltd.</b>
+            <br />
+            Room 501, Building 3, No. 1188, Nanshan Avenue, Nanshan District, Shenzhen, Guangdong, China 518052
+            <br />
+            <span className="block mt-1 text-gray-500">
+              Business License: 91440300MA5FP7W02K
+              <br />
+              VAT Number: 440300112233445
+            </span>
+          </div>
+          <div className="max-w-3xl mx-auto mt-6 text-xs text-gray-400 px-4">
+            *All products displayed are for demo/sample purposes in project mode. Final commercial launch includes official supplier verification and compliance.
+          </div>
+        </>
+      )}
+
+      {/* --- Contact Tab --- */}
+      {tab === "contact" && (
+        <div className="max-w-3xl mx-auto px-4">
+          <h1 className="text-3xl font-extrabold text-green-700 mb-4 tracking-tight">
+            Contact BambooMall
+          </h1>
+          <div className="mb-3 text-gray-700 text-base">
+            Our support team is ready to help,{" "}
+            <span className="font-bold text-green-800">
+              8am – 10pm (GMT+6:30), Monday to Saturday
+            </span>
+            .<br />
+            For commercial cooperation, global partnerships, or any questions—reach out!
+          </div>
+
+          <div className="flex flex-col gap-3 mt-6 mb-6">
+            <a
+              href="https://wa.me/8613800138000"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="w-full text-center py-3 rounded-xl font-semibold text-white text-lg shadow transition bg-gradient-to-r from-green-500 to-green-600 hover:from-green-700 hover:to-green-800 focus:outline-none"
+            >
+              WhatsApp Support
+            </a>
+            <a
+              href="https://t.me/bamboomall_support"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="w-full text-center py-3 rounded-xl font-semibold text-white text-lg shadow transition bg-gradient-to-r from-blue-400 to-blue-500 hover:from-blue-500 hover:to-blue-600 focus:outline-none"
+            >
+              Telegram Chat
+            </a>
+            <a
+              href="mailto:support@bamboomall.com"
+              className="w-full text-center py-3 rounded-xl font-semibold text-green-800 text-lg shadow transition bg-green-50 hover:bg-green-100 border border-green-300 focus:outline-none"
+            >
+              Email: support@bamboomall.com
+            </a>
+          </div>
+
+          <div className="mb-2 flex flex-col gap-1">
+            <div className="font-semibold text-gray-700">
+              Phone:
+              <span className="ml-2 text-green-800 font-bold">
+                +86 138-0013-8000
+              </span>
+            </div>
+            <div className="font-semibold text-gray-700">
+              Office:
+              <span className="ml-2 text-green-800">
+                Room 501, Building 3, No. 1188, Nanshan Avenue,
+                <br />
+                Nanshan District, Shenzhen, Guangdong, China 518052
+              </span>
+            </div>
+          </div>
+
+          <div className="mt-6 text-xs text-gray-400">
+            All messages are confidential. We reply as quickly as possible!
+          </div>
+        </div>
+      )}
     </div>
   );
 }

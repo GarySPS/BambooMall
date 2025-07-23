@@ -3,8 +3,8 @@ import { fetchCartOrders } from "../utils/api";
 import { useUser } from "../contexts/UserContext";
 import { requestRefund } from "../utils/api";
 import { useLocation } from "react-router-dom";
-import { getProductImage } from "../utils/image"; // <--- ADD THIS LINE
-
+import { getProductImage } from "../utils/image";
+import { toast } from "react-toastify"; // Only import toast (not ToastContainer)
 
 export default function CartPage() {
   const { user } = useUser();
@@ -19,7 +19,7 @@ export default function CartPage() {
   const handleRefund = async (orderId) => {
     try {
       await requestRefund(orderId);
-      alert(`Refund request submitted for Order ID: ${orderId}`);
+      toast.success("Refund request submitted!");
       setLoading(true);
       fetchCartOrders(userId)
         .then((data) => {
@@ -27,7 +27,7 @@ export default function CartPage() {
           setLoading(false);
         });
     } catch (err) {
-      alert(err.message || "Refund request failed");
+      toast.error(err.message || "Refund request failed");
     }
   };
 
@@ -87,10 +87,10 @@ export default function CartPage() {
                 className="bg-white rounded-2xl shadow-md p-4 flex flex-col items-center relative"
               >
                 <img
-  src={getProductImage(order.product)}
-  alt={order.title}
-  className="w-20 h-20 rounded-xl object-cover border-2 border-green-200 shadow mb-2"
-/>
+                  src={getProductImage(order.product)}
+                  alt={order.title}
+                  className="w-20 h-20 rounded-xl object-cover border-2 border-green-200 shadow mb-2"
+                />
                 <div className="flex-1 w-full flex flex-col items-center text-center">
                   <div className="font-semibold text-base text-green-900 mb-1 line-clamp-2">
                     {order.title}
@@ -103,11 +103,11 @@ export default function CartPage() {
                       Price: <span className="font-bold">${Number(order.unit_price).toFixed(2)}</span>
                     </span>
                     <span className="text-gray-500">
-  Discount:
-  <span className="font-bold ml-1">
-    {order.admin_discount || 0}% + {order.vip_bonus || 0}% = {order.total_discount || (order.admin_discount || 0) + (order.vip_bonus || 0)}%
-  </span>
-</span>
+                      Discount:
+                      <span className="font-bold ml-1">
+                        {order.admin_discount || 0}% + {order.vip_bonus || 0}% = {order.total_discount || (order.admin_discount || 0) + (order.vip_bonus || 0)}%
+                      </span>
+                    </span>
                   </div>
                   <div className="flex items-center justify-center gap-2 mb-2">
                     <span className="font-medium text-gray-800">Earn After Resale:</span>
@@ -119,8 +119,8 @@ export default function CartPage() {
                     <span>
                       Cost: <b>${Number(order.amount).toFixed(2)}</b>
                       {"  |  "}
-                     Sell total: <b>${(Number(order.unit_price || 0) * Number(order.qty || 0)).toFixed(2)}</b>
-                     </span>
+                      Sell total: <b>${(Number(order.unit_price || 0) * Number(order.qty || 0)).toFixed(2)}</b>
+                    </span>
                   </div>
                   <div className="flex flex-col items-center justify-center gap-1 mt-1 mb-2">
                     <span className="text-xs text-gray-400">{order.created_at ? new Date(order.created_at).toLocaleString() : ""}</span>
@@ -131,12 +131,21 @@ export default function CartPage() {
                       Selling on {order.status || "processing"}
                     </span>
                   </div>
-                  <button
-                    className="bg-red-100 hover:bg-red-200 text-red-700 font-semibold px-4 py-2 rounded-lg text-xs shadow transition"
-                    onClick={() => handleRefund(order.id)}
-                  >
-                    Refund Request
-                  </button>
+                  {order.status === "selling" ? (
+  <button
+    className="bg-red-100 hover:bg-red-200 text-red-700 font-semibold px-4 py-2 rounded-lg text-xs shadow transition"
+    onClick={() => handleRefund(order.id)}
+  >
+    Refund Request
+  </button>
+) : order.status === "refund_pending" ? (
+  <button
+    className="bg-gray-300 text-gray-500 font-semibold px-4 py-2 rounded-lg text-xs shadow transition cursor-not-allowed"
+    disabled
+  >
+    Refund Pending...
+  </button>
+) : null}
                 </div>
               </div>
             ))}

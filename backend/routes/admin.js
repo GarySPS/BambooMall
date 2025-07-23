@@ -270,16 +270,42 @@ router.get('/users', async (req, res) => {
             address: w.address
           }))
         : [],
-      orders: orders.map(o => ({
-        id: o.id,
-        product_title: o.product_title || "",
-        quantity: o.quantity || 0,
-        total: o.amount || 0,  
-        resale_status: o.status === "sold" ? "sold" : "pending",
-        refund_status: o.status === "refunded"
-          ? "refunded"
-          : (o.status === "refund_pending" ? "pending" : "")
-      })),
+      orders: orders.map(o => {
+  let resale_status = "";
+  let refund_status = "";
+
+  if (o.status === "sold") {
+    resale_status = "sold";
+  } else if (o.status === "selling" || o.status === "pending") {
+    resale_status = "pending";
+  }
+
+  if (o.status === "refunded") {
+    refund_status = "refunded";
+  } else if (o.status === "refund_pending") {
+    refund_status = "pending";
+  }
+
+  // Make mutually exclusive for admin logic:
+  // If refund is in progress or done, no resale actions!
+  if (o.status === "refunded" || o.status === "refund_pending") {
+    resale_status = "";
+  }
+  // If sold, no refund possible
+  if (o.status === "sold") {
+    refund_status = "";
+  }
+
+  return {
+    id: o.id,
+    product_title: o.product_title || "",
+    quantity: o.quantity || 0,
+    total: o.amount || 0,
+    resale_status,
+    refund_status,
+  };
+}),
+
     };
   });
   res.json(mapped);
