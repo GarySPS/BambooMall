@@ -19,7 +19,7 @@ export default function MembershipPage() {
     vipTiers.slice().reverse().find((t) => userBalance >= t.min) || vipTiers[0];
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-[#f6ecd6] via-[#f3f9f9] to-[#eadcc2] flex flex-col items-center px-2 py-10">
+    <div className="min-h-screen flex flex-col items-center px-2 py-10">
       {/* Premium Headline */}
       <div className="mb-10 text-center">
         <div className="inline-block px-8 py-3 rounded-full bg-gradient-to-r from-yellow-100 via-yellow-50 to-yellow-200 shadow-md border-2 border-yellow-200">

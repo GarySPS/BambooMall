@@ -13,7 +13,7 @@ export default function AboutUsPage() {
   const [tab, setTab] = useState("about");
 
   return (
-    <div className="w-full min-h-screen bg-[#F2E5C0] pb-24">
+    <div className="w-full min-h-screen pb-24">
       <div className="max-w-3xl mx-auto pt-16 px-4">
         <div className="flex gap-6 mb-8 justify-center">
           <button

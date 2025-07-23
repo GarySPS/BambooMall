@@ -66,7 +66,18 @@ export default function CartPage() {
   }
 
   return (
-    <div className="min-h-screen bg-[#F2E5C0] px-4 py-8 flex flex-col items-center">
+    <div
+  className="min-h-screen px-4 py-8 flex flex-col items-center"
+  style={{
+    backgroundImage: "url('/profilebg.jpg')",
+    backgroundSize: "cover",
+    backgroundRepeat: "no-repeat",
+    backgroundPosition: "center center",
+    backgroundAttachment: "fixed", // Optional for a fixed effect
+    minHeight: "100vh"
+  }}
+>
+
       <div className="w-full max-w-md">
         <h2 className="text-3xl font-bold text-green-800 mb-8">Your Resale Orders</h2>
         {notice && (

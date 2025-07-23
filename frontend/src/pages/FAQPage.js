@@ -123,7 +123,7 @@ export default function FAQPage() {
   const [open, setOpen] = useState(null);
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-green-50 to-white px-2 pb-24">
+    <div className="min-h-screen px-2 pb-24">
       <div className="max-w-3xl mx-auto pt-14 pb-4 px-2">
         <h1 className="text-4xl md:text-5xl font-extrabold text-green-800 mb-5 text-center drop-shadow-sm tracking-tight font-['Montserrat']">
           BambooMall FAQ

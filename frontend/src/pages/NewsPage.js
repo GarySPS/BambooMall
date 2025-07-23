@@ -27,7 +27,7 @@ export default function NewsPage() {
 
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-green-50 to-white px-2 pb-24">
+    <div className="min-h-screen px-2 pb-24">
       <div className="max-w-2xl mx-auto pt-14 pb-4 px-2">
         <h1 className="text-3xl md:text-4xl font-bold text-green-800 mb-6 text-center font-['Montserrat']">
           China Factory & Retail News

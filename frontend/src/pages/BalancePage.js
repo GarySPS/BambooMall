@@ -188,7 +188,7 @@ export default function BalancePage() {
 
   // --- UI/UX ---
   return (
-    <div className="min-h-screen w-full flex flex-col items-center justify-center bg-gradient-to-br from-green-50 via-yellow-50 to-emerald-100">
+    <div className="min-h-screen w-full flex flex-col items-center justify-center">
       <div className="w-full max-w-lg px-4">
         {/* Balance Card with VIP animation */}
         <div className="relative z-10 bg-white/80 backdrop-blur-2xl border border-green-100 shadow-2xl rounded-3xl p-8 mt-10 mb-8 flex flex-col items-center transition-all">

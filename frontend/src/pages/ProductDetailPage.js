@@ -235,7 +235,18 @@ export default function ProductDetailPage() {
     );
   }
 
-  return (
+return (
+  <div
+    className="min-h-screen flex flex-col items-center px-2 pb-8"
+    style={{
+      backgroundImage: "url('/profilebg.jpg')",
+      backgroundSize: "cover",
+      backgroundRepeat: "no-repeat",
+      backgroundPosition: "center center",
+      backgroundAttachment: "fixed",
+      minHeight: "100vh"
+    }}
+  >
     <div className="w-full max-w-xl mx-auto py-4 px-1 sm:px-2">
       {/* Back button */}
       <div className="mb-4">
