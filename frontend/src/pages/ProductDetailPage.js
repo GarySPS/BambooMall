@@ -235,202 +235,204 @@ export default function ProductDetailPage() {
     );
   }
 
-return (
-  <div
-    className="min-h-screen flex flex-col items-center px-2 pb-8"
-    style={{
-      backgroundImage: "url('/profilebg.jpg')",
-      backgroundSize: "cover",
-      backgroundRepeat: "no-repeat",
-      backgroundPosition: "center center",
-      backgroundAttachment: "fixed",
-      minHeight: "100vh"
-    }}
-  >
-    <div className="w-full max-w-xl mx-auto py-4 px-1 sm:px-2">
-      {/* Back button */}
-      <div className="mb-4">
-        <Link
-          to="/products"
-          className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white shadow border border-gray-200 text-green-700 font-semibold hover:bg-green-50 hover:border-green-300 transition"
-        >
-          <FaArrowLeft className="text-lg" />
-          Back to Products
-        </Link>
-      </div>
-      <ProductGallery gallery={product.gallery} title={product.title} />
-      <div className="flex items-center gap-3 mb-2 mt-2">
-        <span className="rounded-lg px-2 py-1 text-xs bg-green-100 text-green-800 font-semibold">
-          {product.brand || "Factory Brand"}
-        </span>
-        <span className="rounded px-2 py-1 text-xs bg-yellow-100 text-yellow-800">
-          Factory: {product.supplier}
-        </span>
-      </div>
-      <h2 className="text-xl sm:text-2xl font-bold text-green-700 mb-2">
-        {product.title}
-      </h2>
-      <div className="flex items-center gap-2 bg-white rounded-xl shadow p-2 mb-3 w-fit">
-        <div className="flex items-center gap-1">
-          {[1, 2, 3, 4, 5].map((i) => (
-            <svg
-              key={i}
-              viewBox="0 0 20 20"
-              fill={i <= Math.round(avgRating) ? "#FFD700" : "#E5E7EB"}
-              className="w-5 h-5"
-            >
-              <polygon points="10,2 13,7.5 19,8 14.5,12 15.5,18 10,15 4.5,18 5.5,12 1,8 7,7.5" />
-            </svg>
-          ))}
+  return (
+    <div
+      className="min-h-screen flex flex-col items-center px-2 pb-8"
+      style={{
+        backgroundImage: "url('/profilebg.jpg')",
+        backgroundSize: "cover",
+        backgroundRepeat: "no-repeat",
+        backgroundPosition: "center center",
+        backgroundAttachment: "fixed",
+        minHeight: "100vh"
+      }}
+    >
+      <div className="w-full max-w-xl mx-auto py-4 px-1 sm:px-2">
+        {/* Back button */}
+        <div className="mb-4">
+          <Link
+            to="/products"
+            className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white shadow border border-gray-200 text-green-700 font-semibold hover:bg-green-50 hover:border-green-300 transition"
+          >
+            <FaArrowLeft className="text-lg" />
+            Back to Products
+          </Link>
         </div>
-        <span className="font-extrabold text-2xl text-gray-900">{avgRating}</span>
-        <span className="font-bold text-xl text-gray-700">/ 5</span>
-        <span className="ml-2 text-base text-gray-500 font-medium">
-          ({reviewCount} reviews)
-        </span>
-      </div>
-      <PriceTiersCard priceTiers={product.priceTiers} />
-      <ProductVariantSelector
-        colors={product.colors || []}
-        sizeList={
-          Array.isArray(product.size)
-            ? product.size
-            : typeof product.size === "string" && product.size.trim().startsWith("[")
-            ? JSON.parse(product.size)
-            : []
-        }
-        selectedColor={selectedColor}
-        setSelectedColor={setSelectedColor}
-        selectedSize={selectedSize}
-        setSelectedSize={setSelectedSize}
-      />
-      <MoreProductDetail keyAttributes={product.keyAttributes} />
-      <div className="mb-2 text-gray-700">{product.description}</div>
-      <SupplierInfoBlock
-        supplier={product.supplier}
-        minOrder={product.min_order || product.minQty || 1}
-        factoryWebsite={product.factoryWebsite}
-        factoryUrl={product.factory_url}
-      />
-      {/* --- Order Preview --- */}
-      {orderPreview && (
-  <div className="bg-blue-50 border border-blue-200 rounded-xl px-3 py-2 my-4 text-sm font-bold text-blue-700">
-    <div className="mb-1 text-base text-gray-800 font-semibold">Cost Estimating</div>
-    <table className="w-full text-blue-900 mb-1">
-      <tbody>
-        <tr>
-          <td>Price</td>
-          <td className="text-right">${orderPreview.tier?.price?.toFixed(2) || "—"}</td>
-        </tr>
-        <tr>
-          <td>Units</td>
-          <td className="text-right">{quantity}</td>
-        </tr>
-        <tr>
-          <td>Total cost</td>
-          <td className="text-right">${orderPreview.total.toFixed(2)}</td>
-        </tr>
-        <tr>
-          <td>Discount</td>
-          <td className="text-right">{product.discount || 0}%</td>
-        </tr>
-        <tr>
-          <td>Membership</td>
-          <td className="text-right">{vipDiscount || 0}%</td>
-        </tr>
-        <tr>
-          <td>Pay</td>
-          <td className="text-right text-green-700">${orderPreview.discounted.toFixed(2)}</td>
-        </tr>
-        <tr>
-          <td>Sell on global markets</td>
-          <td className="text-right">${orderPreview.resale.toFixed(2)}</td>
-        </tr>
-        <tr>
-          <td className="font-bold">Estimated profit after sale</td>
-          <td className="text-right font-bold text-blue-800">
-            ${orderPreview.profit.toFixed(2)}
-          </td>
-        </tr>
-      </tbody>
-    </table>
-  </div>
-)}
-
-      {/* --- Buy Card --- */}
-      <div className="bg-white rounded-xl shadow p-4 mb-4">
-        {showNotice && (
-          <div className="mb-3 text-center bg-red-50 border border-red-200 text-red-700 font-bold rounded-xl px-4 py-2 transition">
-            {showNotice}
+        <ProductGallery gallery={product.gallery} title={product.title} />
+        <div className="flex items-center gap-3 mb-2 mt-2">
+          <span className="rounded-lg px-2 py-1 text-xs bg-green-100 text-green-800 font-semibold">
+            {product.brand || "Factory Brand"}
+          </span>
+          <span className="rounded px-2 py-1 text-xs bg-yellow-100 text-yellow-800">
+            Factory: {product.supplier}
+          </span>
+        </div>
+        <h2 className="text-xl sm:text-2xl font-bold text-green-700 mb-2">
+          {product.title}
+        </h2>
+        <div className="flex items-center gap-2 bg-white rounded-xl shadow p-2 mb-3 w-fit">
+          <div className="flex items-center gap-1">
+            {[1, 2, 3, 4, 5].map((i) => (
+              <svg
+                key={i}
+                viewBox="0 0 20 20"
+                fill={i <= Math.round(avgRating) ? "#FFD700" : "#E5E7EB"}
+                className="w-5 h-5"
+              >
+                <polygon points="10,2 13,7.5 19,8 14.5,12 15.5,18 10,15 4.5,18 5.5,12 1,8 7,7.5" />
+              </svg>
+            ))}
+          </div>
+          <span className="font-extrabold text-2xl text-gray-900">{avgRating}</span>
+          <span className="font-bold text-xl text-gray-700">/ 5</span>
+          <span className="ml-2 text-base text-gray-500 font-medium">
+            ({reviewCount} reviews)
+          </span>
+        </div>
+        <PriceTiersCard priceTiers={product.priceTiers} />
+        <ProductVariantSelector
+          colors={product.colors || []}
+          sizeList={
+            Array.isArray(product.size)
+              ? product.size
+              : typeof product.size === "string" && product.size.trim().startsWith("[")
+              ? JSON.parse(product.size)
+              : []
+          }
+          selectedColor={selectedColor}
+          setSelectedColor={setSelectedColor}
+          selectedSize={selectedSize}
+          setSelectedSize={setSelectedSize}
+        />
+        <MoreProductDetail keyAttributes={product.keyAttributes} />
+        <div className="mb-2 text-gray-700">{product.description}</div>
+        <SupplierInfoBlock
+          supplier={product.supplier}
+          minOrder={product.min_order || product.minQty || 1}
+          factoryWebsite={product.factoryWebsite}
+          factoryUrl={product.factory_url}
+        />
+        {/* --- Order Preview --- */}
+        {orderPreview && (
+          <div className="bg-blue-50 border border-blue-200 rounded-xl px-3 py-2 my-4 text-sm font-bold text-blue-700">
+            <div className="mb-1 text-base text-gray-800 font-semibold">Cost Estimating</div>
+            <table className="w-full text-blue-900 mb-1">
+              <tbody>
+                <tr>
+                  <td>Price</td>
+                  <td className="text-right">${orderPreview.tier?.price?.toFixed(2) || "—"}</td>
+                </tr>
+                <tr>
+                  <td>Units</td>
+                  <td className="text-right">{quantity}</td>
+                </tr>
+                <tr>
+                  <td>Total cost</td>
+                  <td className="text-right">${orderPreview.total.toFixed(2)}</td>
+                </tr>
+                <tr>
+                  <td>Discount</td>
+                  <td className="text-right">{product.discount || 0}%</td>
+                </tr>
+                <tr>
+                  <td>Membership</td>
+                  <td className="text-right">{vipDiscount || 0}%</td>
+                </tr>
+                <tr>
+                  <td>Pay</td>
+                  <td className="text-right text-green-700">${orderPreview.discounted.toFixed(2)}</td>
+                </tr>
+                <tr>
+                  <td>Sell on global markets</td>
+                  <td className="text-right">${orderPreview.resale.toFixed(2)}</td>
+                </tr>
+                <tr>
+                  <td className="font-bold">Estimated profit after sale</td>
+                  <td className="text-right font-bold text-blue-800">
+                    ${orderPreview.profit.toFixed(2)}
+                  </td>
+                </tr>
+              </tbody>
+            </table>
           </div>
         )}
-        <div className="flex items-center gap-3 mb-2">
-          <span className="inline-block bg-green-100 text-green-700 px-2 py-1 rounded text-xs font-bold">
-            {product.discount || 0}% OFF
-          </span>
-          <span className="font-semibold text-gray-600">
-            Limited time discount!
-          </span>
+
+        {/* --- Buy Card --- */}
+        <div className="bg-white rounded-xl shadow p-4 mb-4">
+          {showNotice && (
+            <div className="mb-3 text-center bg-red-50 border border-red-200 text-red-700 font-bold rounded-xl px-4 py-2 transition">
+              {showNotice}
+            </div>
+          )}
+          <div className="flex items-center gap-3 mb-2">
+            <span className="inline-block bg-green-100 text-green-700 px-2 py-1 rounded text-xs font-bold">
+              {product.discount || 0}% OFF
+            </span>
+            <span className="font-semibold text-gray-600">
+              Limited time discount!
+            </span>
+          </div>
+          <div className="flex items-center gap-3 mb-2">
+            <span className="font-semibold">Select quantity:</span>
+            <input
+              type="number"
+              min={product.min_order || product.minQty || 1}
+              value={quantity}
+              onChange={(e) => {
+                const val = e.target.value;
+                if (/^[0-9]*$/.test(val)) setQuantity(val);
+              }}
+              onBlur={() => {
+                const min = product.min_order || product.minQty || 1;
+                const num = parseInt(quantity, 10);
+                if (!num || num < min) setQuantity(min);
+                else setQuantity(num);
+              }}
+              className="border rounded-lg px-3 py-1 w-24 text-base"
+            />
+            <span className="text-xs text-gray-500">
+              (Min. {product.min_order || product.minQty || 1})
+            </span>
+          </div>
+          {!showConfirm ? (
+            <button
+              className={`mt-3 w-full bg-green-600 hover:bg-green-700 text-white rounded-xl py-2 font-bold text-lg shadow transition ${
+                buying ? "opacity-60 cursor-wait" : ""
+              }`}
+              onClick={() => setShowConfirm(true)}
+              disabled={buying}
+            >
+              {buying ? "Processing..." : "Buy & Resale"}
+            </button>
+          ) : (
+            <div className="flex flex-col gap-3 mt-3">
+              <div className="text-center font-semibold text-blue-900 mb-2">
+                Are you sure you want to buy and resale this product?
+              </div>
+              <div className="flex gap-3">
+                <button
+                  className="w-1/2 bg-green-600 hover:bg-green-700 text-white rounded-xl py-2 font-bold shadow transition"
+                  onClick={async () => {
+                    await handleResale();
+                    setShowConfirm(false);
+                  }}
+                  disabled={buying}
+                >
+                  Confirm
+                </button>
+                <button
+                  className="w-1/2 bg-gray-300 hover:bg-gray-400 text-gray-900 rounded-xl py-2 font-bold shadow transition"
+                  onClick={() => setShowConfirm(false)}
+                  disabled={buying}
+                >
+                  Cancel
+                </button>
+              </div>
+            </div>
+          )}
         </div>
-        <div className="flex items-center gap-3 mb-2">
-          <span className="font-semibold">Select quantity:</span>
-          <input
-            type="number"
-            min={product.min_order || product.minQty || 1}
-            value={quantity}
-            onChange={(e) => {
-              const val = e.target.value;
-              if (/^[0-9]*$/.test(val)) setQuantity(val);
-            }}
-            onBlur={() => {
-              const min = product.min_order || product.minQty || 1;
-              const num = parseInt(quantity, 10);
-              if (!num || num < min) setQuantity(min);
-              else setQuantity(num);
-            }}
-            className="border rounded-lg px-3 py-1 w-24 text-base"
-          />
-          <span className="text-xs text-gray-500">
-            (Min. {product.min_order || product.minQty || 1})
-          </span>
-        </div>
-        {!showConfirm ? (
-  <button
-    className={`mt-3 w-full bg-green-600 hover:bg-green-700 text-white rounded-xl py-2 font-bold text-lg shadow transition ${
-      buying ? "opacity-60 cursor-wait" : ""
-    }`}
-    onClick={() => setShowConfirm(true)}
-    disabled={buying}
-  >
-    {buying ? "Processing..." : "Buy & Resale"}
-  </button>
-) : (
-  <div className="flex flex-col gap-3 mt-3">
-    <div className="text-center font-semibold text-blue-900 mb-2">
-      Are you sure you want to buy and resale this product?
-    </div>
-    <div className="flex gap-3">
-      <button
-        className="w-1/2 bg-green-600 hover:bg-green-700 text-white rounded-xl py-2 font-bold shadow transition"
-        onClick={async () => {
-  await handleResale();
-  setShowConfirm(false);
-}}
-        disabled={buying}
-      >
-        Confirm
-      </button>
-      <button
-        className="w-1/2 bg-gray-300 hover:bg-gray-400 text-gray-900 rounded-xl py-2 font-bold shadow transition"
-        onClick={() => setShowConfirm(false)}
-        disabled={buying}
-      >
-        Cancel
-      </button>
-    </div>
-  </div>
-)}
       </div>
     </div>
   );
 }
+
