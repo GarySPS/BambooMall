@@ -103,7 +103,7 @@ export default function AboutUsPage() {
               <div>
                 <div className="font-bold text-green-900">Global, Confidential Support</div>
                 <div className="text-sm text-gray-700">
-                  Our team answers in English, Burmese, Chinese &amp; more. All chats are private, all issues handled—no matter where you are.
+                  Our team answers with your relate language &amp; more. All chats are private, all issues handled—no matter where you are.
                 </div>
               </div>
             </div>
