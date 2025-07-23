@@ -79,7 +79,36 @@ export default function App() {
     <UserProvider>
       <Router>
         <ToastContainer position="top-center" autoClose={1800} />
-        <AppContent />
+        <div
+          style={{
+            minHeight: "100vh",
+            minWidth: "100vw",
+            backgroundImage: "url('/profilebg.jpg')",
+            backgroundSize: "cover",
+            backgroundRepeat: "no-repeat",
+            backgroundPosition: "center center",
+            backgroundAttachment: "fixed",
+            position: "relative",
+          }}
+        >
+          {/* --- Optional overlay for readability (uncomment if needed) --- */}
+          {/* <div
+            style={{
+              position: "fixed",
+              top: 0,
+              left: 0,
+              width: "100vw",
+              height: "100vh",
+              background: "rgba(255,255,255,0.85)", // adjust opacity/color as needed
+              zIndex: 0,
+              pointerEvents: "none"
+            }}
+          /> */}
+          {/* --- Your main app content --- */}
+          <div style={{ position: "relative", zIndex: 1 }}>
+            <AppContent />
+          </div>
+        </div>
       </Router>
     </UserProvider>
   );
