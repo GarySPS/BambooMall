@@ -100,38 +100,52 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* Key Selling Points */}
+      {/* Key Selling Points (with same bg as hero/factory cards) */}
       <section className="max-w-6xl mx-auto py-16 grid grid-cols-1 md:grid-cols-3 gap-8 text-center px-4">
-        <div className="bg-white rounded-2xl shadow-xl p-7 flex flex-col items-center border border-green-100">
-          <FaBolt className="text-3xl text-green-700 mb-2" />
-          <h3 className="font-bold text-xl text-green-700 mb-2">Direct-from-Factory Pricing</h3>
-          <p className="text-green-600 mb-4">
-            Secure exclusive pricing on brand-new products direct from the source. No hidden fees.
-          </p>
-          <Link className="text-green-700 font-semibold hover:underline" to="/about-us">
-            How We Source →
-          </Link>
-        </div>
-        <div className="bg-white rounded-2xl shadow-xl p-7 flex flex-col items-center border border-green-100">
-          <FaCrown className="text-3xl text-yellow-400 mb-2" />
-          <h3 className="font-bold text-xl text-green-700 mb-2">VIP Profit Boosts</h3>
-          <p className="text-green-600 mb-4">
-            Grow your wallet, unlock new VIP tiers, and enjoy instant bonus discounts. See your status live!
-          </p>
-          <Link className="text-green-700 font-semibold hover:underline" to="/membership">
-            Explore VIP Benefits →
-          </Link>
-        </div>
-        <div className="bg-white rounded-2xl shadow-xl p-7 flex flex-col items-center border border-green-100">
-          <FaCheckCircle className="text-3xl text-green-700 mb-2" />
-          <h3 className="font-bold text-xl text-green-700 mb-2">Fastest Resale System</h3>
-          <p className="text-green-600 mb-4">
-            Simulate instant resale profits, withdraw any time, and track your earnings with zero risk.
-          </p>
-          <Link className="text-green-700 font-semibold hover:underline" to="/faq">
-            How It Works →
-          </Link>
-        </div>
+        {[
+          {
+            icon: <FaBolt className="text-3xl text-green-700 mb-2" />,
+            title: "Direct-from-Factory Pricing",
+            desc: "Secure exclusive pricing on brand-new products direct from the source. No hidden fees.",
+            link: "/about-us",
+            linkLabel: "How We Source →",
+          },
+          {
+            icon: <FaCrown className="text-3xl text-yellow-400 mb-2" />,
+            title: "VIP Profit Boosts",
+            desc: "Grow your wallet, unlock new VIP tiers, and enjoy instant bonus discounts. See your status live!",
+            link: "/membership",
+            linkLabel: "Explore VIP Benefits →",
+          },
+          {
+            icon: <FaCheckCircle className="text-3xl text-green-700 mb-2" />,
+            title: "Fastest Resale System",
+            desc: "Simulate instant resale profits, withdraw any time, and track your earnings with zero risk.",
+            link: "/faq",
+            linkLabel: "How It Works →",
+          },
+        ].map((item, idx) => (
+          <div
+            key={idx}
+            className="relative rounded-2xl shadow-xl overflow-hidden flex flex-col items-center border border-green-100"
+            style={{
+              backgroundImage: "url('/hero-bg.png')",
+              backgroundSize: 'cover',
+              backgroundPosition: 'center',
+              minHeight: 265,
+            }}
+          >
+            <div className="absolute inset-0 bg-white/80 backdrop-blur-sm" />
+            <div className="relative z-10 flex flex-col items-center p-7 w-full">
+              {item.icon}
+              <h3 className="font-bold text-xl text-green-700 mb-2">{item.title}</h3>
+              <p className="text-green-600 mb-4">{item.desc}</p>
+              <Link className="text-green-700 font-semibold hover:underline" to={item.link}>
+                {item.linkLabel}
+              </Link>
+            </div>
+          </div>
+        ))}
       </section>
 
       {/* Promo Video */}
@@ -232,7 +246,7 @@ export default function HomePage() {
         </Link>
       </section>
 
-      {/* --- REPLACEMENT SECTION: China Factories Grid --- */}
+      {/* --- China Factories Grid (matches hero bg & card effect) --- */}
       <section className="max-w-6xl mx-auto py-16 px-4">
         <h2 className="text-center text-3xl font-bold text-green-700 mb-2">
           Trusted Partner Factories Across China
@@ -247,7 +261,7 @@ export default function HomePage() {
               className="relative rounded-2xl shadow-lg overflow-hidden flex flex-col items-center"
               style={{
                 minHeight: '340px',
-                backgroundImage: "url('/hero-bg.png')", // use your own image for card bg
+                backgroundImage: "url('/hero-bg.png')",
                 backgroundSize: 'cover',
                 backgroundPosition: 'center',
                 border: '1.5px solid #d1fae5'
