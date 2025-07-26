@@ -100,52 +100,38 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* Key Selling Points (with same bg as hero/factory cards) */}
+      {/* Key Selling Points */}
       <section className="max-w-6xl mx-auto py-16 grid grid-cols-1 md:grid-cols-3 gap-8 text-center px-4">
-        {[
-          {
-            icon: <FaBolt className="text-3xl text-green-700 mb-2" />,
-            title: "Direct-from-Factory Pricing",
-            desc: "Secure exclusive pricing on brand-new products direct from the source. No hidden fees.",
-            link: "/about-us",
-            linkLabel: "How We Source →",
-          },
-          {
-            icon: <FaCrown className="text-3xl text-yellow-400 mb-2" />,
-            title: "VIP Profit Boosts",
-            desc: "Grow your wallet, unlock new VIP tiers, and enjoy instant bonus discounts. See your status live!",
-            link: "/membership",
-            linkLabel: "Explore VIP Benefits →",
-          },
-          {
-            icon: <FaCheckCircle className="text-3xl text-green-700 mb-2" />,
-            title: "Fastest Resale System",
-            desc: "Simulate instant resale profits, withdraw any time, and track your earnings with zero risk.",
-            link: "/faq",
-            linkLabel: "How It Works →",
-          },
-        ].map((item, idx) => (
-          <div
-            key={idx}
-            className="relative rounded-2xl shadow-xl overflow-hidden flex flex-col items-center border border-green-100"
-            style={{
-              backgroundImage: "url('/hero-bg.png')",
-              backgroundSize: 'cover',
-              backgroundPosition: 'center',
-              minHeight: 265,
-            }}
-          >
-            <div className="absolute inset-0 bg-white/80 backdrop-blur-sm" />
-            <div className="relative z-10 flex flex-col items-center p-7 w-full">
-              {item.icon}
-              <h3 className="font-bold text-xl text-green-700 mb-2">{item.title}</h3>
-              <p className="text-green-600 mb-4">{item.desc}</p>
-              <Link className="text-green-700 font-semibold hover:underline" to={item.link}>
-                {item.linkLabel}
-              </Link>
-            </div>
-          </div>
-        ))}
+        <div className="bg-white rounded-2xl shadow-xl p-7 flex flex-col items-center border border-green-100">
+          <FaBolt className="text-3xl text-green-700 mb-2" />
+          <h3 className="font-bold text-xl text-green-700 mb-2">Direct-from-Factory Pricing</h3>
+          <p className="text-green-600 mb-4">
+            Secure exclusive pricing on brand-new products direct from the source. No hidden fees.
+          </p>
+          <Link className="text-green-700 font-semibold hover:underline" to="/about-us">
+            How We Source →
+          </Link>
+        </div>
+        <div className="bg-white rounded-2xl shadow-xl p-7 flex flex-col items-center border border-green-100">
+          <FaCrown className="text-3xl text-yellow-400 mb-2" />
+          <h3 className="font-bold text-xl text-green-700 mb-2">VIP Profit Boosts</h3>
+          <p className="text-green-600 mb-4">
+            Grow your wallet, unlock new VIP tiers, and enjoy instant bonus discounts. See your status live!
+          </p>
+          <Link className="text-green-700 font-semibold hover:underline" to="/membership">
+            Explore VIP Benefits →
+          </Link>
+        </div>
+        <div className="bg-white rounded-2xl shadow-xl p-7 flex flex-col items-center border border-green-100">
+          <FaCheckCircle className="text-3xl text-green-700 mb-2" />
+          <h3 className="font-bold text-xl text-green-700 mb-2">Fastest Resale System</h3>
+          <p className="text-green-600 mb-4">
+            Simulate instant resale profits, withdraw any time, and track your earnings with zero risk.
+          </p>
+          <Link className="text-green-700 font-semibold hover:underline" to="/faq">
+            How It Works →
+          </Link>
+        </div>
       </section>
 
       {/* Promo Video */}
@@ -246,42 +232,47 @@ export default function HomePage() {
         </Link>
       </section>
 
-      {/* --- China Factories Grid (matches hero bg & card effect) --- */}
-      <section className="max-w-6xl mx-auto py-16 px-4">
-        <h2 className="text-center text-3xl font-bold text-green-700 mb-2">
-          Trusted Partner Factories Across China
-        </h2>
-        <p className="text-center text-green-500 text-base mb-8">
-          Every partner is a verified, high-volume exporter serving top brands worldwide.
-        </p>
-        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-8">
-          {factories.map((f, i) => (
-            <div
-              key={i}
-              className="relative rounded-2xl shadow-lg overflow-hidden flex flex-col items-center"
-              style={{
-                minHeight: '340px',
-                backgroundImage: "url('/hero-bg.png')",
-                backgroundSize: 'cover',
-                backgroundPosition: 'center',
-                border: '1.5px solid #d1fae5'
-              }}
-            >
-              <div className="absolute inset-0 bg-white/85 backdrop-blur-sm" />
-              <div className="relative z-10 flex flex-col items-center p-6 w-full">
-                <img
-                  src={f.image}
-                  alt={f.name}
-                  className="w-28 h-28 object-cover rounded-2xl mb-3 border border-green-100 shadow"
-                  style={{ background: '#f0fdf4' }}
-                  onError={e => { e.target.onerror = null; e.target.src='/factory-default.png'; }}
-                />
-                <div className="font-bold text-green-800 text-lg mb-1 text-center">{f.name}</div>
-                <div className="text-green-600 text-xs mb-2 text-center">{f.address}</div>
-                <p className="text-green-600 text-center text-sm">{f.info}</p>
-              </div>
+      {/* --- CHINA FACTORIES SECTION WITH CONTAINER BACKGROUND --- */}
+      <section className="py-16 px-4 flex justify-center">
+        <div
+          className="relative max-w-6xl w-full rounded-3xl shadow-2xl overflow-hidden"
+          style={{
+            backgroundImage: "url('/hero-bg.png')",
+            backgroundSize: 'cover',
+            backgroundPosition: 'center',
+            minHeight: 500,
+          }}
+        >
+          {/* Soft white overlay for readability */}
+          <div className="absolute inset-0 bg-white/80 backdrop-blur-md z-0" />
+          <div className="relative z-10 px-4 py-8">
+            <h2 className="text-center text-3xl font-bold text-green-700 mb-2 drop-shadow">
+              Trusted Partner Factories Across China
+            </h2>
+            <p className="text-center text-green-600 text-base mb-8 font-medium">
+              Every partner is a verified, high-volume exporter serving top brands worldwide.
+            </p>
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-8">
+              {factories.map((f, i) => (
+                <div
+                  key={i}
+                  className="relative rounded-2xl bg-white shadow-lg flex flex-col items-center p-6 border border-green-100"
+                  style={{ minHeight: 340 }}
+                >
+                  <img
+                    src={f.image}
+                    alt={f.name}
+                    className="w-28 h-28 object-cover rounded-2xl mb-3 border border-green-100 shadow"
+                    style={{ background: '#f0fdf4' }}
+                    onError={e => { e.target.onerror = null; e.target.src='/factory-default.png'; }}
+                  />
+                  <div className="font-bold text-green-800 text-lg mb-1 text-center">{f.name}</div>
+                  <div className="text-green-600 text-xs mb-2 text-center">{f.address}</div>
+                  <p className="text-green-600 text-center text-sm">{f.info}</p>
+                </div>
+              ))}
             </div>
-          ))}
+          </div>
         </div>
       </section>
 
