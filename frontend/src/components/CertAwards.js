@@ -17,15 +17,7 @@ const certImgs = [
 
 export default function CertAwards() {
   return (
-    <section
-      className="w-full py-16 px-2"
-      style={{
-        background: "linear-gradient(120deg, #F2E5C0 70%, #e6f3ee 100%)",
-        borderRadius: 0,
-        marginBottom: "2.5rem",
-        boxShadow: "0 3px 18px #e0eae3",
-      }}
-    >
+<section className="w-full py-8 px-2">
       <div className="max-w-5xl mx-auto flex flex-col items-center">
         <h2
           className="text-4xl md:text-5xl font-extrabold text-center mb-14"
