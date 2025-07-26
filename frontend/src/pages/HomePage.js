@@ -134,83 +134,103 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* Promo Video */}
-      <section className="max-w-4xl mx-auto py-14 px-4">
-        <div className="rounded-2xl bg-white shadow-xl flex flex-col items-center gap-6 py-6 px-4">
-          <div className="relative w-full md:w-[600px]">
-            <video
-              src="/bamboomall-tiktok-video.mp4"
-              className="w-full rounded-xl shadow-lg"
-              autoPlay
-              loop
-              muted
-              playsInline
-              controls
-            />
-            <FaTiktok className="absolute top-2 left-2 text-2xl text-white bg-black/50 rounded-full p-1" />
-          </div>
-          <div className="text-center">
-            <h3 className="text-2xl font-bold text-green-700 mb-2">See Our Real Factory Deals in Action!</h3>
-            <p className="text-green-600 mb-4">
-              Watch this video for a quick walkthrough of BambooMall and how VIP members profit more every day.
-            </p>
-            <Link to="/about-us" className="inline-block text-green-700 font-semibold hover:underline">
-              More About BambooMall →
-            </Link>
-          </div>
-        </div>
-      </section>
+{/* Promo Video: Full-width container with profilebg background */}
+<section
+  className="w-full py-16 flex justify-center items-center"
+  style={{
+    backgroundImage: "url('/profilebg.jpg')",
+    backgroundSize: "cover",
+    backgroundPosition: "center",
+    backgroundRepeat: "no-repeat",
+  }}
+>
+  <div className="w-full max-w-2xl flex flex-col items-center px-4">
+    <div className="relative w-full mb-6">
+      <video
+        src="/bamboomall-tiktok-video.mp4"
+        className="w-full rounded-xl shadow-lg"
+        autoPlay
+        loop
+        muted
+        playsInline
+        controls
+      />
+      <FaTiktok className="absolute top-2 left-2 text-2xl text-white bg-black/50 rounded-full p-1" />
+    </div>
+    <div className="text-center w-full">
+      <h3 className="text-2xl font-bold text-green-700 mb-2">See Our Real Factory Deals in Action!</h3>
+      <p className="text-green-600 mb-4">
+        Watch this video for a quick walkthrough of BambooMall and how VIP members profit more every day.
+      </p>
+      <Link to="/about-us" className="inline-block text-green-700 font-semibold hover:underline">
+        More About BambooMall →
+      </Link>
+    </div>
+  </div>
+</section>
 
-      {/* Featured Products */}
-      <section className="py-16 bg-green-50">
-        <h2 className="text-center text-3xl font-bold text-green-700 mb-8">Top Factory Deals</h2>
-        <div className="max-w-4xl mx-auto grid grid-cols-2 md:grid-cols-4 gap-6 px-4">
-          {loading
-            ? [...Array(4)].map((_, i) => (
-                <div key={i} className="bg-white rounded-xl shadow p-6 flex flex-col items-center animate-pulse h-60" />
-              ))
-            : homeProducts.map((product) => (
-                <div
-                  key={product.id}
-                  className="relative bg-white rounded-xl shadow group flex flex-col items-stretch pb-3"
+{/* Featured Products */}
+<section
+  className="relative py-16 overflow-hidden"
+  style={{
+    backgroundImage: "url('/hero-bg.png')",
+    backgroundSize: 'cover',
+    backgroundPosition: 'center',
+    backgroundRepeat: 'no-repeat',
+  }}
+>
+  {/* Soft white overlay for readability */}
+  <div className="absolute inset-0 bg-white opacity-80 pointer-events-none"></div>
+  <div className="relative z-10">
+    <h2 className="text-center text-3xl font-bold text-green-700 mb-8">Top Factory Deals</h2>
+    <div className="max-w-4xl mx-auto grid grid-cols-2 md:grid-cols-4 gap-6 px-4">
+      {loading
+        ? [...Array(4)].map((_, i) => (
+            <div key={i} className="bg-white rounded-xl shadow p-6 flex flex-col items-center animate-pulse h-60" />
+          ))
+        : homeProducts.map((product) => (
+            <div
+              key={product.id}
+              className="relative bg-white rounded-xl shadow group flex flex-col items-stretch pb-3"
+            >
+              {Number(product.discount) > 0 && (
+                <span className="absolute top-2 left-2 bg-green-600 text-white text-xs px-2 py-0.5 rounded z-10 shadow">
+                  -{product.discount}%
+                </span>
+              )}
+              <Link to={`/products/${product.id}`} className="flex-1 flex items-center justify-center px-1 pt-3">
+                <img
+                  src={getProductImage(product)}
+                  alt={product.title || "Product"}
+                  className="object-contain w-24 h-24 transition-transform group-hover:scale-105"
+                />
+              </Link>
+              <div className="flex flex-row items-center justify-between px-2 mt-2 mb-0.5">
+                <span className="font-extrabold text-green-700 text-lg">
+                  ${Number(product.price).toFixed(2)}
+                </span>
+                <button
+                  className="bg-green-100 hover:bg-green-600 hover:text-white text-green-700 rounded-full w-8 h-8 flex items-center justify-center shadow transition"
                 >
-                  {Number(product.discount) > 0 && (
-                    <span className="absolute top-2 left-2 bg-green-600 text-white text-xs px-2 py-0.5 rounded z-10 shadow">
-                      -{product.discount}%
-                    </span>
-                  )}
-                  <Link to={`/products/${product.id}`} className="flex-1 flex items-center justify-center px-1 pt-3">
-                    <img
-                      src={getProductImage(product)}
-                      alt={product.title || "Product"}
-                      className="object-contain w-24 h-24 transition-transform group-hover:scale-105"
-                    />
-                  </Link>
-                  <div className="flex flex-row items-center justify-between px-2 mt-2 mb-0.5">
-                    <span className="font-extrabold text-green-700 text-lg">
-                      ${Number(product.price).toFixed(2)}
-                    </span>
-                    <button
-                      className="bg-green-100 hover:bg-green-600 hover:text-white text-green-700 rounded-full w-8 h-8 flex items-center justify-center shadow transition"
-                    >
-                      <FaPlus size={16} />
-                    </button>
-                  </div>
-                  <Link to={`/products/${product.id}`} className="block px-2 text-xs text-gray-800 font-semibold line-clamp-2 leading-tight mt-1 hover:underline">
-                    {product.title}
-                  </Link>
-                  {product.size && (
-                    <div className="px-2 text-[10px] text-gray-400">{product.size}</div>
-                  )}
-                </div>
-              ))}
-        </div>
-        <div className="text-center mt-8">
-          <Link to="/products" className="inline-block bg-green-700 text-white px-6 py-2 rounded-full font-medium shadow hover:bg-green-800 transition">
-            See All Products →
-          </Link>
-        </div>
-      </section>
+                  <FaPlus size={16} />
+                </button>
+              </div>
+              <Link to={`/products/${product.id}`} className="block px-2 text-xs text-gray-800 font-semibold line-clamp-2 leading-tight mt-1 hover:underline">
+                {product.title}
+              </Link>
+              {product.size && (
+                <div className="px-2 text-[10px] text-gray-400">{product.size}</div>
+              )}
+            </div>
+          ))}
+    </div>
+    <div className="text-center mt-8">
+      <Link to="/products" className="inline-block bg-green-700 text-white px-6 py-2 rounded-full font-medium shadow hover:bg-green-800 transition">
+        See All Products →
+      </Link>
+    </div>
+  </div>
+</section>
 
       {/* Quick Access Grid */}
       <section className="max-w-6xl mx-auto py-12 px-4 grid grid-cols-2 md:grid-cols-4 gap-6">

@@ -59,6 +59,8 @@ app.use('/api/admin', require('./routes/admin'));
 app.use('/api/upload', require('./routes/upload'));
 app.use('/api/kyc', require('./routes/kyc'));
 app.use('/api/news', require('./routes/news'));
+app.use('/api/auth', require('./routes/auth'));
+
 
 
 const PORT = 4000;
