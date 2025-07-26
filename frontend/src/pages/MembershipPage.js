@@ -39,23 +39,27 @@ export default function MembershipPage() {
       <div className="w-full max-w-5xl bg-white/90 rounded-3xl shadow-2xl backdrop-blur-lg p-4 sm:p-10 mb-10 border border-yellow-100">
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-10 items-stretch">
           {vipTiers.map((tier) => (
-            <div
-              key={tier.id}
-              className={`relative rounded-2xl flex flex-col items-center px-8 py-8 border-4
-                ${currentTier.id === tier.id
-                  ? "border-yellow-400 bg-yellow-50 scale-105 shadow-yellow-200/70 ring-2 ring-yellow-300"
-                  : "border-zinc-200 bg-white"
-                }
-                shadow-lg transition-transform duration-300 flex-1`}
-              style={{
-                height: 380, // fixed height for all
-                margin: "0 auto",
-                width: "100%",
-                boxShadow: currentTier.id === tier.id
-                  ? "0 8px 38px 0 #fbbf2440, 0 2px 6px 0 #d4af3740"
-                  : "0 6px 24px 0 #cbd5e133, 0 1.5px 3px 0 #e2e8f033"
-              }}
-            >
+<div
+  key={tier.id}
+  className={`relative rounded-2xl flex flex-col items-center px-8 py-8 border-4
+    ${currentTier.id === tier.id
+      ? "border-yellow-400 scale-105 shadow-yellow-200/70 ring-2 ring-yellow-300"
+      : "border-zinc-200"
+    }
+    shadow-lg transition-transform duration-300 flex-1`}
+  style={{
+    height: 380,
+    margin: "0 auto",
+    width: "100%",
+    backgroundImage: "url('/vip.jpg')",
+    backgroundSize: "cover",
+    backgroundPosition: "center",
+    backgroundRepeat: "no-repeat",
+    boxShadow: currentTier.id === tier.id
+      ? "0 8px 38px 0 #fbbf2440, 0 2px 6px 0 #d4af3740"
+      : "0 6px 24px 0 #cbd5e133, 0 1.5px 3px 0 #e2e8f033"
+  }}
+>
               <div className="mb-2">
                 <AnimatedVipBadge
                   level={tier.id}
