@@ -51,7 +51,7 @@ export default function AboutUsPage() {
 <div
   className="w-full py-12 mb-6"
   style={{
-    backgroundImage: "url('/certi.png')",
+    backgroundImage: "url('/certi.jpg')",
     backgroundRepeat: "no-repeat",
     backgroundSize: "cover",
     backgroundPosition: "center",
