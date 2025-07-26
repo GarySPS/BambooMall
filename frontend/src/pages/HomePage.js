@@ -6,29 +6,65 @@ import { FaStar, FaBolt, FaCheckCircle, FaCrown, FaTiktok, FaPlus } from 'react-
 import { fetchProducts } from '../utils/api';
 import { getProductImage } from '../utils/image';
 
-const testimonials = [
+// --- 1. Add your factories array here (edit info/images as needed) ---
+const factories = [
   {
-    name: "Jessica (VIP2 Member)",
-    avatar: "/demo_avatar1.jpg",
-    badge: "VIP2",
-    text: "I started with just $1000, now I'm VIP2! Real factory prices and resale profits. Highly recommended.",
+    name: "Sunon Furniture Co., Ltd.",
+    image: "/sunon.jpg",
+    address: "No. 16, Jincheng Rd, Hangzhou, Zhejiang, China",
+    info: "Leading office furniture manufacturer with 20+ years global export experience.",
   },
   {
-    name: "Json (VIP1 Member)",
-    avatar: "/demo_avatar2.jpg",
-    badge: "VIP1",
-    text: "The VIP perks are real! Extra discounts on top of factory prices—BambooMall is my favorite.",
+    name: "KUKA Home",
+    image: "/kuka.png",
+    address: "No. 299, Huxi Rd, Haining, Zhejiang, China",
+    info: "World-class upholstered furniture and sofas, OEM/ODM for global brands.",
   },
   {
-    name: "David (VIP0 Member)",
-    avatar: "/demo_avatar3.jpg",
-    badge: "VIP0",
-    text: "Fast resale, quick profit, and real product quality. The membership badge looks so cool on my profile.",
+    name: "Haier Smart Electronics",
+    image: "/haier.png",
+    address: "Haier Industrial Park, Qingdao, Shandong, China",
+    info: "Top-rated smart appliances & IoT solutions factory.",
+  },
+  {
+    name: "Gree Electric Appliances Inc.",
+    image: "/gree.jpg",
+    address: "No. 6, Xin'an Road, Zhuhai, Guangdong, China",
+    info: "China’s largest air conditioner and smart electronics exporter.",
+  },
+  {
+    name: "Midea Group",
+    image: "/aa.png",
+    address: "Midea Headquarters, Foshan, Guangdong, China",
+    info: "Global leader in smart home appliances and robotics.",
+  },
+  {
+    name: "Galanz Appliances",
+    image: "/galanz.jpg",
+    address: "Galanz Industrial Park, Foshan, Guangdong, China",
+    info: "Microwaves, refrigerators, and home appliances innovator.",
+  },
+  {
+    name: "TCL Technology",
+    image: "/bb.png",
+    address: "No. 22, Heung Yip Road, Huizhou, Guangdong, China",
+    info: "Renowned factory for electronics, TVs, and panels.",
+  },
+  {
+    name: "Opple Lighting",
+    image: "/opple.png",
+    address: "No. 1888, North Zhongshan Rd, Shanghai, China",
+    info: "China’s #1 smart lighting and LED factory.",
+  },
+  {
+    name: "Zhejiang Xilinmen Furniture",
+    image: "/xilinmen.png",
+    address: "Shaoxing, Zhejiang, China",
+    info: "OEM/ODM mattress and bedding manufacturer.",
   },
 ];
 
 export default function HomePage() {
-  // Fetch 4 products for homepage "Featured"
   const [homeProducts, setHomeProducts] = useState([]);
   const [loading, setLoading] = useState(true);
 
@@ -127,7 +163,7 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* NEW: Featured Products from Real API */}
+      {/* Featured Products */}
       <section className="py-16 bg-green-50">
         <h2 className="text-center text-3xl font-bold text-green-700 mb-8">Top Factory Deals</h2>
         <div className="max-w-4xl mx-auto grid grid-cols-2 md:grid-cols-4 gap-6 px-4">
@@ -140,14 +176,11 @@ export default function HomePage() {
                   key={product.id}
                   className="relative bg-white rounded-xl shadow group flex flex-col items-stretch pb-3"
                 >
-                  {/* Discount Badge */}
                   {Number(product.discount) > 0 && (
                     <span className="absolute top-2 left-2 bg-green-600 text-white text-xs px-2 py-0.5 rounded z-10 shadow">
                       -{product.discount}%
                     </span>
                   )}
-
-                  {/* Product Image & Link */}
                   <Link to={`/products/${product.id}`} className="flex-1 flex items-center justify-center px-1 pt-3">
                     <img
                       src={getProductImage(product)}
@@ -155,25 +188,19 @@ export default function HomePage() {
                       className="object-contain w-24 h-24 transition-transform group-hover:scale-105"
                     />
                   </Link>
-
-                  {/* Price and Add Button */}
                   <div className="flex flex-row items-center justify-between px-2 mt-2 mb-0.5">
                     <span className="font-extrabold text-green-700 text-lg">
                       ${Number(product.price).toFixed(2)}
                     </span>
                     <button
                       className="bg-green-100 hover:bg-green-600 hover:text-white text-green-700 rounded-full w-8 h-8 flex items-center justify-center shadow transition"
-                      // onClick={} // Optional: Add to cart
                     >
                       <FaPlus size={16} />
                     </button>
                   </div>
-
-                  {/* Title */}
                   <Link to={`/products/${product.id}`} className="block px-2 text-xs text-gray-800 font-semibold line-clamp-2 leading-tight mt-1 hover:underline">
                     {product.title}
                   </Link>
-                  {/* Sub-info (optional) */}
                   {product.size && (
                     <div className="px-2 text-[10px] text-gray-400">{product.size}</div>
                   )}
@@ -186,19 +213,6 @@ export default function HomePage() {
           </Link>
         </div>
       </section>
-
-      {/* Old: Carousel can still be included below if you want */}
-      {/* 
-      <section className="py-16 bg-green-100">
-        <h2 className="text-center text-3xl font-bold text-green-700 mb-8">Featured Products</h2>
-        <FeaturedProductsCarousel />
-        <div className="text-center mt-8">
-          <Link to="/products" className="inline-block bg-green-700 text-white px-6 py-2 rounded-full font-medium shadow hover:bg-green-800 transition">
-            See All Products →
-          </Link>
-        </div>
-      </section>
-      */}
 
       {/* Quick Access Grid */}
       <section className="max-w-6xl mx-auto py-12 px-4 grid grid-cols-2 md:grid-cols-4 gap-6">
@@ -220,22 +234,24 @@ export default function HomePage() {
         </Link>
       </section>
 
-      {/* Success Stories / Testimonials */}
+      {/* --- REPLACEMENT SECTION: China Factories Grid --- */}
       <section className="max-w-6xl mx-auto py-16 px-4">
-        <h2 className="text-center text-3xl font-bold text-green-700 mb-8">Success Stories</h2>
-        <div className="grid md:grid-cols-3 gap-8">
-          {testimonials.map((t, i) => (
-            <div key={i} className="bg-white rounded-2xl shadow-lg p-6 flex flex-col items-center border border-green-100">
+        <h2 className="text-center text-3xl font-bold text-green-700 mb-8">Our China Partner Factories</h2>
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-8">
+          {factories.map((f, i) => (
+            <div
+              key={i}
+              className="bg-white rounded-2xl shadow-lg p-6 flex flex-col items-center border border-green-100"
+            >
               <img
-                src={t.avatar}
-                alt={t.name}
-                className="w-16 h-16 rounded-full border-4 border-green-100 mb-3 object-cover"
+                src={f.image}
+                alt={f.name}
+                className="w-32 h-32 object-cover rounded-2xl mb-3"
+                onError={e => { e.target.onerror = null; e.target.src='/factory-default.png'; }}
               />
-              <div className="flex items-center gap-2 mb-2">
-                {t.badge && <AnimatedVipBadge level={t.badge} size={32} />}
-                <span className="font-semibold text-green-700">{t.name}</span>
-              </div>
-              <p className="text-green-600 text-center italic">{t.text}</p>
+              <div className="font-bold text-green-800 text-lg mb-1 text-center">{f.name}</div>
+              <div className="text-green-600 text-xs mb-2 text-center">{f.address}</div>
+              <p className="text-green-600 text-center text-sm">{f.info}</p>
             </div>
           ))}
         </div>

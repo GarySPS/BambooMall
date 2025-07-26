@@ -43,9 +43,9 @@ export default function LoginPage() {
     >
       {/* Top Title */}
 <h1
-  className="mt-8 mb-2 w-full text-center font-extrabold select-none"
+  className="mt-8 mb-2 w-full text-center font-extrabold select-none text-5xl sm:text-6xl"
   style={{
-    fontSize: "clamp(2.2rem, 6vw, 4rem)",
+    fontSize: "clamp(2.8rem, 10vw, 4rem)",
     letterSpacing: "-1px",
     lineHeight: "1.05",
   }}
@@ -68,6 +68,7 @@ export default function LoginPage() {
     Mall
   </span>
 </h1>
+
 
 
       {/* Panda/BambooMall Image Above Card */}
