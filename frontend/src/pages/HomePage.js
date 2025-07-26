@@ -6,7 +6,6 @@ import { FaStar, FaBolt, FaCheckCircle, FaCrown, FaTiktok, FaPlus } from 'react-
 import { fetchProducts } from '../utils/api';
 import { getProductImage } from '../utils/image';
 
-// --- 1. Add your factories array here (edit info/images as needed) ---
 const factories = [
   {
     name: "Sunon Furniture Co., Ltd.",
@@ -71,7 +70,7 @@ export default function HomePage() {
   useEffect(() => {
     fetchProducts()
       .then((data) => {
-        setHomeProducts(data.slice(0, 4)); // Display first 4 products
+        setHomeProducts(data.slice(0, 4));
         setLoading(false);
       })
       .catch(() => setLoading(false));
@@ -80,55 +79,51 @@ export default function HomePage() {
   return (
     <div className="min-h-screen bg-gradient-to-b from-green-50 to-white flex flex-col">
 
-      {/* Hero Banner */}
-      <section className="py-20 text-center bg-green-700 text-white relative overflow-hidden">
-        <div
-          className="absolute inset-0 opacity-10 bg-cover bg-center pointer-events-none"
-          style={{ backgroundImage: "url('/hero-bg.png')" }}
-        />
-        <div className="relative z-10">
-          <h1 className="text-5xl md:text-6xl font-extrabold mb-4 drop-shadow-lg font-[Montserrat]">
+      {/* --- Hero Banner: Premium White Card with Green Shadow --- */}
+      <section className="flex flex-col items-center justify-center pt-16 pb-16 px-2 md:px-0">
+        <div className="bg-white rounded-3xl shadow-2xl px-8 py-14 w-full max-w-3xl text-center relative border border-green-100">
+          <h1 className="text-5xl md:text-6xl font-extrabold mb-4 text-green-800 drop-shadow font-[Montserrat] tracking-tight">
             BambooMall
           </h1>
-          <p className="max-w-2xl mx-auto text-xl md:text-2xl mb-8 animate-fadein-slow font-[Inter]">
-            Real Factory Goods. <span className="font-bold text-yellow-300">Exclusive Discounts</span>. <span className="text-yellow-100">Profitable Resale.</span>
+          <p className="max-w-2xl mx-auto text-xl md:text-2xl mb-8 font-[Inter] text-green-700">
+            Direct from Trusted Factories. <span className="font-bold text-yellow-500">Real Discounts</span>. <span className="font-semibold text-green-800">Guaranteed Resale Profits.</span>
           </p>
           <Link
             to="/products"
-            className="mt-4 inline-block bg-white text-green-700 font-bold px-8 py-3 rounded-full shadow-xl hover:bg-yellow-100 hover:text-green-900 transition text-lg"
+            className="mt-2 inline-block bg-green-700 text-white font-bold px-8 py-3 rounded-full shadow-xl hover:bg-yellow-100 hover:text-green-900 transition text-lg"
           >
             Start Reselling
           </Link>
         </div>
       </section>
 
-      {/* Key Selling Points */}
-      <section className="max-w-6xl mx-auto py-16 grid grid-cols-1 md:grid-cols-3 gap-8 text-center px-4">
+      {/* --- Key Selling Points --- */}
+      <section className="max-w-6xl mx-auto py-14 grid grid-cols-1 md:grid-cols-3 gap-8 text-center px-4">
         <div className="bg-white rounded-2xl shadow-xl p-7 flex flex-col items-center border border-green-100">
           <FaBolt className="text-3xl text-green-700 mb-2" />
-          <h3 className="font-bold text-xl text-green-700 mb-2">Exclusive Factory Prices</h3>
+          <h3 className="font-bold text-xl text-green-700 mb-2">Direct-from-Factory Pricing</h3>
           <p className="text-green-600 mb-4">
-            Order direct from top factories—skip the middleman and maximize your resale profit.
+            Secure exclusive pricing on brand-new products direct from the source. No hidden fees.
           </p>
           <Link className="text-green-700 font-semibold hover:underline" to="/about-us">
-            Learn More →
+            How We Source →
           </Link>
         </div>
         <div className="bg-white rounded-2xl shadow-xl p-7 flex flex-col items-center border border-green-100">
           <FaCrown className="text-3xl text-yellow-400 mb-2" />
-          <h3 className="font-bold text-xl text-green-700 mb-2">VIP Membership Perks</h3>
+          <h3 className="font-bold text-xl text-green-700 mb-2">VIP Profit Boosts</h3>
           <p className="text-green-600 mb-4">
-            Level up as your wallet grows—get instant extra discounts and show off your animated VIP badge.
+            Grow your wallet, unlock new VIP tiers, and enjoy instant bonus discounts. See your status live!
           </p>
           <Link className="text-green-700 font-semibold hover:underline" to="/membership">
-            View VIP Levels →
+            Explore VIP Benefits →
           </Link>
         </div>
         <div className="bg-white rounded-2xl shadow-xl p-7 flex flex-col items-center border border-green-100">
           <FaCheckCircle className="text-3xl text-green-700 mb-2" />
-          <h3 className="font-bold text-xl text-green-700 mb-2">Instant Resale Profits</h3>
+          <h3 className="font-bold text-xl text-green-700 mb-2">Fastest Resale System</h3>
           <p className="text-green-600 mb-4">
-            Buy, resell, and withdraw your profit instantly with our wallet-based simulation system.
+            Simulate instant resale profits, withdraw any time, and track your earnings with zero risk.
           </p>
           <Link className="text-green-700 font-semibold hover:underline" to="/faq">
             How It Works →
@@ -136,9 +131,9 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* Promo Video */}
+      {/* --- Promo Video Card --- */}
       <section className="max-w-4xl mx-auto py-14 px-4">
-        <div className="rounded-2xl bg-white shadow-xl flex flex-col items-center gap-6 py-6 px-4">
+        <div className="rounded-2xl bg-white shadow-xl flex flex-col items-center gap-6 py-6 px-4 border border-green-100">
           <div className="relative w-full md:w-[600px]">
             <video
               src="/bamboomall-tiktok-video.mp4"
@@ -152,20 +147,20 @@ export default function HomePage() {
             <FaTiktok className="absolute top-2 left-2 text-2xl text-white bg-black/50 rounded-full p-1" />
           </div>
           <div className="text-center">
-            <h3 className="text-2xl font-bold text-green-700 mb-2">See Our Real Factory Deals in Action!</h3>
+            <h3 className="text-2xl font-bold text-green-700 mb-2">How Factory Resale Works</h3>
             <p className="text-green-600 mb-4">
-              Watch this video for a quick walkthrough of BambooMall and how VIP members profit more every day.
+              See how members source, buy, and profit from our global supply chain—all in real time.
             </p>
             <Link to="/about-us" className="inline-block text-green-700 font-semibold hover:underline">
-              More About BambooMall →
+              Discover Our Process →
             </Link>
           </div>
         </div>
       </section>
 
-      {/* Featured Products */}
+      {/* --- Featured Products Grid --- */}
       <section className="py-16 bg-green-50">
-        <h2 className="text-center text-3xl font-bold text-green-700 mb-8">Top Factory Deals</h2>
+        <h2 className="text-center text-3xl font-bold text-green-700 mb-8">Exclusive Resale Deals</h2>
         <div className="max-w-4xl mx-auto grid grid-cols-2 md:grid-cols-4 gap-6 px-4">
           {loading
             ? [...Array(4)].map((_, i) => (
@@ -214,7 +209,7 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* Quick Access Grid */}
+      {/* --- Quick Access Grid --- */}
       <section className="max-w-6xl mx-auto py-12 px-4 grid grid-cols-2 md:grid-cols-4 gap-6">
         <Link to="/products" className="flex flex-col items-center bg-white shadow-lg rounded-xl p-6 hover:bg-green-50 transition">
           <FaStar className="text-2xl text-green-700 mb-2" />
@@ -234,9 +229,14 @@ export default function HomePage() {
         </Link>
       </section>
 
-      {/* --- REPLACEMENT SECTION: China Factories Grid --- */}
+      {/* --- Factory Grid: "Trusted Partner Factories Across China" --- */}
       <section className="max-w-6xl mx-auto py-16 px-4">
-        <h2 className="text-center text-3xl font-bold text-green-700 mb-8">Our China Partner Factories</h2>
+        <h2 className="text-center text-3xl font-bold text-green-700 mb-2">
+          Trusted Partner Factories Across China
+        </h2>
+        <p className="text-center text-green-500 text-base mb-7">
+          Every partner is a verified, high-volume exporter serving top brands worldwide.
+        </p>
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-8">
           {factories.map((f, i) => (
             <div
@@ -257,10 +257,10 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* Final CTA Banner */}
+      {/* --- Final CTA --- */}
       <section className="py-20 text-center bg-green-600 text-white">
-        <h2 className="text-4xl font-bold mb-4">Join BambooMall Today!</h2>
-        <p className="text-lg mb-6">Become a VIP reseller and unlock extra profits. Your membership and wallet badge upgrade instantly as you deposit!</p>
+        <h2 className="text-4xl font-bold mb-4">Become a BambooMall Partner</h2>
+        <p className="text-lg mb-6">Get VIP status instantly, unlock extra discounts, and join a global network of resellers and suppliers.</p>
         <Link
           to="/signup"
           className="inline-block bg-white text-green-700 font-bold px-8 py-3 rounded-full shadow hover:bg-yellow-100 hover:text-green-900 transition text-lg"
@@ -269,7 +269,7 @@ export default function HomePage() {
         </Link>
       </section>
 
-      {/* Footer */}
+      {/* --- Footer --- */}
       <footer className="text-center py-6 text-green-700/60 text-sm">
         &copy; {new Date().getFullYear()} BambooMall. All rights reserved.
       </footer>
