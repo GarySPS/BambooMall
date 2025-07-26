@@ -47,8 +47,19 @@ export default function AboutUsPage() {
             </p>
           </div>
 
-          {/* ---- NovaChain-Style Certificate & Awards Section ---- */}
-          <CertAwards />
+{/* ---- Certificate & Awards Section with BG ---- */}
+<div
+  className="w-full py-12 mb-6"
+  style={{
+    backgroundImage: "url('/certi.png')",
+    backgroundRepeat: "no-repeat",
+    backgroundSize: "cover",
+    backgroundPosition: "center",
+    minHeight: 380,
+  }}
+>
+  <CertAwards />
+</div>
 
           <div className="max-w-3xl mx-auto grid sm:grid-cols-2 gap-4 mb-6 px-4">
             <div className="flex items-start gap-3 bg-green-50 border border-green-100 rounded-xl p-4">
