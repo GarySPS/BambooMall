@@ -41,13 +41,15 @@ export default function LoginPage() {
         backgroundPosition: "center",
       }}
     >
-      {/* Top Title */}
+{/* Top Title (absolutely positioned at top center) */}
 <h1
-  className="mt-8 mb-2 w-full text-center font-extrabold select-none text-5xl sm:text-6xl"
+  className="absolute top-6 left-1/2 -translate-x-1/2 w-full text-center font-extrabold select-none z-30"
   style={{
     fontSize: "clamp(2.8rem, 10vw, 4rem)",
     letterSpacing: "-1px",
     lineHeight: "1.05",
+    maxWidth: "95vw",
+    userSelect: "none"
   }}
 >
   <span style={{
@@ -68,8 +70,6 @@ export default function LoginPage() {
     Mall
   </span>
 </h1>
-
-
 
       {/* Panda/BambooMall Image Above Card */}
 <img
