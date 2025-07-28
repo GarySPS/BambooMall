@@ -1,14 +1,17 @@
 import React, { useEffect, useState } from "react";
 
+// Read backend API URL from environment variable (best for Vercel)
+const API_BASE_URL = process.env.REACT_APP_API_BASE_URL || "https://bamboomall-backend.onrender.com/api";
+
 export default function NewsPage() {
   const [news, setNews] = useState([]);
   const [loading, setLoading] = useState(true);
 
-    useEffect(() => {
-    fetch("/api/news")
+  useEffect(() => {
+    fetch(`${API_BASE_URL}/news`)
       .then(res => res.json())
       .then(data => {
-        // Log and adapt for both {news: []} and [] structures
+        // Log for debugging
         console.log("NEWS API:", data);
         if (Array.isArray(data)) {
           setNews(data);
@@ -24,7 +27,6 @@ export default function NewsPage() {
         setLoading(false);
       });
   }, []);
-
 
   return (
     <div className="min-h-screen px-2 pb-24">
