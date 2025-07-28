@@ -77,13 +77,26 @@ export default function Navbar() {
                 >
                   <FaUser /> {user.username}
                 </Link>
-                {/* Logout */}
-                <button
-                  onClick={() => { logout(); navigate("/login"); }}
-                  className="ml-2 px-3 py-1 rounded-xl bg-red-100 text-red-700 font-semibold hover:bg-red-200 transition"
-                >
-                  Logout
-                </button>
+{user && (
+  <>
+    {/* Profile button on desktop */}
+    <Link
+      to="/profile"
+      className="bg-green-100 text-green-700 px-3 py-1 rounded-xl font-bold text-base flex items-center gap-2 hover:bg-green-200 transition hidden md:flex"
+      style={{ minWidth: 85 }}
+    >
+      <FaUser /> {user.username}
+    </Link>
+    {/* Logout */}
+    <button
+      onClick={() => { logout(); navigate("/login"); }}
+      className="ml-2 px-3 py-1 rounded-xl bg-red-100 text-red-700 font-semibold hover:bg-red-200 transition"
+    >
+      Logout
+    </button>
+  </>
+)}
+
               </>
             )}
             {/* Login button removed for both desktop and mobile */}

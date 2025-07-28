@@ -503,21 +503,44 @@ export default function ProfilePage() {
           )}
         </div>
 
-{/* Login Card */}
-<div className="bg-white rounded-2xl shadow-lg p-6 flex flex-col w-full gap-4">
-  <div className="flex items-center gap-2 justify-center select-none">
-    <span className="text-green-600 text-2xl">🔑</span>
-    <span className="text-lg font-bold text-gray-800 text-center">Login to your account</span>
+{user ? (
+  // LOGOUT CARD
+  <div className="bg-white rounded-2xl shadow-lg p-6 flex flex-col w-full gap-4">
+    <div className="flex items-center gap-2 justify-center select-none">
+      <span className="text-red-500 text-2xl">🔓</span>
+      <span className="text-lg font-bold text-gray-800 text-center">Logout from your account</span>
+    </div>
+    <button
+      className="w-full max-w-xs bg-red-100 text-red-700 font-bold rounded-xl py-3 hover:bg-red-200 shadow transition mx-auto mt-3"
+      onClick={() => {
+        if (window.confirm("Are you sure you want to logout?")) {
+          // logout from your useUser context
+          import("../contexts/UserContext").then(({ useUser }) => {
+            const { logout } = useUser();
+            logout();
+            navigate("/login");
+          });
+        }
+      }}
+    >
+      Logout
+    </button>
   </div>
-  <button
-    className="w-full max-w-xs bg-green-600 text-white font-bold rounded-xl py-3 hover:bg-green-700 shadow transition mx-auto mt-3"
-    onClick={() => navigate("/login")}
-  >
-    Login
-  </button>
-</div>
-
-
+) : (
+  // LOGIN CARD
+  <div className="bg-white rounded-2xl shadow-lg p-6 flex flex-col w-full gap-4">
+    <div className="flex items-center gap-2 justify-center select-none">
+      <span className="text-green-600 text-2xl">🔑</span>
+      <span className="text-lg font-bold text-gray-800 text-center">Login to your account</span>
+    </div>
+    <button
+      className="w-full max-w-xs bg-green-600 text-white font-bold rounded-xl py-3 hover:bg-green-700 shadow transition mx-auto mt-3"
+      onClick={() => navigate("/login")}
+    >
+      Login
+    </button>
+  </div>
+)}
      </div>
     </div>
   );
