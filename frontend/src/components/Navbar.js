@@ -79,18 +79,36 @@ export default function Navbar() {
             {/* No logout or login button here */}
           </div>
         </div>
-        {/* Desktop nav links */}
-        <div className="hidden md:flex justify-center gap-8 py-2 bg-white shadow">
-          {navLinks.map((link) => (
-            <Link
-              key={link.name}
-              to={link.href}
-              className="text-gray-700 font-medium hover:text-green-700 transition"
-            >
-              {link.name}
-            </Link>
-          ))}
-        </div>
+{/* Desktop nav links */}
+<div className="hidden md:flex justify-center gap-8 py-2 bg-white shadow">
+  {navLinks.map((link) => (
+    <Link
+      key={link.name}
+      to={link.href}
+      className={`
+        relative
+        px-4 py-1
+        text-lg
+        font-bold
+        tracking-wide
+        rounded-xl
+        transition
+        duration-200
+        font-montserrat
+        text-gray-800
+        hover:text-green-700
+        hover:bg-green-50
+        hover:shadow-lg
+        before:content-[''] before:absolute before:-bottom-1 before:left-1/2 before:-translate-x-1/2
+        before:w-0 before:h-0.5 before:bg-gradient-to-r before:from-green-400 before:to-green-700
+        hover:before:w-8 hover:before:h-1 before:transition-all before:duration-300
+      `}
+      style={{ fontFamily: "Montserrat, Inter, sans-serif" }}
+    >
+      {link.name}
+    </Link>
+  ))}
+</div>
       </nav>
 
       {/* Mobile Drawer */}
