@@ -4,6 +4,7 @@
 import React, { useEffect, useState } from "react";
 import { useUser } from "../contexts/UserContext";
 import { fetchProducts } from "../utils/api";
+import { supabase } from "../utils/supabase";
 import { useNavigate } from "react-router-dom";
 import {
   ResponsiveContainer,
@@ -14,6 +15,7 @@ import {
   Tooltip,
   CartesianGrid,
 } from "recharts";
+
 
 // ---- VIP Tier Calculation (sync with Membership/Balance) ----
 function getVipTier(balance) {
@@ -459,25 +461,61 @@ export default function ProfilePage() {
             <span className="text-green-400 text-2xl">🖼️</span>
             <span className="text-lg font-bold text-gray-800 text-center">Edit Profile</span>
           </div>
-          {showAvatar && (
-            <form className="flex flex-col gap-3 pt-2 items-center">
-              <label className="flex flex-col gap-2 w-full max-w-xs">
-                <span className="text-sm font-medium text-gray-700">Upload Profile Photo</span>
-                <CustomFileInput
-                  id="profile-avatar-upload"
-                  onChange={e => setProfileAvatar(e.target.files[0])}
-                  accept="image/*"
-                  disabled={false}
-                />
-              </label>
-              <button
-                type="submit"
-                className="mt-2 rounded-xl px-5 py-2 w-full max-w-xs text-white font-bold bg-gradient-to-r from-green-400 to-green-700 shadow hover:scale-105 transition"
-              >
-                Submit
-              </button>
-            </form>
-          )}
+{showAvatar && (
+  <form
+    className="flex flex-col gap-3 pt-2 items-center"
+    onSubmit={async (e) => {
+      e.preventDefault();
+      if (!profileAvatar) return;
+      // 1. Upload to Supabase avatars bucket
+      const fileExt = profileAvatar.name.split('.').pop();
+      const filePath = `${user.user_id}_${Date.now()}.${fileExt}`;
+      let { error: uploadError } = await supabase.storage
+        .from('avatars')
+        .upload(filePath, profileAvatar, { upsert: true });
+
+      if (uploadError) {
+        alert("Avatar upload failed!");
+        return;
+      }
+      // 2. Get public URL
+      const { data } = supabase.storage
+        .from('avatars')
+        .getPublicUrl(filePath);
+
+      const avatarUrl = data.publicUrl;
+
+      // 3. Update user profile in backend
+      await fetch(`/api/user/update-avatar`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ user_id: user.user_id, avatar: avatarUrl }),
+      });
+
+      setProfileAvatar(null);
+      alert("Avatar updated!");
+      refreshUser(); // Refetch user info to update avatar in UI
+    }}
+  >
+    <label className="flex flex-col gap-2 w-full max-w-xs">
+      <span className="text-sm font-medium text-gray-700">Upload Profile Photo</span>
+      <CustomFileInput
+        id="profile-avatar-upload"
+        onChange={e => setProfileAvatar(e.target.files[0])}
+        accept="image/*"
+        disabled={false}
+      />
+    </label>
+    <button
+      type="submit"
+      className="mt-2 rounded-xl px-5 py-2 w-full max-w-xs text-white font-bold bg-gradient-to-r from-green-400 to-green-700 shadow hover:scale-105 transition"
+      disabled={!profileAvatar}
+    >
+      Submit
+    </button>
+  </form>
+)}
+
         </div>
 
         {/* Change Password Card */}
