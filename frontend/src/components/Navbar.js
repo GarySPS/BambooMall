@@ -1,4 +1,4 @@
-// src/Navbar.js
+// src/components/Navbar.js
 import React, { useState } from "react";
 import { Link, useNavigate, useLocation } from "react-router-dom";
 import { FaBars, FaShoppingCart, FaUser, FaTimes } from "react-icons/fa";
@@ -68,38 +68,15 @@ export default function Navbar() {
               <FaShoppingCart size={18} />
             </Link>
             {user && (
-              <>
-                {/* Profile button on desktop */}
-                <Link
-                  to="/profile"
-                  className="bg-green-100 text-green-700 px-3 py-1 rounded-xl font-bold text-base flex items-center gap-2 hover:bg-green-200 transition hidden md:flex"
-                  style={{ minWidth: 85 }}
-                >
-                  <FaUser /> {user.username}
-                </Link>
-{user && (
-  <>
-    {/* Profile button on desktop */}
-    <Link
-      to="/profile"
-      className="bg-green-100 text-green-700 px-3 py-1 rounded-xl font-bold text-base flex items-center gap-2 hover:bg-green-200 transition hidden md:flex"
-      style={{ minWidth: 85 }}
-    >
-      <FaUser /> {user.username}
-    </Link>
-    {/* Logout */}
-    <button
-      onClick={() => { logout(); navigate("/login"); }}
-      className="ml-2 px-3 py-1 rounded-xl bg-red-100 text-red-700 font-semibold hover:bg-red-200 transition"
-    >
-      Logout
-    </button>
-  </>
-)}
-
-              </>
+              <Link
+                to="/profile"
+                className="bg-green-100 text-green-700 px-3 py-1 rounded-xl font-bold text-base flex items-center gap-2 hover:bg-green-200 transition hidden md:flex"
+                style={{ minWidth: 85 }}
+              >
+                <FaUser /> {user.username}
+              </Link>
             )}
-            {/* Login button removed for both desktop and mobile */}
+            {/* No logout or login button here */}
           </div>
         </div>
         {/* Desktop nav links */}
@@ -148,24 +125,16 @@ export default function Navbar() {
           <Link to="/cart" className="py-2 px-3 flex items-center gap-2 rounded hover:bg-gray-100">
             <FaShoppingCart /> Cart
           </Link>
-          <Link to="/profile" className="py-2 px-3 flex items-center gap-2 rounded hover:bg-gray-100">
-            <FaUser /> Account
-          </Link>
-          <hr className="my-2" />
           {user && (
-            <div className="flex items-center justify-between px-3 py-2">
-              <span className="flex items-center gap-2 text-green-700 font-semibold">
-                <FaUser /> {user.username}
-              </span>
-              <button
-                onClick={() => { logout(); navigate("/login"); setDrawerOpen(false); }}
-                className="px-3 py-1 rounded-xl bg-red-100 text-red-700 font-semibold hover:bg-red-200 transition"
-              >
-                Logout
-              </button>
-            </div>
+            <Link
+              to="/profile"
+              onClick={() => setDrawerOpen(false)}
+              className="py-2 px-3 flex items-center gap-2 rounded hover:bg-gray-100 text-green-700 font-semibold"
+            >
+              <FaUser /> {user.username}
+            </Link>
           )}
-          {/* Login button removed for mobile drawer as well */}
+          {/* No logout or login in mobile drawer */}
         </nav>
       </div>
       {/* Overlay for Drawer */}
