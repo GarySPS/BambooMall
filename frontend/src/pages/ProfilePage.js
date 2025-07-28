@@ -7,23 +7,21 @@ import { fetchProducts } from "../utils/api";
 import { useNavigate } from "react-router-dom";
 import {
   ResponsiveContainer,
-  LineChart,
-  Line,
+  AreaChart,
+  Area,
   XAxis,
   YAxis,
   Tooltip,
-  Area,
-  AreaChart,
   CartesianGrid,
 } from "recharts";
 
 // ---- VIP Tier Calculation (sync with Membership/Balance) ----
 function getVipTier(balance) {
   if (balance >= 40000) return "VIVIP";
-  if (balance >= 20000) return "VIPX";    // Adjust if you use VIP3 etc.
+  if (balance >= 20000) return "VIPX"; // Adjust if you use VIP3 etc.
   if (balance >= 15000) return "VIP2";
   if (balance >= 10000) return "VIP1";
-  if (balance >= 5000)  return "VIP0";
+  if (balance >= 5000) return "VIP0";
   return "Member";
 }
 
@@ -39,8 +37,9 @@ function AnimatedVIPBadge({ tier = "Member" }) {
   };
   const style = styleMap[tier] || styleMap.Member;
   return (
-    <div className="relative flex justify-center" style={{marginTop: 8}}>
-      <div className={`
+    <div className="relative flex justify-center" style={{ marginTop: 8 }}>
+      <div
+        className={`
         animate-vip-bounce
         bg-gradient-to-r ${style} 
         font-bold px-5 py-1 rounded-full shadow-xl border-2 border-white text-xs tracking-wide select-none font-mono
@@ -48,8 +47,9 @@ function AnimatedVIPBadge({ tier = "Member" }) {
         style={{
           minWidth: 80,
           letterSpacing: 1.5,
-          boxShadow: "0 6px 22px 0 rgba(0,0,0,0.07)"
-        }}>
+          boxShadow: "0 6px 22px 0 rgba(0,0,0,0.07)",
+        }}
+      >
         {tier}
       </div>
       <style>{`
@@ -69,11 +69,17 @@ function VerifiedBadge() {
     <span
       className="inline-flex items-center ml-2"
       title="Verified"
-      style={{ verticalAlign: 'middle' }}
+      style={{ verticalAlign: "middle" }}
     >
       <svg width="22" height="22" fill="none" viewBox="0 0 22 22">
         <circle cx="11" cy="11" r="11" fill="#2563eb" />
-        <path d="M7.5 11.5l2.2 2L15 8.5" stroke="#fff" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+        <path
+          d="M7.5 11.5l2.2 2L15 8.5"
+          stroke="#fff"
+          strokeWidth="2"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        />
       </svg>
     </span>
   );
@@ -102,7 +108,21 @@ function CustomFileInput({ id, onChange, accept, disabled }) {
           minWidth: 140,
         }}
       >
-        <svg width="20" height="20" fill="none" viewBox="0 0 20 20" className="mr-2"><path d="M6.5 13.5L9 16l4.5-4.5m0-3.5A5.5 5.5 0 1111 3.5a5.5 5.5 0 013.5 9.5z" stroke="#22c55e" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
+        <svg
+          width="20"
+          height="20"
+          fill="none"
+          viewBox="0 0 20 20"
+          className="mr-2"
+        >
+          <path
+            d="M6.5 13.5L9 16l4.5-4.5m0-3.5A5.5 5.5 0 1111 3.5a5.5 5.5 0 013.5 9.5z"
+            stroke="#22c55e"
+            strokeWidth="2"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          />
+        </svg>
         {disabled ? "Uploading..." : "Choose File"}
       </label>
     </div>
@@ -210,7 +230,7 @@ function KYCForm({ user, kycSelfie, setKycSelfie, kycId, setKycId, refreshUser }
 
 // ---- MAIN PROFILE PAGE ----
 export default function ProfilePage() {
-  const { user, wallet, refreshUser } = useUser();
+  const { user, wallet, refreshUser, logout } = useUser();
   const [products, setProducts] = useState([]);
   const [loadingProducts, setLoadingProducts] = useState(true);
 
@@ -218,7 +238,6 @@ export default function ProfilePage() {
   const [showKYC, setShowKYC] = useState(true);
   const [showAvatar, setShowAvatar] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
-  const [showInstall, setShowInstall] = useState(false);
 
   // KYC Uploads
   const [kycSelfie, setKycSelfie] = useState(null);
@@ -264,10 +283,10 @@ export default function ProfilePage() {
 
   // Font classes
   const displayFont = "font-[Montserrat] font-extrabold";
-  const mainFont = "font-[Inter]";
+  // const mainFont = "font-[Inter]";
 
   return (
-      <div className="min-h-screen px-4 pt-3 pb-8 flex flex-col items-center">
+    <div className="min-h-screen px-4 pt-3 pb-8 flex flex-col items-center">
       <div className="w-full max-w-2xl flex flex-col gap-10">
 
         {/* Profile Card */}
@@ -323,59 +342,59 @@ export default function ProfilePage() {
         </div>
 
         {/* Balance Overview Chart Card */}
-<div className="bg-white rounded-2xl shadow-lg px-8 py-6 w-full flex flex-col items-center mb-6">
-  <div className="w-full flex flex-row items-center justify-between mb-3">
-    <span className="text-lg font-bold text-gray-700 tracking-wide">Balance Overview</span>
-    <span className="text-xs text-gray-400">Last 14 days</span>
-  </div>
-  <div className="w-full flex items-center justify-center" style={{ minHeight: 180 }}>
-    <ResponsiveContainer width="100%" height={180}>
-      <AreaChart
-        data={[
-          { date: '07-01', balance: 14100 },
-          { date: '07-02', balance: 14250 },
-          { date: '07-03', balance: 14800 },
-          { date: '07-04', balance: 14650 },
-          { date: '07-05', balance: 15000 },
-          { date: '07-06', balance: 15120 },
-          { date: '07-07', balance: 15500 },
-          { date: '07-08', balance: 16000 },
-          { date: '07-09', balance: 15800 },
-          { date: '07-10', balance: 16200 },
-          { date: '07-11', balance: 16600 },
-          { date: '07-12', balance: 17000 },
-          { date: '07-13', balance: 19250 },
-          { date: '07-14', balance: 19537.4 }
-        ]}
-        margin={{ top: 10, right: 16, left: 0, bottom: 0 }}
-      >
-        <defs>
-          <linearGradient id="colorBalance" x1="0" y1="0" x2="0" y2="1">
-            <stop offset="10%" stopColor="#34d399" stopOpacity={0.8}/>
-            <stop offset="90%" stopColor="#f3f4f6" stopOpacity={0.1}/>
-          </linearGradient>
-        </defs>
-        <CartesianGrid strokeDasharray="3 3" vertical={false} />
-        <XAxis dataKey="date" tick={{ fontSize: 12 }} axisLine={false} tickLine={false} />
-        <YAxis tick={{ fontSize: 12 }} axisLine={false} tickLine={false} width={60} />
-        <Tooltip
-          contentStyle={{ borderRadius: 12, background: "#fff", border: "1px solid #e5e7eb", boxShadow: "0 2px 10px #0002" }}
-          labelStyle={{ fontWeight: "bold", color: "#34d399" }}
-        />
-        <Area
-          type="monotone"
-          dataKey="balance"
-          stroke="#22c55e"
-          fillOpacity={1}
-          fill="url(#colorBalance)"
-          strokeWidth={3}
-          dot={{ r: 2, stroke: "#22c55e", strokeWidth: 2, fill: "#fff" }}
-          activeDot={{ r: 5 }}
-        />
-      </AreaChart>
-    </ResponsiveContainer>
-  </div>
-</div>
+        <div className="bg-white rounded-2xl shadow-lg px-8 py-6 w-full flex flex-col items-center mb-6">
+          <div className="w-full flex flex-row items-center justify-between mb-3">
+            <span className="text-lg font-bold text-gray-700 tracking-wide">Balance Overview</span>
+            <span className="text-xs text-gray-400">Last 14 days</span>
+          </div>
+          <div className="w-full flex items-center justify-center" style={{ minHeight: 180 }}>
+            <ResponsiveContainer width="100%" height={180}>
+              <AreaChart
+                data={[
+                  { date: '07-01', balance: 14100 },
+                  { date: '07-02', balance: 14250 },
+                  { date: '07-03', balance: 14800 },
+                  { date: '07-04', balance: 14650 },
+                  { date: '07-05', balance: 15000 },
+                  { date: '07-06', balance: 15120 },
+                  { date: '07-07', balance: 15500 },
+                  { date: '07-08', balance: 16000 },
+                  { date: '07-09', balance: 15800 },
+                  { date: '07-10', balance: 16200 },
+                  { date: '07-11', balance: 16600 },
+                  { date: '07-12', balance: 17000 },
+                  { date: '07-13', balance: 19250 },
+                  { date: '07-14', balance: 19537.4 }
+                ]}
+                margin={{ top: 10, right: 16, left: 0, bottom: 0 }}
+              >
+                <defs>
+                  <linearGradient id="colorBalance" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="10%" stopColor="#34d399" stopOpacity={0.8} />
+                    <stop offset="90%" stopColor="#f3f4f6" stopOpacity={0.1} />
+                  </linearGradient>
+                </defs>
+                <CartesianGrid strokeDasharray="3 3" vertical={false} />
+                <XAxis dataKey="date" tick={{ fontSize: 12 }} axisLine={false} tickLine={false} />
+                <YAxis tick={{ fontSize: 12 }} axisLine={false} tickLine={false} width={60} />
+                <Tooltip
+                  contentStyle={{ borderRadius: 12, background: "#fff", border: "1px solid #e5e7eb", boxShadow: "0 2px 10px #0002" }}
+                  labelStyle={{ fontWeight: "bold", color: "#34d399" }}
+                />
+                <Area
+                  type="monotone"
+                  dataKey="balance"
+                  stroke="#22c55e"
+                  fillOpacity={1}
+                  fill="url(#colorBalance)"
+                  strokeWidth={3}
+                  dot={{ r: 2, stroke: "#22c55e", strokeWidth: 2, fill: "#fff" }}
+                  activeDot={{ r: 5 }}
+                />
+              </AreaChart>
+            </ResponsiveContainer>
+          </div>
+        </div>
 
         {/* KYC Card */}
         <div className="bg-white rounded-2xl shadow-lg flex justify-center items-center p-0 w-full min-h-[260px]">
@@ -384,12 +403,12 @@ export default function ProfilePage() {
             <svg width="46" height="46" fill="none" viewBox="0 0 44 44" className="mb-2">
               <defs>
                 <linearGradient id="KYCblue" x1="0" x2="0" y1="0" y2="1">
-                  <stop offset="0%" stopColor="#46b6ff"/>
-                  <stop offset="100%" stopColor="#3776f6"/>
+                  <stop offset="0%" stopColor="#46b6ff" />
+                  <stop offset="100%" stopColor="#3776f6" />
                 </linearGradient>
               </defs>
-              <path d="M22 4C29 6 36 7 36 16c0 10-8.5 19-14 22C14.5 35 8 26 8 16c0-9 7-10 14-12z" fill="url(#KYCblue)" stroke="#2563eb" strokeWidth="2"/>
-              <path d="M18 19l4 4 6-6" stroke="#fff" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"/>
+              <path d="M22 4C29 6 36 7 36 16c0 10-8.5 19-14 22C14.5 35 8 26 8 16c0-9 7-10 14-12z" fill="url(#KYCblue)" stroke="#2563eb" strokeWidth="2" />
+              <path d="M18 19l4 4 6-6" stroke="#fff" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
             </svg>
             <div className="text-2xl font-extrabold text-gray-800 font-[Montserrat] mb-1 tracking-wide text-center">
               KYC Verification
@@ -398,13 +417,13 @@ export default function ProfilePage() {
             <div className="flex flex-col items-center gap-2 mt-2">
               {user.kyc_status === "pending" ? (
                 <div className="bg-yellow-100 text-yellow-700 px-4 py-1 rounded-xl text-xs font-bold flex items-center gap-1 animate-pulse">
-                  <svg width="18" height="18" viewBox="0 0 20 20"><circle cx="10" cy="10" r="8" fill="#fbbf24" /><path d="M10 6v4l2 2" stroke="#fff" strokeWidth="2"/></svg>
+                  <svg width="18" height="18" viewBox="0 0 20 20"><circle cx="10" cy="10" r="8" fill="#fbbf24" /><path d="M10 6v4l2 2" stroke="#fff" strokeWidth="2" /></svg>
                   Pending Review
                 </div>
               ) : user.kyc_status === "approved" ? (
                 <>
                   <div className="bg-green-100 text-green-700 px-4 py-1 rounded-xl text-xs font-bold flex items-center gap-1">
-                    <svg width="18" height="18" viewBox="0 0 20 20"><circle cx="10" cy="10" r="8" fill="#22c55e" /><path d="M6 11l3 3 5-5" stroke="#fff" strokeWidth="2"/></svg>
+                    <svg width="18" height="18" viewBox="0 0 20 20"><circle cx="10" cy="10" r="8" fill="#22c55e" /><path d="M6 11l3 3 5-5" stroke="#fff" strokeWidth="2" /></svg>
                     KYC Approved
                   </div>
                   <div className="text-green-600 text-sm font-semibold mt-1 mb-1">You are fully verified.</div>
@@ -503,45 +522,48 @@ export default function ProfilePage() {
           )}
         </div>
 
-{user ? (
-  // LOGOUT CARD
-  <div className="bg-white rounded-2xl shadow-lg p-6 flex flex-col w-full gap-4">
-    <div className="flex items-center gap-2 justify-center select-none">
-      <span className="text-red-500 text-2xl">🔓</span>
-      <span className="text-lg font-bold text-gray-800 text-center">Logout from your account</span>
-    </div>
-    <button
-      className="w-full max-w-xs bg-red-100 text-red-700 font-bold rounded-xl py-3 hover:bg-red-200 shadow transition mx-auto mt-3"
-      onClick={() => {
-        if (window.confirm("Are you sure you want to logout?")) {
-          // logout from your useUser context
-          import("../contexts/UserContext").then(({ useUser }) => {
-            const { logout } = useUser();
-            logout();
-            navigate("/login");
-          });
-        }
-      }}
-    >
-      Logout
-    </button>
-  </div>
-) : (
-  // LOGIN CARD
-  <div className="bg-white rounded-2xl shadow-lg p-6 flex flex-col w-full gap-4">
-    <div className="flex items-center gap-2 justify-center select-none">
-      <span className="text-green-600 text-2xl">🔑</span>
-      <span className="text-lg font-bold text-gray-800 text-center">Login to your account</span>
-    </div>
-    <button
-      className="w-full max-w-xs bg-green-600 text-white font-bold rounded-xl py-3 hover:bg-green-700 shadow transition mx-auto mt-3"
-      onClick={() => navigate("/login")}
-    >
-      Login
-    </button>
-  </div>
-)}
-     </div>
+        {/* ---- LOGIN/LOGOUT CARD BLOCK (this is what you replace at the bottom) ---- */}
+        <div>
+          <div>
+            {user ? (
+              // LOGOUT CARD
+              <div className="bg-white rounded-2xl shadow-lg p-6 flex flex-col w-full gap-4">
+                <div className="flex items-center gap-2 justify-center select-none">
+                  <span className="text-red-500 text-2xl">🔓</span>
+                  <span className="text-lg font-bold text-gray-800 text-center">Logout from your account</span>
+                </div>
+                <button
+                  className="w-full max-w-xs bg-red-100 text-red-700 font-bold rounded-xl py-3 hover:bg-red-200 shadow transition mx-auto mt-3"
+                  onClick={() => {
+                    if (window.confirm("Are you sure you want to logout?")) {
+                      logout();
+                      navigate("/login");
+                    }
+                  }}
+                >
+                  Logout
+                </button>
+              </div>
+            ) : (
+              // LOGIN CARD
+              <div className="bg-white rounded-2xl shadow-lg p-6 flex flex-col w-full gap-4">
+                <div className="flex items-center gap-2 justify-center select-none">
+                  <span className="text-green-600 text-2xl">🔑</span>
+                  <span className="text-lg font-bold text-gray-800 text-center">Login to your account</span>
+                </div>
+                <button
+                  className="w-full max-w-xs bg-green-600 text-white font-bold rounded-xl py-3 hover:bg-green-700 shadow transition mx-auto mt-3"
+                  onClick={() => navigate("/login")}
+                >
+                  Login
+                </button>
+              </div>
+            )}
+          </div>
+        </div>
+        {/* ---- END LOGIN/LOGOUT CARD BLOCK ---- */}
+
+      </div>
     </div>
   );
 }
