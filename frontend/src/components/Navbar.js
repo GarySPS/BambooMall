@@ -1,7 +1,7 @@
 // src/Navbar.js
 import React, { useState } from "react";
 import { Link, useNavigate, useLocation } from "react-router-dom";
-import { FaBars, FaSearch, FaShoppingCart, FaUser, FaTimes } from "react-icons/fa";
+import { FaBars, FaShoppingCart, FaUser, FaTimes } from "react-icons/fa";
 import { ReactComponent as Logo } from "./logo.svg";
 import { useUser } from "../contexts/UserContext";
 
@@ -67,7 +67,7 @@ export default function Navbar() {
             <Link to="/cart" className="p-2 hover:bg-gray-100 rounded-full">
               <FaShoppingCart size={18} />
             </Link>
-            {user ? (
+            {user && (
               <>
                 {/* Profile button on desktop */}
                 <Link
@@ -85,14 +85,8 @@ export default function Navbar() {
                   Logout
                 </button>
               </>
-            ) : (
-              <Link
-                to="/login"
-                className="ml-2 px-4 py-1.5 rounded-xl bg-green-600 text-white font-bold hover:bg-green-700 transition"
-              >
-                Login
-              </Link>
             )}
+            {/* Login button removed for both desktop and mobile */}
           </div>
         </div>
         {/* Desktop nav links */}
@@ -138,14 +132,14 @@ export default function Navbar() {
             </Link>
           ))}
           <hr className="my-2" />
-            <Link to="/cart" className="py-2 px-3 flex items-center gap-2 rounded hover:bg-gray-100">
+          <Link to="/cart" className="py-2 px-3 flex items-center gap-2 rounded hover:bg-gray-100">
             <FaShoppingCart /> Cart
           </Link>
           <Link to="/profile" className="py-2 px-3 flex items-center gap-2 rounded hover:bg-gray-100">
             <FaUser /> Account
           </Link>
           <hr className="my-2" />
-          {user ? (
+          {user && (
             <div className="flex items-center justify-between px-3 py-2">
               <span className="flex items-center gap-2 text-green-700 font-semibold">
                 <FaUser /> {user.username}
@@ -157,15 +151,8 @@ export default function Navbar() {
                 Logout
               </button>
             </div>
-          ) : (
-            <Link
-              to="/login"
-              className="flex items-center gap-2 px-3 py-2 rounded-xl bg-green-600 text-white font-bold hover:bg-green-700 transition"
-              onClick={() => setDrawerOpen(false)}
-            >
-              Login
-            </Link>
           )}
+          {/* Login button removed for mobile drawer as well */}
         </nav>
       </div>
       {/* Overlay for Drawer */}

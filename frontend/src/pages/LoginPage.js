@@ -41,9 +41,9 @@ export default function LoginPage() {
         backgroundPosition: "center",
       }}
     >
-{/* Top Title (absolutely positioned at top center) */}
+{/* Top Title (moved lower, absolutely positioned at top center) */}
 <h1
-  className="absolute top-6 left-1/2 -translate-x-1/2 w-full text-center font-extrabold select-none z-30"
+  className="absolute top-16 left-1/2 -translate-x-1/2 w-full text-center font-extrabold select-none z-30"
   style={{
     fontSize: "clamp(2.8rem, 10vw, 4rem)",
     letterSpacing: "-1px",
