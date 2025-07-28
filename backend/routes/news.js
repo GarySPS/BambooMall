@@ -5,8 +5,10 @@ const parser = new Parser();
 
 // TEST: Use BBC first to check everything works
 const sources = [
-  { name: "China Daily", url: "http://www.chinadaily.com.cn/rss/business_rss.xml" }
+  { name: "BBC China", url: "http://feeds.bbci.co.uk/news/world/asia/china/rss.xml" },
+  { name: "SCMP China", url: "https://www.scmp.com/rss/91/feed" }
 ];
+
 
 router.get('/', async (req, res) => {
   try {
