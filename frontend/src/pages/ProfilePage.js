@@ -517,48 +517,79 @@ export default function ProfilePage() {
 )}
 
         </div>
-
-        {/* Change Password Card */}
-        <div className="bg-white rounded-2xl shadow-lg p-6 flex flex-col w-full gap-4">
-          <div
-            className="flex items-center gap-2 cursor-pointer select-none justify-center"
-            onClick={() => setShowPassword((s) => !s)}
-          >
-            <span className="text-orange-400 text-2xl">🔒</span>
-            <span className="text-lg font-bold text-gray-800 text-center">Change Password</span>
-          </div>
-          {showPassword && (
-            <form className="flex flex-col gap-3 pt-2 items-center">
-              <input
-                type="password"
-                placeholder="Current Password"
-                className="border rounded-xl px-4 py-3 text-base focus:outline-none focus:ring-2 focus:ring-orange-400 w-full max-w-xs"
-                value={oldPass}
-                onChange={e => setOldPass(e.target.value)}
-              />
-              <input
-                type="password"
-                placeholder="New Password"
-                className="border rounded-xl px-4 py-3 text-base focus:outline-none focus:ring-2 focus:ring-orange-400 w-full max-w-xs"
-                value={newPass}
-                onChange={e => setNewPass(e.target.value)}
-              />
-              <input
-                type="password"
-                placeholder="Confirm New Password"
-                className="border rounded-xl px-4 py-3 text-base focus:outline-none focus:ring-2 focus:ring-orange-400 w-full max-w-xs"
-                value={confirmPass}
-                onChange={e => setConfirmPass(e.target.value)}
-              />
-              <button
-                type="submit"
-                className="mt-2 rounded-xl px-5 py-2 w-full max-w-xs text-white font-bold bg-gradient-to-r from-orange-400 to-orange-600 shadow hover:scale-105 transition"
-              >
-                Submit
-              </button>
-            </form>
-          )}
-        </div>
+{/* Change Password Card */}
+<div className="bg-white rounded-2xl shadow-lg p-6 flex flex-col w-full gap-4">
+  <div
+    className="flex items-center gap-2 cursor-pointer select-none justify-center"
+    onClick={() => setShowPassword((s) => !s)}
+  >
+    <span className="text-orange-400 text-2xl">🔒</span>
+    <span className="text-lg font-bold text-gray-800 text-center">Change Password</span>
+  </div>
+  {showPassword && (
+    <form
+      className="flex flex-col gap-3 pt-2 items-center"
+      onSubmit={async (e) => {
+        e.preventDefault();
+        if (!oldPass || !newPass || !confirmPass) {
+          alert("All fields are required");
+          return;
+        }
+        if (newPass !== confirmPass) {
+          alert("New passwords do not match");
+          return;
+        }
+        // Call backend API
+        const res = await fetch("/api/user/change-password", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            user_id: user.id,  // <-- Use user.id as your backend expects
+            old_password: oldPass,
+            new_password: newPass,
+          }),
+        });
+        const data = await res.json();
+        if (res.ok && data.message === "Password changed") {
+          alert("Password changed successfully!");
+          setOldPass("");
+          setNewPass("");
+          setConfirmPass("");
+        } else {
+          alert(data.error || "Password change failed");
+        }
+      }}
+    >
+      <input
+        type="password"
+        placeholder="Current Password"
+        className="border rounded-xl px-4 py-3 text-base focus:outline-none focus:ring-2 focus:ring-orange-400 w-full max-w-xs"
+        value={oldPass}
+        onChange={e => setOldPass(e.target.value)}
+      />
+      <input
+        type="password"
+        placeholder="New Password"
+        className="border rounded-xl px-4 py-3 text-base focus:outline-none focus:ring-2 focus:ring-orange-400 w-full max-w-xs"
+        value={newPass}
+        onChange={e => setNewPass(e.target.value)}
+      />
+      <input
+        type="password"
+        placeholder="Confirm New Password"
+        className="border rounded-xl px-4 py-3 text-base focus:outline-none focus:ring-2 focus:ring-orange-400 w-full max-w-xs"
+        value={confirmPass}
+        onChange={e => setConfirmPass(e.target.value)}
+      />
+      <button
+        type="submit"
+        className="mt-2 rounded-xl px-5 py-2 w-full max-w-xs text-white font-bold bg-gradient-to-r from-orange-400 to-orange-600 shadow hover:scale-105 transition"
+      >
+        Submit
+      </button>
+    </form>
+  )}
+</div>
 
         {/* ---- LOGIN/LOGOUT CARD BLOCK (this is what you replace at the bottom) ---- */}
         <div>
