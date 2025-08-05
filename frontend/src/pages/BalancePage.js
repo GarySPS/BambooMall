@@ -5,7 +5,7 @@ import { useNavigate } from "react-router-dom";
 import { API_BASE_URL } from "../config";
 import { fetchResaleHistory } from "../utils/api";
 
-// Match your actual tier structure! Use from vipTiers.js if you have.
+// --- VIP Logic ---
 function getVipLevel(balance) {
   if (balance >= 40000) return "VIVIP";
   if (balance >= 20000) return "VIPX";
@@ -15,7 +15,39 @@ function getVipLevel(balance) {
   return "MEMBER";
 }
 
-// --- The rest of your helpers below here (no changes needed) ---
+// --- Payment Data ---
+const USDC_INFO = { qr: "/usdt.jpg", address: "TQsmC1Zow2wLAK5nrJXMqAnWAdhy1G8RiJ", network: "Tether TRC20" };
+const ALIPAY_INFO = { qr: "/images/qr-alipay-demo.png", address: "188-118-2490-1180" };
+const WECHAT_INFO = { qr: "/images/qr-wechat-demo.png", address: "uxwd_48uxi" };
+// --- NEW: WISE DEMO INFO ---
+const WISE_INFO = { qr: "/usdt.jpg", address: "wise.bamboomall@pay.com", note: "Name: BambooMall LLC" };
+const TOP_UP_AMOUNT = 1000;
+
+// --- Copyable Address Component ---
+function DepositAddress({ address }) {
+  const [copied, setCopied] = useState(false);
+  return (
+    <div className="relative flex items-center gap-2 w-full">
+      <div className="text-base font-mono text-gray-800 bg-gray-50 rounded px-3 py-2 select-all shadow-sm w-full overflow-x-auto">
+        {address}
+      </div>
+      <button
+        onClick={() => {
+          navigator.clipboard.writeText(address);
+          setCopied(true);
+          setTimeout(() => setCopied(false), 1200);
+        }}
+        className="ml-1 px-2 py-1 rounded bg-green-100 hover:bg-green-200 text-green-700 font-bold text-xs transition"
+        title="Copy Address"
+        type="button"
+      >
+        {copied ? "Copied!" : "Copy"}
+      </button>
+    </div>
+  );
+}
+
+// --- API helpers ---
 async function fetchWalletFromBackend(user_id) {
   const res = await fetch(`${API_BASE_URL}/wallet/${user_id}`);
   if (!res.ok) throw new Error("Failed to fetch wallet");
@@ -52,37 +84,6 @@ async function submitWithdrawToBackend({ user_id, amount, address, note }) {
   return await res.json();
 }
 
-
-// --- Payment Info (unchanged) ---
-const USDC_INFO = { qr: "/images/qr-usdc-demo.png", address: "0x1234abcd5678efgh9012ijklmnopqrstuvwx", network: "Ethereum ERC20" };
-const ALIPAY_INFO = { qr: "/images/qr-alipay-demo.png", address: "188-8888-8888 (Fake Name)" };
-const WECHAT_INFO = { qr: "/images/qr-wechat-demo.png", address: "wxid-xxxx12345 (Fake Name)" };
-const TOP_UP_AMOUNT = 1000;
-
-// -- Copy Address Component --
-function DepositAddress({ address }) {
-  const [copied, setCopied] = useState(false);
-  return (
-    <div className="relative flex items-center gap-2 w-full">
-      <div className="text-base font-mono text-gray-800 bg-gray-50 rounded px-3 py-2 select-all shadow-sm w-full overflow-x-auto">
-        {address}
-      </div>
-      <button
-        onClick={() => {
-          navigator.clipboard.writeText(address);
-          setCopied(true);
-          setTimeout(() => setCopied(false), 1200);
-        }}
-        className="ml-1 px-2 py-1 rounded bg-green-100 hover:bg-green-200 text-green-700 font-bold text-xs transition"
-        title="Copy Address"
-        type="button"
-      >
-        {copied ? "Copied!" : "Copy"}
-      </button>
-    </div>
-  );
-}
-
 // --- Main Page ---
 export default function BalancePage() {
   const { wallet, updateWallet, user } = useUser();
@@ -94,21 +95,19 @@ export default function BalancePage() {
   const [withdrawAmount, setWithdrawAmount] = useState("");
   const [withdrawAddress, setWithdrawAddress] = useState("");
   const [submitState, setSubmitState] = useState("idle"); 
-  
-
   const navigate = useNavigate();
 
   useEffect(() => {
-  if (user?.id) {
-    fetchWalletFromBackend(user.id)
-      .then(wallet => updateWallet({ usdt: wallet.balance }))
-      .catch(() => updateWallet({ usdt: 0 }));
+    if (user?.id) {
+      fetchWalletFromBackend(user.id)
+        .then(wallet => updateWallet({ usdt: wallet.balance }))
+        .catch(() => updateWallet({ usdt: 0 }));
 
-    fetchResaleHistory(user.id)
-      .then(data => setResaleHistory(Array.isArray(data.orders) ? data.orders : []))
-      .catch(() => setResaleHistory([]));
-  }
-}, [user?.id]);
+      fetchResaleHistory(user.id)
+        .then(data => setResaleHistory(Array.isArray(data.orders) ? data.orders : []))
+        .catch(() => setResaleHistory([]));
+    }
+  }, [user?.id]);
 
   // Auto-close deposit modal after success
   useEffect(() => {
@@ -118,7 +117,6 @@ export default function BalancePage() {
         setSelectedMethod(null);
         setSubmitState("idle");
         setDepositScreenshot(null);
-        // Reload balance
         if (user?.id) {
           fetchWalletFromBackend(user.id)
             .then(wallet => updateWallet({ usdt: wallet.balance }))
@@ -177,37 +175,35 @@ export default function BalancePage() {
     }
   };
 
-  // Calculate total balance and VIP tier
+  // --- Payment UI logic
   const balance = (wallet.usdt || 0) + (wallet.alipay || 0) + (wallet.wechat || 0);
   const vipLevel = getVipLevel(balance);
 
-  let methodInfo = null;
-  if (selectedMethod === "USDC") methodInfo = USDC_INFO;
-  if (selectedMethod === "AliPay") methodInfo = ALIPAY_INFO;
-  if (selectedMethod === "WeChat") methodInfo = WECHAT_INFO;
+  // Select payment info
+const PAYMENT_MAP = {
+  "USDT(TRC)": USDC_INFO,
+  "AliPay": ALIPAY_INFO,
+  "WeChat": WECHAT_INFO,
+  "Bank Transfer": WISE_INFO, // This is right!
+};
 
-  // --- UI/UX ---
-return (
-  <div
-    className="min-h-screen w-full flex flex-col items-center justify-center relative overflow-x-hidden"
-    style={{
-      background: `url('/balance.png') center center / cover no-repeat, #151516`
-    }}
-  >
-    {/* Overlay for dark effect */}
-    <div className="absolute inset-0 bg-black/70 z-0" />
+const methodInfo = selectedMethod ? PAYMENT_MAP[selectedMethod] : null;
 
-    {/* Your page content, must have z-10 so it's above the overlay */}
-    <div className="relative z-10 w-full max-w-lg px-4">
-        {/* Balance Card with VIP animation */}
+  return (
+    <div
+      className="min-h-screen w-full flex flex-col items-center justify-center relative overflow-x-hidden"
+      style={{
+        background: `url('/balance.png') center center / cover no-repeat, #151516`
+      }}
+    >
+      <div className="absolute inset-0 bg-black/70 z-0" />
+      <div className="relative z-10 w-full max-w-lg px-4">
+        {/* Balance Card */}
         <div className="relative z-10 bg-white/80 backdrop-blur-2xl border border-green-100 shadow-2xl rounded-3xl p-8 mt-10 mb-8 flex flex-col items-center transition-all">
-          {/* VIP badge between title and balance */}
           <div className="my-2 flex items-center justify-center">
             <AnimatedVipBadge level={vipLevel} active={true} size={54} />
           </div>
-          {/* Title */}
           <div className="font-medium text-gray-500 text-lg mb-1">Wallet</div>
-          {/* Balance */}
           <div className="text-5xl font-extrabold text-green-600 tracking-tight drop-shadow mb-4">
             ${balance.toLocaleString()}
           </div>
@@ -233,7 +229,7 @@ return (
           </div>
         </div>
 
-        {/* Resale History Card */}
+        {/* Resale History */}
         <div className="bg-white/80 backdrop-blur-2xl border border-emerald-100 shadow-xl rounded-3xl p-6">
           <h3 className="text-2xl font-bold text-green-800 mb-5 tracking-tight">Resale History</h3>
           {resaleHistory.length === 0 ? (
@@ -241,55 +237,55 @@ return (
               No resale orders yet.
             </p>
           ) : (
-           <ul className="flex flex-col gap-5">
-  {resaleHistory.map((order) => (
-    <li
-      key={order.id}
-      className="bg-gradient-to-br from-white to-emerald-50/80 rounded-2xl border border-gray-100 shadow flex flex-col sm:flex-row items-center gap-4 px-5 py-4 transition-all hover:shadow-lg"
-    >
-      <div className="w-20 h-20 flex-shrink-0 flex items-center justify-center rounded-xl bg-gray-50 border border-gray-100 overflow-hidden">
-        {order.image ? (
-          <img src={order.image} alt="" className="object-cover w-full h-full" />
-        ) : (
-          <span className="text-4xl text-emerald-400 font-bold">🛒</span>
-        )}
-      </div>
-      <div className="flex-1 w-full flex flex-col gap-1">
-        <div className="flex items-center gap-3">
-          <span className="font-semibold text-lg text-green-800">{order.title}</span>
-          {order.status === "sold" && (
-            <span className="px-2 py-0.5 rounded-lg bg-green-100 text-green-700 text-xs font-semibold ml-2 animate-pulse">SOLD</span>
-          )}
-          {order.status === "refund_pending" && (
-            <span className="px-2 py-0.5 rounded-lg bg-red-100 text-red-700 text-xs font-semibold ml-2">REFUND PENDING</span>
-          )}
-          {order.status === "selling" && (
-            <span className="px-2 py-0.5 rounded-lg bg-yellow-100 text-yellow-700 text-xs font-semibold ml-2">IN PROGRESS</span>
-          )}
-        </div>
-        <div className="text-xs text-gray-400 font-mono">
-          {order.created_at ? new Date(order.created_at).toLocaleString() : ""}
-        </div>
-        <div className="flex flex-wrap items-center gap-4 mt-1 text-base">
-          <span className="font-medium text-gray-800">
-            Amount: <span className="text-green-700">${order.amount}</span>
-          </span>
-          <span className="font-medium text-gray-600">
-            {order.status === "sold" ? (
-              <>Profit: <span className="text-emerald-600">+${order.earn ?? order.profit ?? 0}</span></>
-            ) : (
-              order.status === "refund_pending" ? (
-                <span className="text-red-500">Refund Pending</span>
-              ) : (
-                <span className="text-gray-400">Selling…</span>
-              )
-            )}
-          </span>
-        </div>
-      </div>
-    </li>
-  ))}
-</ul>
+            <ul className="flex flex-col gap-5">
+              {resaleHistory.map((order) => (
+                <li
+                  key={order.id}
+                  className="bg-gradient-to-br from-white to-emerald-50/80 rounded-2xl border border-gray-100 shadow flex flex-col sm:flex-row items-center gap-4 px-5 py-4 transition-all hover:shadow-lg"
+                >
+                  <div className="w-20 h-20 flex-shrink-0 flex items-center justify-center rounded-xl bg-gray-50 border border-gray-100 overflow-hidden">
+                    {order.image ? (
+                      <img src={order.image} alt="" className="object-cover w-full h-full" />
+                    ) : (
+                      <span className="text-4xl text-emerald-400 font-bold">🛒</span>
+                    )}
+                  </div>
+                  <div className="flex-1 w-full flex flex-col gap-1">
+                    <div className="flex items-center gap-3">
+                      <span className="font-semibold text-lg text-green-800">{order.title}</span>
+                      {order.status === "sold" && (
+                        <span className="px-2 py-0.5 rounded-lg bg-green-100 text-green-700 text-xs font-semibold ml-2 animate-pulse">SOLD</span>
+                      )}
+                      {order.status === "refund_pending" && (
+                        <span className="px-2 py-0.5 rounded-lg bg-red-100 text-red-700 text-xs font-semibold ml-2">REFUND PENDING</span>
+                      )}
+                      {order.status === "selling" && (
+                        <span className="px-2 py-0.5 rounded-lg bg-yellow-100 text-yellow-700 text-xs font-semibold ml-2">IN PROGRESS</span>
+                      )}
+                    </div>
+                    <div className="text-xs text-gray-400 font-mono">
+                      {order.created_at ? new Date(order.created_at).toLocaleString() : ""}
+                    </div>
+                    <div className="flex flex-wrap items-center gap-4 mt-1 text-base">
+                      <span className="font-medium text-gray-800">
+                        Amount: <span className="text-green-700">${order.amount}</span>
+                      </span>
+                      <span className="font-medium text-gray-600">
+                        {order.status === "sold" ? (
+                          <>Profit: <span className="text-emerald-600">+${order.earn ?? order.profit ?? 0}</span></>
+                        ) : (
+                          order.status === "refund_pending" ? (
+                            <span className="text-red-500">Refund Pending</span>
+                          ) : (
+                            <span className="text-gray-400">Selling…</span>
+                          )
+                        )}
+                      </span>
+                    </div>
+                  </div>
+                </li>
+              ))}
+            </ul>
           )}
         </div>
       </div>
@@ -303,35 +299,39 @@ return (
                 <h3 className="text-xl font-extrabold text-green-800 mb-5 text-center tracking-tight">
                   Choose Payment Method
                 </h3>
-                <div className="space-y-5">
-                  {/* AliPay */}
+                <div className="grid grid-cols-2 gap-5">
                   <button
                     onClick={() => setSelectedMethod("AliPay")}
-                    className="w-full flex flex-col items-center justify-center bg-white/70 rounded-2xl border border-green-200 shadow px-8 py-7 transition-all hover:shadow-xl hover:border-green-400 focus:outline-none active:scale-95"
-                    style={{ minHeight: 120 }}
+                    className="flex flex-col items-center justify-center bg-white/70 rounded-2xl border border-green-200 shadow px-8 py-7 transition-all hover:shadow-xl hover:border-green-400 focus:outline-none active:scale-95"
                   >
                     <img src="/images/alipay.png" alt="AliPay" className="w-16 h-16 mb-3" />
                     <span className="font-extrabold text-green-800 text-lg tracking-wide">AliPay</span>
                   </button>
-                  {/* WeChat Pay */}
                   <button
                     onClick={() => setSelectedMethod("WeChat")}
-                    className="w-full flex flex-col items-center justify-center bg-white/70 rounded-2xl border border-green-200 shadow px-8 py-7 transition-all hover:shadow-xl hover:border-green-400 focus:outline-none active:scale-95"
-                    style={{ minHeight: 120 }}
+                    className="flex flex-col items-center justify-center bg-white/70 rounded-2xl border border-green-200 shadow px-8 py-7 transition-all hover:shadow-xl hover:border-green-400 focus:outline-none active:scale-95"
                   >
                     <img src="/images/wechatpay.png" alt="WeChat Pay" className="w-16 h-16 mb-3" />
                     <span className="font-extrabold text-green-800 text-lg tracking-wide">WeChat Pay</span>
                   </button>
-                  {/* USDC (Crypto) */}
                   <button
-                    onClick={() => setSelectedMethod("USDC")}
-                    className="w-full flex flex-col items-center justify-center bg-white/70 rounded-2xl border border-blue-200 shadow px-8 py-7 transition-all hover:shadow-xl hover:border-blue-400 focus:outline-none active:scale-95"
-                    style={{ minHeight: 120 }}
+                    onClick={() => setSelectedMethod("USDT(TRC)")}
+                    className="flex flex-col items-center justify-center bg-white/70 rounded-2xl border border-blue-200 shadow px-8 py-7 transition-all hover:shadow-xl hover:border-blue-400 focus:outline-none active:scale-95"
                   >
-                    <img src="/images/usdc.jpg" alt="USDC" className="w-16 h-16 mb-3" />
-                    <span className="font-extrabold text-blue-800 text-lg tracking-wide">USDC (Crypto)</span>
+                    <img src="/usdt.jpg" alt="USDT" className="w-16 h-16 mb-3" />
+                    <span className="font-extrabold text-blue-800 text-lg tracking-wide">USDT (Crypto)</span>
                     <span className="text-sm text-blue-500 font-bold mt-1">+4% Bonus!</span>
                   </button>
+                  {/* WISE */}
+<button
+  onClick={() => setSelectedMethod("Bank Transfer")}
+  className="flex flex-col items-center justify-center bg-white/70 rounded-2xl border border-green-200 shadow px-8 py-7 transition-all hover:shadow-xl hover:border-green-400 focus:outline-none active:scale-95"
+>
+  <img src="/wise-logo.png" alt="Bank Transfer" className="w-16 h-16 mb-3" />
+  <span className="font-extrabold text-green-800 text-lg tracking-wide">Bank Transfer</span>
+  <span className="text-xs mt-1 text-emerald-700 font-semibold">Global (WISE)</span>
+</button>
+
                 </div>
                 <button
                   className="w-full mt-7 bg-gray-100 text-gray-600 rounded-xl py-3 font-semibold hover:bg-gray-200 transition mt-5"
@@ -351,12 +351,18 @@ return (
                     alt={`${selectedMethod} QR`}
                     className="w-36 h-36 rounded-2xl border border-gray-200 shadow-sm mb-3"
                   />
-                  {selectedMethod === "USDC" && (
+                  {selectedMethod === "USDT(TRC)" && (
                     <div className="text-xs text-gray-500 mb-1">
-                      Network: <span className="font-bold text-blue-700">{methodInfo.network}</span>
+                      Network: <span className="font-bold text-blue-700">{USDC_INFO.network}</span>
                     </div>
                   )}
-                  {/* Copyable Address */}
+                  {/* WISE account note */}
+{selectedMethod === "Bank Transfer" && (
+  <div className="mb-1 text-xs text-gray-700">
+    <span className="font-semibold">Account Name:</span> BambooMall LLC
+  </div>
+)}
+
                   <DepositAddress address={methodInfo.address} />
                 </div>
                 <input
