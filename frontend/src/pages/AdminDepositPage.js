@@ -36,7 +36,22 @@ export default function AdminDepositPage() {
     );
   };
 
+  // Filter deposits by status
   const pendingUsers = users.filter(u => u.deposit && u.deposit.status === "pending");
+  const approvedUsers = users.filter(u => u.deposit && u.deposit.status === "approved");
+  const rejectedUsers = users.filter(u => u.deposit && u.deposit.status === "rejected");
+
+  // Table header for re-use
+  const tableHeader = (
+    <tr className="bg-[#17604e]/90 text-white">
+      <th className="py-3 px-4 rounded-tl-2xl text-left font-bold">User</th>
+      <th className="py-3 px-4 text-left font-bold">Amount</th>
+      <th className="py-3 px-4 text-left font-bold">Method</th>
+      <th className="py-3 px-4 text-left font-bold">Status</th>
+      <th className="py-3 px-4 text-left font-bold">Screenshot</th>
+      <th className="py-3 px-4 rounded-tr-2xl text-left font-bold">Action</th>
+    </tr>
+  );
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-[#F2E5C0] to-[#e6f3ee] font-inter">
@@ -46,77 +61,203 @@ export default function AdminDepositPage() {
             <FaMoneyCheckAlt className="text-[#17604e]" size={24} />
           </span>
           <h2 className="text-2xl md:text-3xl font-extrabold text-[#17604e] tracking-tight">
-            Deposit Approvals
+            Deposit Approvals & History
           </h2>
         </div>
-        <div className="overflow-x-auto rounded-2xl shadow-xl bg-white/70 backdrop-blur border border-white/60">
-          <table className="min-w-full text-sm divide-y divide-[#e3e9ef]">
-            <thead>
-              <tr className="bg-[#17604e]/90 text-white">
-                <th className="py-3 px-4 rounded-tl-2xl text-left font-bold">User</th>
-                <th className="py-3 px-4 text-left font-bold">Amount</th>
-                <th className="py-3 px-4 text-left font-bold">Method</th>
-                <th className="py-3 px-4 text-left font-bold">Status</th>
-                <th className="py-3 px-4 text-left font-bold">Screenshot</th>
-                <th className="py-3 px-4 rounded-tr-2xl text-left font-bold">Action</th>
-              </tr>
-            </thead>
-            <tbody>
-              {loading ? (
-                <tr>
-                  <td colSpan={6} className="text-center py-10 text-green-700 font-semibold">
-                    <span className="animate-spin rounded-full h-6 w-6 border-b-2 border-green-600 inline-block mr-3"></span>
-                    Loading deposits…
-                  </td>
-                </tr>
-              ) : pendingUsers.length === 0 ? (
-                <tr>
-                  <td colSpan={6} className="text-center py-8 text-gray-400">
-                    No pending deposits
-                  </td>
-                </tr>
-              ) : (
-                pendingUsers.map(u => (
-                  <tr key={u.id} className="border-b last:border-0 hover:bg-[#f5f6fa] transition">
-                    <td className="py-3 px-4 font-bold">{u.username}</td>
-                    <td className="py-3 px-4 font-mono">${u.deposit.amount}</td>
-                    <td className="py-3 px-4">{u.deposit.method}</td>
-                    <td className="py-3 px-4">
-                      <span className="px-2 py-1 rounded-2xl bg-yellow-100 text-yellow-800 border border-yellow-300 font-semibold text-xs shadow">
-                        Pending
-                      </span>
-                    </td>
-                    <td className="py-3 px-4">
-                      {u.deposit.screenshot_url && (
-                        <button
-                          className="flex items-center gap-1 bg-[#e8f5ef] hover:bg-[#d1f7ec] px-2 py-1 rounded-lg shadow transition"
-                          onClick={() => setModal({ img: u.deposit.screenshot_url, username: u.username })}
-                        >
-                          <FaRegEye className="text-[#17604e]" />
-                          <span className="text-xs font-semibold text-[#17604e]">View</span>
-                        </button>
-                      )}
-                    </td>
-                    <td className="py-3 px-4">
-                      <button
-                        className="flex items-center gap-1 bg-green-600 hover:bg-green-800 text-white px-3 py-1 rounded-lg font-semibold text-xs mr-2 shadow active:scale-95 transition"
-                        onClick={() => handleApproveDeposit(u.id, u.deposit.tx_id, true)}
-                      >
-                        <FaCheck /> Approve
-                      </button>
-                      <button
-                        className="flex items-center gap-1 bg-red-500 hover:bg-red-700 text-white px-3 py-1 rounded-lg font-semibold text-xs shadow active:scale-95 transition"
-                        onClick={() => handleApproveDeposit(u.id, u.deposit.tx_id, false)}
-                      >
-                        <FaTimes /> Deny
-                      </button>
+
+        {/* ---------- PENDING DEPOSITS ---------- */}
+        <div className="mb-10">
+          <h3 className="text-lg font-bold text-[#17604e] mb-2">Pending Deposits</h3>
+          <div className="overflow-x-auto rounded-2xl shadow-xl bg-white/70 backdrop-blur border border-white/60">
+            <table className="min-w-full text-sm divide-y divide-[#e3e9ef]">
+              <thead>{tableHeader}</thead>
+              <tbody>
+                {loading ? (
+                  <tr>
+                    <td colSpan={6} className="text-center py-10 text-green-700 font-semibold">
+                      <span className="animate-spin rounded-full h-6 w-6 border-b-2 border-green-600 inline-block mr-3"></span>
+                      Loading deposits…
                     </td>
                   </tr>
-                ))
-              )}
-            </tbody>
-          </table>
+                ) : pendingUsers.length === 0 ? (
+                  <tr>
+                    <td colSpan={6} className="text-center py-8 text-gray-400">
+                      No pending deposits
+                    </td>
+                  </tr>
+                ) : (
+                  pendingUsers.map(u => (
+                    <tr key={u.id} className="border-b last:border-0 hover:bg-[#f5f6fa] transition">
+                      <td className="py-3 px-4 font-bold">{u.username}</td>
+                      <td className="py-3 px-4 font-mono">${u.deposit.amount}</td>
+                      <td className="py-3 px-4">{u.deposit.method}</td>
+                      <td className="py-3 px-4">
+                        <span className="px-2 py-1 rounded-2xl bg-yellow-100 text-yellow-800 border border-yellow-300 font-semibold text-xs shadow">
+                          Pending
+                        </span>
+                      </td>
+                      <td className="py-3 px-4">
+                        {u.deposit.screenshot_url && (
+                          <button
+                            className="flex items-center gap-1 bg-[#e8f5ef] hover:bg-[#d1f7ec] px-2 py-1 rounded-lg shadow transition"
+                            onClick={() => setModal({ img: u.deposit.screenshot_url, username: u.username })}
+                          >
+                            <FaRegEye className="text-[#17604e]" />
+                            <span className="text-xs font-semibold text-[#17604e]">View</span>
+                          </button>
+                        )}
+                      </td>
+                      <td className="py-3 px-4">
+                        <button
+                          className="flex items-center gap-1 bg-green-600 hover:bg-green-800 text-white px-3 py-1 rounded-lg font-semibold text-xs mr-2 shadow active:scale-95 transition"
+                          onClick={() => handleApproveDeposit(u.id, u.deposit.tx_id, true)}
+                        >
+                          <FaCheck /> Approve
+                        </button>
+                        <button
+                          className="flex items-center gap-1 bg-red-500 hover:bg-red-700 text-white px-3 py-1 rounded-lg font-semibold text-xs shadow active:scale-95 transition"
+                          onClick={() => handleApproveDeposit(u.id, u.deposit.tx_id, false)}
+                        >
+                          <FaTimes /> Deny
+                        </button>
+                      </td>
+                    </tr>
+                  ))
+                )}
+              </tbody>
+            </table>
+          </div>
         </div>
+
+        {/* ---------- APPROVED HISTORY ---------- */}
+        <div className="mb-10">
+          <h3 className="text-lg font-bold text-green-700 mb-2">Approved Deposits</h3>
+          <div className="overflow-x-auto rounded-2xl shadow bg-white/70 backdrop-blur border border-white/60">
+            <table className="min-w-full text-sm divide-y divide-[#e3e9ef]">
+              <thead>
+                <tr className="bg-green-700 text-white">
+                  <th className="py-3 px-4 rounded-tl-2xl text-left font-bold">User</th>
+                  <th className="py-3 px-4 text-left font-bold">Amount</th>
+                  <th className="py-3 px-4 text-left font-bold">Method</th>
+                  <th className="py-3 px-4 text-left font-bold">Status</th>
+                  <th className="py-3 px-4 text-left font-bold">Screenshot</th>
+                  <th className="py-3 px-4 rounded-tr-2xl text-left font-bold">Date</th>
+                </tr>
+              </thead>
+              <tbody>
+                {loading ? (
+                  <tr>
+                    <td colSpan={6} className="text-center py-8 text-green-700 font-semibold">
+                      <span className="animate-spin rounded-full h-6 w-6 border-b-2 border-green-600 inline-block mr-3"></span>
+                      Loading...
+                    </td>
+                  </tr>
+                ) : approvedUsers.length === 0 ? (
+                  <tr>
+                    <td colSpan={6} className="text-center py-8 text-gray-400">
+                      No approved deposits
+                    </td>
+                  </tr>
+                ) : (
+                  approvedUsers.map(u => (
+                    <tr key={u.id} className="border-b last:border-0 hover:bg-[#f7fff7] transition">
+                      <td className="py-3 px-4 font-bold">{u.username}</td>
+                      <td className="py-3 px-4 font-mono">${u.deposit.amount}</td>
+                      <td className="py-3 px-4">{u.deposit.method}</td>
+                      <td className="py-3 px-4">
+                        <span className="px-2 py-1 rounded-2xl bg-green-100 text-green-800 border border-green-300 font-semibold text-xs shadow">
+                          Approved
+                        </span>
+                      </td>
+                      <td className="py-3 px-4">
+                        {u.deposit.screenshot_url && (
+                          <button
+                            className="flex items-center gap-1 bg-[#e8f5ef] hover:bg-[#d1f7ec] px-2 py-1 rounded-lg shadow transition"
+                            onClick={() => setModal({ img: u.deposit.screenshot_url, username: u.username })}
+                          >
+                            <FaRegEye className="text-[#17604e]" />
+                            <span className="text-xs font-semibold text-[#17604e]">View</span>
+                          </button>
+                        )}
+                      </td>
+                      <td className="py-3 px-4 font-mono text-xs text-gray-600">
+                        {u.deposit.updated_at
+                          ? new Date(u.deposit.updated_at).toLocaleString()
+                          : "-"}
+                      </td>
+                    </tr>
+                  ))
+                )}
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        {/* ---------- REJECTED HISTORY ---------- */}
+        <div>
+          <h3 className="text-lg font-bold text-red-700 mb-2">Rejected Deposits</h3>
+          <div className="overflow-x-auto rounded-2xl shadow bg-white/60 backdrop-blur border border-white/60">
+            <table className="min-w-full text-sm divide-y divide-[#e3e9ef]">
+              <thead>
+                <tr className="bg-red-600 text-white">
+                  <th className="py-3 px-4 rounded-tl-2xl text-left font-bold">User</th>
+                  <th className="py-3 px-4 text-left font-bold">Amount</th>
+                  <th className="py-3 px-4 text-left font-bold">Method</th>
+                  <th className="py-3 px-4 text-left font-bold">Status</th>
+                  <th className="py-3 px-4 text-left font-bold">Screenshot</th>
+                  <th className="py-3 px-4 rounded-tr-2xl text-left font-bold">Date</th>
+                </tr>
+              </thead>
+              <tbody>
+                {loading ? (
+                  <tr>
+                    <td colSpan={6} className="text-center py-8 text-red-600 font-semibold">
+                      <span className="animate-spin rounded-full h-6 w-6 border-b-2 border-red-600 inline-block mr-3"></span>
+                      Loading...
+                    </td>
+                  </tr>
+                ) : rejectedUsers.length === 0 ? (
+                  <tr>
+                    <td colSpan={6} className="text-center py-8 text-gray-400">
+                      No rejected deposits
+                    </td>
+                  </tr>
+                ) : (
+                  rejectedUsers.map(u => (
+                    <tr key={u.id} className="border-b last:border-0 hover:bg-[#fff7f7] transition">
+                      <td className="py-3 px-4 font-bold">{u.username}</td>
+                      <td className="py-3 px-4 font-mono">${u.deposit.amount}</td>
+                      <td className="py-3 px-4">{u.deposit.method}</td>
+                      <td className="py-3 px-4">
+                        <span className="px-2 py-1 rounded-2xl bg-red-100 text-red-700 border border-red-300 font-semibold text-xs shadow">
+                          Rejected
+                        </span>
+                      </td>
+                      <td className="py-3 px-4">
+                        {u.deposit.screenshot_url && (
+                          <button
+                            className="flex items-center gap-1 bg-[#fce8e8] hover:bg-[#ffe1e1] px-2 py-1 rounded-lg shadow transition"
+                            onClick={() => setModal({ img: u.deposit.screenshot_url, username: u.username })}
+                          >
+                            <FaRegEye className="text-[#c71c22]" />
+                            <span className="text-xs font-semibold text-[#c71c22]">View</span>
+                          </button>
+                        )}
+                      </td>
+                      <td className="py-3 px-4 font-mono text-xs text-gray-600">
+                        {u.deposit.updated_at
+                          ? new Date(u.deposit.updated_at).toLocaleString()
+                          : "-"}
+                      </td>
+                    </tr>
+                  ))
+                )}
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        {/* Modal for viewing screenshots */}
         {modal && (
           <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 transition"
             onClick={() => setModal(null)}>
@@ -131,6 +272,7 @@ export default function AdminDepositPage() {
             </div>
           </div>
         )}
+
       </div>
     </div>
   );
