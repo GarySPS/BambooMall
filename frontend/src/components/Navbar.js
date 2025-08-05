@@ -12,7 +12,6 @@ const navLinks = [
   { name: "Balance", href: "/balance" },
   { name: "Membership", href: "/membership" },
   { name: "About Us", href: "/about-us" },
-  { name: "Blog", href: "/blog" },
   { name: "FAQ", href: "/faq" }
 ];
 

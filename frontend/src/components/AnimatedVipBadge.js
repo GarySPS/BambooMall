@@ -1,80 +1,84 @@
-// components/AnimatedVipBadge.js
 import React from "react";
 
 const tierColors = {
-  MEMBER: {
-    bg: "linear-gradient(135deg, #f0f0f0 70%, #e0e7ef 100%)",
-    ring: "#cbd5e1",
-    text: "#64748b",
-  },
-  VIP0: {
-    bg: "linear-gradient(135deg, #bcf0d4 0%, #a7f3d0 100%)",
-    ring: "#4ade80",
-    text: "#047857",
-  },
-  VIP1: {
-    bg: "linear-gradient(135deg, #c7d2fe 0%, #60a5fa 100%)",
-    ring: "#60a5fa",
-    text: "#1e40af",
-  },
-  VIP2: {
-    bg: "linear-gradient(135deg, #f5d0fe 0%, #a21caf 100%)",
-    ring: "#a21caf",
-    text: "#7c3aed",
-  },
-  VIP3: {
-    bg: "linear-gradient(135deg, #fef9c3 0%, #fde68a 100%)",
-    ring: "#eab308",
-    text: "#b45309",
-  },
-  VIPX: {
-    bg: "linear-gradient(90deg, #fbbf24 0%, #f472b6 80%, #818cf8 100%)",
-    ring: "#fbbf24",
-    text: "#fff",
-    superGlow: true,
-  },
-  VIVIP: {
-    bg: "linear-gradient(90deg, #fbbf24 0%, #ec4899 60%, #a78bfa 100%)",
-    ring: "#fbbf24",
-    text: "#fff",
-    superGlow: true,
-  },
+  MEMBER: { ring: "#9ca3af", glow: "#9ca3af" },
+  VIP0: { ring: "#34d399", glow: "#10b981" },
+  VIP1: { ring: "#3b82f6", glow: "#2563eb" },
+  VIP2: { ring: "#a855f7", glow: "#9333ea" },
+  VIP3: { ring: "#facc15", glow: "#eab308" },
+  VIPX: { ring: "#f472b6", glow: "#ec4899" },
+  VIVIP: { ring: "#fbbf24", glow: "#f59e0b" },
 };
 
-export default function AnimatedVipBadge({ level, active = true, size = 64 }) {
-  const { bg, ring, text, superGlow } = tierColors[level] || tierColors.MEMBER;
-
-  // Show "M" for MEMBER, otherwise use full tier code
-  const label = level === "MEMBER" ? "M" : level;
+export default function AnimatedVipBadge({ level, active = true, size = 80 }) {
+  const { ring, glow } = tierColors[level] || tierColors.MEMBER;
 
   return (
     <div
-      className={`relative premium-vip-badge ${active ? "active" : ""} ${superGlow ? "super-glow" : ""}`}
+      className="relative vip-badge-animation"
       style={{
         width: size,
         height: size,
-        borderRadius: "50%",
-        background: bg,
-        boxShadow: `0 0 0 3px ${ring}99, 0 0 16px 3px ${ring}66`,
-        border: `3.5px solid ${ring}`,
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "center",
-        color: text,
-        fontWeight: 900,
-        fontSize: level === "MEMBER" ? size * 0.43 : size * 0.32, // Make "M" a bit bigger
-        letterSpacing: 1.2,
-        position: "relative",
-        overflow: "hidden",
-        transition: "box-shadow .23s cubic-bezier(.4,2,.45,1)",
-        userSelect: "none",
       }}
     >
-      <span className="vip-shine" />
-      {superGlow && <span className="vip-badge-sparkle" />}
-      <span style={{ zIndex: 2, fontWeight: 900, textShadow: "0 0 10px #fff8" }}>
-        {label}
-      </span>
+      <div
+        className="rounded-full flex items-center justify-center relative overflow-hidden"
+        style={{
+          width: size,
+          height: size,
+          border: `4px solid ${ring}`,
+          boxShadow: `0 0 16px ${glow}, 0 0 32px ${glow}99`,
+          animation: active ? "pulseGlow 2s infinite, rotateBadge 10s linear infinite" : "none",
+          background: `radial-gradient(circle at center, ${ring}40, transparent 70%)`,
+        }}
+      >
+        <img
+          src="/logo192.png"  // Use your uploaded PNG
+          alt="VIP"
+          style={{
+            width: '75%',
+            height: '75%',
+            objectFit: 'cover',
+            borderRadius: "50%",
+            boxShadow: '0 0 14px #fff8',
+            zIndex: 10,
+            background: "#fff", // fallback for transparent PNGs
+          }}
+        />
+        {/* Sparkle */}
+        {active && <div className="sparkle-effect" />}
+      </div>
+
+      <style jsx>{`
+        @keyframes pulseGlow {
+          0%, 100% { box-shadow: 0 0 16px ${glow}, 0 0 32px ${glow}99; }
+          50% { box-shadow: 0 0 28px ${glow}, 0 0 56px ${glow}99; }
+        }
+        @keyframes rotateBadge {
+          from { transform: rotate(0deg); }
+          to { transform: rotate(360deg); }
+        }
+        .sparkle-effect::before, .sparkle-effect::after {
+          content: "";
+          position: absolute;
+          width: ${size / 8}px;
+          height: ${size / 8}px;
+          background: #fff;
+          border-radius: 50%;
+          top: 15%;
+          left: 15%;
+          animation: sparkle 3s infinite ease-in-out alternate;
+        }
+        .sparkle-effect::after {
+          top: 75%;
+          left: 75%;
+          animation-delay: 1.5s;
+        }
+        @keyframes sparkle {
+          from { opacity: 0; transform: scale(0.5); }
+          to { opacity: 1; transform: scale(1.5); }
+        }
+      `}</style>
     </div>
   );
 }

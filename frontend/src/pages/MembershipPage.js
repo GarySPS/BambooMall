@@ -3,6 +3,33 @@ import vipTiers from "../data/vipTiers";
 import AnimatedVipBadge from "../components/AnimatedVipBadge";
 import { useUser } from "../contexts/UserContext";
 
+const FEATURES = [
+  {
+    icon: "🌟",
+    title: "EXCLUSIVE",
+    subtitle: "VIP CLUB",
+    desc: "Unlock members-only deals and events. Your tier rises with your wallet balance.",
+  },
+  {
+    icon: "💸",
+    title: "VALUABLE",
+    subtitle: "CASHBACK",
+    desc: "Extra discounts at every tier—auto applied, no extra work!",
+  },
+  {
+    icon: "⚡",
+    title: "LIMITLESS",
+    subtitle: "EXPRESS WITHDRAWAL",
+    desc: "Enjoy fast, admin-approved withdrawals at higher levels.",
+  },
+  {
+    icon: "🤝",
+    title: "COMMUNITY",
+    subtitle: "VIP SUPPORT",
+    desc: "Get early access, new launches, and special support.",
+  }
+];
+
 export default function MembershipPage() {
   const { wallet } = useUser();
 
@@ -15,86 +42,176 @@ export default function MembershipPage() {
     );
   }, [wallet]);
 
+  // VIP Tiers sorted ascending (lowest min first)
+  const sortedTiers = vipTiers.slice().sort((a, b) => a.min - b.min);
+
+  // Find current and next tier
   const currentTier =
-    vipTiers.slice().reverse().find((t) => userBalance >= t.min) || vipTiers[0];
+    sortedTiers.slice().reverse().find((t) => userBalance >= t.min) || sortedTiers[0];
+  const nextTier =
+    sortedTiers.find((t) => t.min > userBalance) || null;
+
+  // Progress toward next tier
+  const progress =
+    nextTier && nextTier.min > currentTier.min
+      ? Math.min(1, (userBalance - currentTier.min) / (nextTier.min - currentTier.min))
+      : 1;
 
   return (
-    <div className="min-h-screen flex flex-col items-center px-2 py-10">
-      {/* Premium Headline */}
-      <div className="mb-10 text-center">
-        <div className="inline-block px-8 py-3 rounded-full bg-gradient-to-r from-yellow-100 via-yellow-50 to-yellow-200 shadow-md border-2 border-yellow-200">
-          <span className="font-serif font-extrabold text-2xl sm:text-3xl text-yellow-800 tracking-wide flex items-center gap-2">
-            <svg className="w-8 h-8 text-yellow-400 animate-pulse" fill="currentColor" viewBox="0 0 24 24">
-              <path d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z"/>
-            </svg>
-            BambooMall VIP Membership
-          </span>
+    <div
+      className="min-h-screen w-full flex flex-col items-center justify-center relative overflow-x-hidden"
+      style={{
+        background: `url('/membership.jpg') center center / cover no-repeat, #19191d`,
+      }}
+    >
+      <div className="absolute inset-0 bg-black bg-opacity-70 z-0" />
+
+      {/* VIP Club Card */}
+      <div className="relative z-10 w-full max-w-2xl mx-auto rounded-3xl shadow-2xl bg-black/80 p-8 pb-6 flex flex-col items-center border border-yellow-900"
+        style={{
+          boxShadow: "0 4px 48px 0 #fbbf2440, 0 2px 6px 0 #d4af3740"
+        }}
+      >
+        {/* Crown or Badge */}
+        <div className="flex justify-center mb-3">
+          <AnimatedVipBadge level={currentTier.id} active size={92} />
         </div>
-        <div className="mt-5 text-gray-600 text-base font-light">
-          Unlock higher discounts and status instantly as your wallet balance increases.
+
+        {/* Headline */}
+        <div className="text-3xl font-black font-serif text-yellow-200 text-center tracking-wide mb-2">
+          BambooMall <span className="text-yellow-400">VIP Club</span>
+        </div>
+        <div className="text-gray-300 text-center mb-6 text-sm font-light">
+          Unlock higher discounts and exclusive benefits as your wallet grows.
+        </div>
+
+        {/* Progress Bar */}
+        <div className="w-full mb-2 mt-2">
+          <div className="flex justify-between items-center text-gray-400 text-xs mb-1">
+            <span>${currentTier.min.toLocaleString()}</span>
+            {nextTier ? (
+              <span>
+                ${userBalance.toLocaleString()} / ${nextTier.min.toLocaleString()} &nbsp;
+                <span className="text-yellow-300">{`$${(nextTier.min - userBalance).toLocaleString()} left`}</span>
+              </span>
+            ) : (
+              <span className="text-yellow-400 font-bold">MAX VIP</span>
+            )}
+          </div>
+          <div className="bg-gray-700 rounded-full h-4 shadow-inner relative">
+            <div
+              className="bg-gradient-to-r from-yellow-300 to-yellow-500 h-4 rounded-full transition-all duration-700"
+              style={{
+                width: `${progress * 100}%`
+              }}
+            />
+          </div>
+          <div className="flex justify-between items-center mt-1 font-bold text-sm">
+            <span className="text-zinc-400 italic flex items-center gap-2">
+              LVL {currentTier.id}
+            </span>
+            <span className="text-yellow-200 italic flex items-center gap-2">
+              {nextTier ? `LVL ${nextTier.id}` : "TOP VIP"}
+            </span>
+          </div>
+        </div>
+
+        {/* Tier Info */}
+        <div className="mt-5 flex flex-col items-center">
+          <div className="text-yellow-300 text-xl font-bold mb-1">
+            {currentTier.name}
+          </div>
+          <div className="text-gray-300 text-base mb-1">
+            <span className="font-semibold">+{currentTier.discount}%</span> Extra Discount
+          </div>
+          <div className="text-gray-400 text-xs text-center max-w-sm mb-3">
+            {currentTier.desc}
+          </div>
+          <div className="px-4 py-2 rounded-full bg-gradient-to-r from-yellow-200 via-yellow-300 to-yellow-100 text-yellow-900 text-sm font-bold shadow border-2 border-yellow-200 drop-shadow-lg">
+            Your Current Level
+          </div>
         </div>
       </div>
 
-      {/* VIP Tiers Grid - Fixed card height and stretch! */}
-      <div className="w-full max-w-5xl bg-white/90 rounded-3xl shadow-2xl backdrop-blur-lg p-4 sm:p-10 mb-10 border border-yellow-100">
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-10 items-stretch">
-          {vipTiers.map((tier) => (
-<div
-  key={tier.id}
-  className={`relative rounded-2xl flex flex-col items-center px-8 py-8 border-4
-    ${currentTier.id === tier.id
-      ? "border-yellow-400 scale-105 shadow-yellow-200/70 ring-2 ring-yellow-300"
-      : "border-zinc-200"
-    }
-    shadow-lg transition-transform duration-300 flex-1`}
-  style={{
-    height: 380,
-    margin: "0 auto",
-    width: "100%",
-    backgroundImage: "url('/vip.jpg')",
-    backgroundSize: "cover",
-    backgroundPosition: "center",
-    backgroundRepeat: "no-repeat",
-    boxShadow: currentTier.id === tier.id
-      ? "0 8px 38px 0 #fbbf2440, 0 2px 6px 0 #d4af3740"
-      : "0 6px 24px 0 #cbd5e133, 0 1.5px 3px 0 #e2e8f033"
-  }}
->
-              <div className="mb-2">
-                <AnimatedVipBadge
-                  level={tier.id}
-                  active={currentTier.id === tier.id}
-                  size={74}
-                />
-              </div>
-              <div className={`text-2xl sm:text-3xl font-bold font-serif tracking-wider mb-1 ${currentTier.id === tier.id ? "text-yellow-700" : "text-zinc-700"}`}>
-                {tier.name}
-              </div>
-              <div className="text-center text-gray-500 text-[15px] mb-4 max-w-xs">
-                {tier.desc}
-              </div>
-              <div className="flex flex-col gap-2 items-center mb-2">
-                <span className="font-mono text-base text-gray-600">
-                  Balance: <span className="font-bold text-green-700">${tier.min.toLocaleString()}</span>+
-                </span>
-                <span className="text-green-800 font-semibold text-md flex items-center gap-2">
-                  <svg className="w-5 h-5 text-green-400" fill="currentColor" viewBox="0 0 20 20"><path d="M16.707 5.293a1 1 0 010 1.414l-7.414 7.414a1 1 0 01-1.414 0l-3.414-3.414a1 1 0 111.414-1.414L8 11.586l6.707-6.707a1 1 0 011.414 0z"/></svg>
-                  +{tier.discount}% Extra Discount
-                </span>
-              </div>
-              {currentTier.id === tier.id && (
-                <div className="mt-6 px-6 py-2 rounded-full bg-gradient-to-r from-yellow-200 via-yellow-300 to-yellow-100 text-yellow-900 text-base font-bold shadow animate-bounce border-2 border-yellow-300 drop-shadow-lg">
-                  Your Current Level
-                </div>
-              )}
-            </div>
-          ))}
+      {/* Feature Cards */}
+      <div className="relative z-10 mt-8 w-full max-w-4xl grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 px-2">
+        {FEATURES.map((f) => (
+          <div
+            key={f.title}
+            className="rounded-xl bg-gradient-to-br from-yellow-300/80 via-yellow-100 to-yellow-400/60 p-5 shadow-lg border border-yellow-200 flex flex-col items-start"
+          >
+            <div className="text-3xl mb-2">{f.icon}</div>
+            <div className="uppercase text-xs font-extrabold text-yellow-900 tracking-wider mb-1">{f.title}</div>
+            <div className="text-lg font-bold text-yellow-800 mb-1">{f.subtitle}</div>
+            <div className="text-zinc-700 text-xs">{f.desc}</div>
+          </div>
+        ))}
+      </div>
+
+{/* Membership Levels Card Grid */}
+<div className="relative z-10 mt-12 w-full max-w-5xl grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8 px-2">
+  {sortedTiers.map((tier) => (
+    <div
+      key={tier.id}
+      className={`flex flex-col items-center justify-center p-6 rounded-3xl border-4 shadow-xl transition-transform duration-300 relative overflow-hidden
+        ${currentTier.id === tier.id
+          ? "border-yellow-400 scale-105 shadow-yellow-400/70 ring-2 ring-yellow-300"
+          : "border-gray-600"
+        }`}
+      style={{
+        background: `url('/vip.jpg') center center / cover no-repeat`,
+        minHeight: 320,
+      }}
+    >
+      {/* Premium Glass Overlay */}
+      <div className="absolute inset-0 bg-black bg-opacity-50 backdrop-blur-sm" />
+
+      {/* Logo Badge */}
+      <div className="relative z-10 flex justify-center mb-3">
+        <img
+          src="/vip1.png"
+          alt="VIP Logo"
+          className="w-16 h-16 rounded-full object-cover shadow-lg border-2 border-white"
+          style={{ boxShadow: `0 0 16px ${currentTier.id === tier.id ? '#facc15' : '#ffffff88'}` }}
+        />
+      </div>
+
+      {/* Tier Name */}
+      <div className={`relative z-10 text-2xl font-serif font-bold tracking-wide mb-2 
+        ${currentTier.id === tier.id ? "text-yellow-300" : "text-gray-100"}`}>
+        {tier.name}
+      </div>
+
+      {/* Description */}
+      <div className="relative z-10 text-gray-300 text-center text-sm mb-4">
+        {tier.desc}
+      </div>
+
+      {/* Balance & Discount */}
+      <div className="relative z-10 flex flex-col items-center text-base font-semibold space-y-1">
+        <div>
+          <span className="text-gray-400">Balance: </span>
+          <span className="text-green-300 font-bold">${tier.min.toLocaleString()}+</span>
+        </div>
+        <div className="text-yellow-200 font-bold">
+          +{tier.discount}% Extra Discount
         </div>
       </div>
 
-      <div className="text-sm text-gray-400 text-center max-w-lg mt-2">
-        Your VIP badge and discount will upgrade automatically as your wallet balance changes.<br />
-        <span className="text-yellow-700 font-semibold">Enjoy exclusive BambooMall privileges!</span>
+      {/* Current Tier Badge */}
+      {currentTier.id === tier.id && (
+        <div className="relative z-10 mt-3 px-4 py-1 rounded-full bg-gradient-to-r from-yellow-300 to-yellow-400 text-yellow-900 font-bold text-xs shadow-lg animate-pulse">
+          ⭐ Your Level
+        </div>
+      )}
+    </div>
+  ))}
+</div>
+
+      <div className="relative z-10 text-sm text-gray-400 text-center max-w-lg mt-10">
+        <span className="text-yellow-400 font-semibold">Enjoy exclusive BambooMall privileges!</span>
+        <br />
+        Your VIP badge and discount update automatically as your wallet balance changes.
       </div>
     </div>
   );

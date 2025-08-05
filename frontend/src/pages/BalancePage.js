@@ -187,9 +187,18 @@ export default function BalancePage() {
   if (selectedMethod === "WeChat") methodInfo = WECHAT_INFO;
 
   // --- UI/UX ---
-  return (
-    <div className="min-h-screen w-full flex flex-col items-center justify-center">
-      <div className="w-full max-w-lg px-4">
+return (
+  <div
+    className="min-h-screen w-full flex flex-col items-center justify-center relative overflow-x-hidden"
+    style={{
+      background: `url('/balance.png') center center / cover no-repeat, #151516`
+    }}
+  >
+    {/* Overlay for dark effect */}
+    <div className="absolute inset-0 bg-black/70 z-0" />
+
+    {/* Your page content, must have z-10 so it's above the overlay */}
+    <div className="relative z-10 w-full max-w-lg px-4">
         {/* Balance Card with VIP animation */}
         <div className="relative z-10 bg-white/80 backdrop-blur-2xl border border-green-100 shadow-2xl rounded-3xl p-8 mt-10 mb-8 flex flex-col items-center transition-all">
           {/* VIP badge between title and balance */}

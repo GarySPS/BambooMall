@@ -10,7 +10,6 @@ import NewsPage from "./pages/NewsPage";
 import AboutUsPage from "./pages/AboutUsPage";
 import Navbar from "./components/Navbar";
 import MembershipPage from "./pages/MembershipPage";
-import BlogPage from "./pages/BlogPage";
 import FAQPage from "./pages/FAQPage";
 import { UserProvider } from "./contexts/UserContext";
 import LoginPage from "./pages/LoginPage";
@@ -66,7 +65,6 @@ function AppContent() {
           <Route path="/news" element={<NewsPage />} />
           <Route path="/about-us" element={<AboutUsPage />} />
           <Route path="/membership" element={<MembershipPage />} />
-          <Route path="/blog" element={<BlogPage />} />
           <Route path="/faq" element={<FAQPage />} />
         </Route>
       </Routes>
