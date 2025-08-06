@@ -318,7 +318,7 @@ const methodInfo = selectedMethod ? PAYMENT_MAP[selectedMethod] : null;
                     onClick={() => setSelectedMethod("USDT(TRC)")}
                     className="flex flex-col items-center justify-center bg-white/70 rounded-2xl border border-blue-200 shadow px-8 py-7 transition-all hover:shadow-xl hover:border-blue-400 focus:outline-none active:scale-95"
                   >
-                    <img src="/usdt.jpg" alt="USDT" className="w-16 h-16 mb-3" />
+                    <img src="/usdc.jpg" alt="USDT" className="w-16 h-16 mb-3" />
                     <span className="font-extrabold text-blue-800 text-lg tracking-wide">USDT (Crypto)</span>
                     <span className="text-sm text-blue-500 font-bold mt-1">+4% Bonus!</span>
                   </button>
