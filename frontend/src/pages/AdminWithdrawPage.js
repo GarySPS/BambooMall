@@ -61,21 +61,23 @@ export default function AdminWithdrawPage() {
   // Table headers for history and pending
   const tableHeader = (
     <tr className="bg-[#17604e]/90 text-white">
-      <th className="py-3 px-4 rounded-tl-2xl text-left font-bold">User</th>
-      <th className="py-3 px-4 text-left font-bold">Amount</th>
-      <th className="py-3 px-4 text-left font-bold">Address</th>
-      <th className="py-3 px-4 text-left font-bold">Status</th>
-      <th className="py-3 px-4 rounded-tr-2xl text-left font-bold">Action</th>
-    </tr>
+  <th className="py-3 px-4 rounded-tl-2xl text-left font-bold">User</th>
+  <th className="py-3 px-4 text-left font-bold">Amount</th>
+  <th className="py-3 px-4 text-left font-bold">Method</th>
+  <th className="py-3 px-4 text-left font-bold">Address</th>
+  <th className="py-3 px-4 text-left font-bold">Status</th>
+  <th className="py-3 px-4 rounded-tr-2xl text-left font-bold">Action</th>
+</tr>
   );
   const historyHeader = (
-    <tr className="bg-[#17604e]/90 text-white">
-      <th className="py-3 px-4 rounded-tl-2xl text-left font-bold">User</th>
-      <th className="py-3 px-4 text-left font-bold">Amount</th>
-      <th className="py-3 px-4 text-left font-bold">Address</th>
-      <th className="py-3 px-4 text-left font-bold">Status</th>
-      <th className="py-3 px-4 rounded-tr-2xl text-left font-bold">Date</th>
-    </tr>
+<tr className="bg-[#17604e]/90 text-white">
+  <th className="py-3 px-4 rounded-tl-2xl text-left font-bold">User</th>
+  <th className="py-3 px-4 text-left font-bold">Amount</th>
+  <th className="py-3 px-4 text-left font-bold">Method</th>
+  <th className="py-3 px-4 text-left font-bold">Address</th>
+  <th className="py-3 px-4 text-left font-bold">Status</th>
+  <th className="py-3 px-4 rounded-tr-2xl text-left font-bold">Date</th>
+</tr>
   );
 
   return (
@@ -112,16 +114,17 @@ export default function AdminWithdrawPage() {
                   </tr>
                 ) : (
                   pendingRows.map(w => (
-                    <tr key={w.tx_id} className="border-b last:border-0 hover:bg-[#f5f6fa] transition">
-                      <td className="py-3 px-4 font-bold">{w.username}</td>
-                      <td className="py-3 px-4 font-mono">${w.amount}</td>
-                      <td className="py-3 px-4 font-mono text-xs">{w.address}</td>
-                      <td className="py-3 px-4">
-                        <span className="px-2 py-1 rounded-2xl bg-yellow-100 text-yellow-800 border border-yellow-300 font-semibold text-xs shadow">
-                          Pending
-                        </span>
-                      </td>
-                      <td className="py-3 px-4">
+<tr key={w.tx_id} className="border-b last:border-0 hover:bg-[#f5f6fa] transition">
+  <td className="py-3 px-4 font-bold">{w.username}</td>
+  <td className="py-3 px-4 font-mono">${w.amount}</td>
+  <td className="py-3 px-4 font-mono">{w.note}</td> {/* NEW: Method */}
+  <td className="py-3 px-4 font-mono text-xs">{w.address}</td>
+  <td className="py-3 px-4">
+    <span className="px-2 py-1 rounded-2xl bg-yellow-100 text-yellow-800 border border-yellow-300 font-semibold text-xs shadow">
+      Pending
+    </span>
+  </td>
+  <td className="py-3 px-4">
                         <button
                           className="flex items-center gap-1 bg-green-600 hover:bg-green-800 text-white px-3 py-1 rounded-lg font-semibold text-xs mr-2 shadow active:scale-95 transition"
                           onClick={() => handleApproveWithdraw(w.userId, w.tx_id, true)}

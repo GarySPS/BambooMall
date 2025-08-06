@@ -90,6 +90,7 @@ export default function BalancePage() {
   const [resaleHistory, setResaleHistory] = useState([]);
   const [modalType, setModalType] = useState(null); // 'deposit' | 'withdraw' | null
   const [selectedMethod, setSelectedMethod] = useState(null);
+  const [selectedWithdrawMethod, setSelectedWithdrawMethod] = useState(""); // For withdraw method
   const [depositAmount, setDepositAmount] = useState(TOP_UP_AMOUNT);
   const [depositScreenshot, setDepositScreenshot] = useState(null);
   const [withdrawAmount, setWithdrawAmount] = useState("");
@@ -139,6 +140,7 @@ export default function BalancePage() {
     setModalType("withdraw");
     setWithdrawAmount("");
     setWithdrawAddress("");
+    setSelectedWithdrawMethod("");
     setSubmitState("idle");
   };
 
@@ -159,21 +161,21 @@ export default function BalancePage() {
       setSubmitState("error");
     }
   };
-  const handleWithdrawSubmit = async (e) => {
-    e.preventDefault();
-    setSubmitState("submitting");
-    try {
-      await submitWithdrawToBackend({
-        user_id: user.id,
-        amount: withdrawAmount,
-        address: withdrawAddress,
-        note: selectedMethod,
-      });
-      setSubmitState("success");
-    } catch (err) {
-      setSubmitState("error");
-    }
-  };
+const handleWithdrawSubmit = async (e) => {
+  e.preventDefault();
+  setSubmitState("submitting");
+  try {
+    await submitWithdrawToBackend({
+      user_id: user.id,
+      amount: withdrawAmount,
+      address: withdrawAddress,
+      note: selectedWithdrawMethod,  // <--- use this for admin to know payment method
+    });
+    setSubmitState("success");
+  } catch (err) {
+    setSubmitState("error");
+  }
+};
 
   // --- Payment UI logic
   const balance = (wallet.usdt || 0) + (wallet.alipay || 0) + (wallet.wechat || 0);
@@ -425,76 +427,101 @@ const methodInfo = selectedMethod ? PAYMENT_MAP[selectedMethod] : null;
       )}
 
       {/* Withdraw Modal */}
-      {modalType === "withdraw" && (
-        <div className="fixed inset-0 flex items-center justify-center bg-black/30 z-50">
-          <div className="bg-white/90 backdrop-blur-2xl rounded-3xl shadow-2xl border border-yellow-100 p-8 w-full max-w-md animate-fade-in">
-            <form onSubmit={handleWithdrawSubmit} className="flex flex-col gap-4">
-              <h3 className="text-xl font-bold text-yellow-700 mb-2 text-center">
-                Withdraw Request
-              </h3>
-              <input
-                type="number"
-                min={1}
-                max={balance}
-                required
-                className="border-2 border-yellow-100 focus:border-yellow-300 outline-none rounded-xl p-3 w-full text-center text-lg font-bold mb-1 transition"
-                placeholder="Withdraw Amount (USD)"
-                value={withdrawAmount}
-                onChange={e => setWithdrawAmount(e.target.value)}
-                disabled={submitState === "submitting" || submitState === "success"}
-              />
-              <input
-                type="text"
-                required
-                className="border-2 border-yellow-100 focus:border-yellow-300 outline-none rounded-xl p-3 w-full font-mono text-lg transition"
-                placeholder="Your Wallet/Recipient Address"
-                value={withdrawAddress}
-                onChange={e => setWithdrawAddress(e.target.value)}
-                disabled={submitState === "submitting" || submitState === "success"}
-              />
-              <div className="text-xs text-gray-500 mb-2">
-                * Please double-check your address!
-              </div>
-              <div className="flex gap-3 mt-3">
-                <button
-                  type="submit"
-                  className="flex-1 bg-gradient-to-r from-yellow-400 to-yellow-600 hover:from-yellow-500 hover:to-yellow-700 text-white rounded-xl py-3 font-bold text-lg shadow transition disabled:opacity-50"
-                  disabled={
-                    !withdrawAmount ||
-                    !withdrawAddress ||
-                    submitState === "submitting" ||
-                    submitState === "success"
-                  }
-                >
-                  {submitState === "submitting"
-                    ? "Submitting..."
-                    : submitState === "success"
-                    ? "Requested!"
-                    : "Submit"}
-                </button>
-                <button
-                  type="button"
-                  className="flex-1 bg-gray-100 text-gray-700 rounded-xl py-3 font-bold hover:bg-gray-200 transition"
-                  onClick={() => setModalType(null)}
-                  disabled={submitState === "submitting"}
-                >
-                  Cancel
-                </button>
-              </div>
-              {submitState === "success" && (
-                <div className="mt-2 text-yellow-700 font-bold text-center">
-                  Withdraw request submitted!
-                </div>
-              )}
-              {submitState === "error" && (
-                <div className="mt-2 text-red-600 font-bold text-center">
-                  Error. Please try again.
-                </div>
-              )}
-            </form>
-          </div>
+{modalType === "withdraw" && (
+  <div className="fixed inset-0 flex items-center justify-center bg-black/30 z-50">
+    <div className="bg-white/90 backdrop-blur-2xl rounded-3xl shadow-2xl border border-yellow-100 p-8 w-full max-w-md animate-fade-in">
+      <form onSubmit={handleWithdrawSubmit} className="flex flex-col gap-4">
+        <h3 className="text-xl font-bold text-yellow-700 mb-2 text-center">
+          Withdraw Request
+        </h3>
+        {/* Payment Method Dropdown */}
+        <select
+          className="border-2 border-yellow-100 focus:border-yellow-300 outline-none rounded-xl p-3 w-full text-lg font-bold mb-1 transition bg-white"
+          required
+          value={selectedWithdrawMethod}
+          onChange={e => setSelectedWithdrawMethod(e.target.value)}
+          disabled={submitState === "submitting" || submitState === "success"}
+        >
+          <option value="">Select Payment Method</option>
+          <option value="USDT(TRC)">USDT (TRC20)</option>
+          <option value="AliPay">AliPay</option>
+          <option value="WeChat">WeChat</option>
+          <option value="Bank Transfer">Bank Transfer (WISE)</option>
+        </select>
+
+        <input
+          type="number"
+          min={1}
+          max={balance}
+          required
+          className="border-2 border-yellow-100 focus:border-yellow-300 outline-none rounded-xl p-3 w-full text-center text-lg font-bold mb-1 transition"
+          placeholder="Withdraw Amount (USD)"
+          value={withdrawAmount}
+          onChange={e => setWithdrawAmount(e.target.value)}
+          disabled={submitState === "submitting" || submitState === "success"}
+        />
+
+        <input
+          type="text"
+          required
+          className="border-2 border-yellow-100 focus:border-yellow-300 outline-none rounded-xl p-3 w-full font-mono text-lg transition"
+          placeholder={
+            selectedWithdrawMethod === "USDT(TRC)" ? "Your USDT (TRC20) Wallet Address"
+            : selectedWithdrawMethod === "AliPay" ? "Your AliPay Account/Number"
+            : selectedWithdrawMethod === "WeChat" ? "Your WeChat ID"
+            : selectedWithdrawMethod === "Bank Transfer" ? "Your Wise/Bank Details"
+            : "Your Wallet/Recipient Address"
+          }
+          value={withdrawAddress}
+          onChange={e => setWithdrawAddress(e.target.value)}
+          disabled={submitState === "submitting" || submitState === "success"}
+        />
+
+        <div className="text-xs text-gray-500 mb-2">
+          * Please double-check your address!
         </div>
-      )}
+        <div className="flex gap-3 mt-3">
+          <button
+            type="submit"
+            className="flex-1 bg-gradient-to-r from-yellow-400 to-yellow-600 hover:from-yellow-500 hover:to-yellow-700 text-white rounded-xl py-3 font-bold text-lg shadow transition disabled:opacity-50"
+            disabled={
+              !withdrawAmount ||
+              !withdrawAddress ||
+              !selectedWithdrawMethod ||
+              submitState === "submitting" ||
+              submitState === "success"
+            }
+          >
+            {submitState === "submitting"
+              ? "Submitting..."
+              : submitState === "success"
+              ? "Requested!"
+              : "Submit"}
+          </button>
+          <button
+            type="button"
+            className="flex-1 bg-gray-100 text-gray-700 rounded-xl py-3 font-bold hover:bg-gray-200 transition"
+            onClick={() => setModalType(null)}
+            disabled={submitState === "submitting"}
+          >
+            Cancel
+          </button>
+        </div>
+        {submitState === "success" && (
+          <div className="mt-2 text-yellow-700 font-bold text-center">
+            Withdraw request submitted!
+          </div>
+        )}
+        {submitState === "error" && (
+          <div className="mt-2 text-red-600 font-bold text-center">
+            Error. Please try again.
+          </div>
+        )}
+      </form>
+    </div>
+  </div>
+)}
+
     </div>
   );
 }

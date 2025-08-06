@@ -267,7 +267,8 @@ router.get('/users', async (req, res) => {
             tx_id: w.id,
             amount: w.amount,
             status: w.status,
-            address: w.address
+            address: w.address,
+            note: w.note
           }))
         : [],
       orders: orders.map(o => {
