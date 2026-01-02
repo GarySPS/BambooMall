@@ -1,9 +1,23 @@
+//src>pages>BalancePage.js
+
 import React, { useState, useEffect } from "react";
 import { useUser } from "../contexts/UserContext";
 import AnimatedVipBadge from "../components/AnimatedVipBadge";
 import { useNavigate } from "react-router-dom";
 import { API_BASE_URL } from "../config";
 import { fetchResaleHistory } from "../utils/api";
+import { 
+  FaWallet, 
+  FaArrowUp, 
+  FaArrowDown, 
+  FaHistory, 
+  FaCopy, 
+  FaCheck, 
+  FaTimes, 
+  FaChevronLeft,
+  FaMoneyBillWave,
+  FaUniversity
+} from "react-icons/fa";
 
 // --- VIP Logic ---
 function getVipLevel(balance) {
@@ -28,7 +42,7 @@ function DepositAddress({ address }) {
   const [copied, setCopied] = useState(false);
   return (
     <div className="relative flex items-center gap-2 w-full">
-      <div className="text-base font-mono text-gray-800 bg-gray-50 rounded px-3 py-2 select-all shadow-sm w-full overflow-x-auto">
+      <div className="text-sm font-mono text-gray-600 bg-gray-50 border border-gray-200 rounded-lg px-3 py-3 select-all shadow-inner w-full overflow-x-auto whitespace-nowrap">
         {address}
       </div>
       <button
@@ -37,11 +51,15 @@ function DepositAddress({ address }) {
           setCopied(true);
           setTimeout(() => setCopied(false), 1200);
         }}
-        className="ml-1 px-2 py-1 rounded bg-green-100 hover:bg-green-200 text-green-700 font-bold text-xs transition"
-        title="Copy Address"
+        className={`flex-shrink-0 px-3 py-2 rounded-lg font-bold text-xs transition-all duration-200 flex items-center gap-1 ${
+          copied 
+            ? "bg-green-100 text-green-700 shadow-none scale-95" 
+            : "bg-white border border-gray-200 text-gray-600 hover:text-green-600 hover:border-green-300 shadow-sm"
+        }`}
         type="button"
       >
-        {copied ? "Copied!" : "Copy"}
+        {copied ? <FaCheck /> : <FaCopy />}
+        {copied ? "Copied" : "Copy"}
       </button>
     </div>
   );
@@ -90,7 +108,7 @@ export default function BalancePage() {
   const [resaleHistory, setResaleHistory] = useState([]);
   const [modalType, setModalType] = useState(null); // 'deposit' | 'withdraw' | null
   const [selectedMethod, setSelectedMethod] = useState(null);
-  const [selectedWithdrawMethod, setSelectedWithdrawMethod] = useState(""); // For withdraw method
+  const [selectedWithdrawMethod, setSelectedWithdrawMethod] = useState("");
   const [depositAmount, setDepositAmount] = useState(TOP_UP_AMOUNT);
   const [depositScreenshot, setDepositScreenshot] = useState(null);
   const [withdrawAmount, setWithdrawAmount] = useState("");
@@ -161,128 +179,149 @@ export default function BalancePage() {
       setSubmitState("error");
     }
   };
-const handleWithdrawSubmit = async (e) => {
-  e.preventDefault();
-  setSubmitState("submitting");
-  try {
-    await submitWithdrawToBackend({
-      user_id: user.id,
-      amount: withdrawAmount,
-      address: withdrawAddress,
-      note: selectedWithdrawMethod,  // <--- use this for admin to know payment method
-    });
-    setSubmitState("success");
-  } catch (err) {
-    setSubmitState("error");
-  }
-};
+  const handleWithdrawSubmit = async (e) => {
+    e.preventDefault();
+    setSubmitState("submitting");
+    try {
+      await submitWithdrawToBackend({
+        user_id: user.id,
+        amount: withdrawAmount,
+        address: withdrawAddress,
+        note: selectedWithdrawMethod,
+      });
+      setSubmitState("success");
+    } catch (err) {
+      setSubmitState("error");
+    }
+  };
 
   // --- Payment UI logic
   const balance = (wallet.usdt || 0) + (wallet.alipay || 0) + (wallet.wechat || 0);
   const vipLevel = getVipLevel(balance);
 
-  // Select payment info
-const PAYMENT_MAP = {
-  "USDT(TRC)": USDC_INFO,
-  "AliPay": ALIPAY_INFO,
-  "WeChat": WECHAT_INFO,
-  "Bank Transfer": WISE_INFO, // This is right!
-};
+  const PAYMENT_MAP = {
+    "USDT(TRC)": USDC_INFO,
+    "AliPay": ALIPAY_INFO,
+    "WeChat": WECHAT_INFO,
+    "Bank Transfer": WISE_INFO,
+  };
 
-const methodInfo = selectedMethod ? PAYMENT_MAP[selectedMethod] : null;
+  const methodInfo = selectedMethod ? PAYMENT_MAP[selectedMethod] : null;
 
   return (
-    <div
-      className="min-h-screen w-full flex flex-col items-center justify-center relative overflow-x-hidden"
-      style={{
-        background: `url('/balance.png') center center / cover no-repeat, #151516`
-      }}
-    >
-      <div className="absolute inset-0 bg-black/70 z-0" />
-      <div className="relative z-10 w-full max-w-lg px-4">
+    <div className="min-h-screen w-full bg-[#151516] text-gray-800 font-sans relative">
+       {/* Background Image Overlay */}
+      <div 
+        className="fixed inset-0 z-0 opacity-40 pointer-events-none"
+        style={{
+          background: `url('/balance.png') center top / cover no-repeat`
+        }}
+      />
+      
+      {/* Content Container */}
+      <div className="relative z-10 max-w-lg mx-auto min-h-screen flex flex-col p-4">
+        
+        {/* Header Title (Optional, fits context) */}
+        <div className="flex items-center justify-between py-2 mb-2">
+           <h1 className="text-white text-xl font-bold flex items-center gap-2">
+             <FaWallet className="text-emerald-400" /> My Assets
+           </h1>
+           {/* Placeholder for settings or user icon if needed */}
+        </div>
+
         {/* Balance Card */}
-        <div className="relative z-10 bg-white/80 backdrop-blur-2xl border border-green-100 shadow-2xl rounded-3xl p-8 mt-10 mb-8 flex flex-col items-center transition-all">
-          <div className="my-2 flex items-center justify-center">
-            <AnimatedVipBadge level={vipLevel} active={true} size={54} />
+        <div className="bg-white/95 backdrop-blur-xl border border-white/20 shadow-2xl rounded-3xl p-6 mb-6 flex flex-col items-center text-center relative overflow-hidden group">
+          <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-green-400 via-emerald-500 to-teal-500"></div>
+          
+          <div className="mt-2 mb-4 transform transition-transform group-hover:scale-105 duration-300">
+            <AnimatedVipBadge level={vipLevel} active={true} size={64} />
           </div>
-          <div className="font-medium text-gray-500 text-lg mb-1">Wallet</div>
-          <div className="text-5xl font-extrabold text-green-600 tracking-tight drop-shadow mb-4">
+          
+          <div className="text-gray-500 text-sm font-medium tracking-wide uppercase mb-1">Total Balance</div>
+          <div className="text-5xl font-extrabold text-transparent bg-clip-text bg-gradient-to-br from-gray-900 to-gray-600 mb-6 tracking-tight">
             ${balance.toLocaleString()}
           </div>
-          <div className="flex w-full gap-4 mt-3 mb-1">
+
+          <div className="grid grid-cols-2 w-full gap-4">
             <button
-              className="flex-1 py-4 rounded-xl bg-gradient-to-r from-green-400 to-emerald-500 text-white text-lg font-extrabold shadow-lg hover:from-green-500 hover:to-emerald-600 transition-all focus:ring-4 focus:ring-green-200"
               onClick={handleDeposit}
+              className="group relative overflow-hidden rounded-2xl bg-gradient-to-br from-green-500 to-emerald-600 p-4 shadow-lg shadow-green-500/20 transition-all hover:shadow-green-500/40 active:scale-95"
             >
-              Deposit
+              <div className="absolute inset-0 bg-white/20 opacity-0 group-hover:opacity-100 transition-opacity" />
+              <div className="flex flex-col items-center justify-center gap-1 text-white">
+                 <FaArrowDown className="text-xl mb-1 group-hover:animate-bounce" />
+                 <span className="font-bold text-lg">Deposit</span>
+              </div>
             </button>
+            
             <button
-              className="flex-1 py-4 rounded-xl bg-gradient-to-r from-yellow-300 to-yellow-500 text-yellow-900 text-lg font-extrabold shadow-lg hover:from-yellow-400 hover:to-yellow-600 transition-all focus:ring-4 focus:ring-yellow-100"
               onClick={handleWithdraw}
+              className="group relative overflow-hidden rounded-2xl bg-gradient-to-br from-amber-400 to-orange-500 p-4 shadow-lg shadow-orange-500/20 transition-all hover:shadow-orange-500/40 active:scale-95"
             >
-              Withdraw
+              <div className="absolute inset-0 bg-white/20 opacity-0 group-hover:opacity-100 transition-opacity" />
+              <div className="flex flex-col items-center justify-center gap-1 text-white">
+                 <FaArrowUp className="text-xl mb-1 group-hover:animate-bounce" />
+                 <span className="font-bold text-lg">Withdraw</span>
+              </div>
             </button>
           </div>
-          <div className="mt-2 flex items-center justify-center gap-2">
-            <span className="inline-block px-2 py-1 rounded-xl bg-white/50 shadow text-emerald-800 font-bold">
-              Membership
-            </span>
-            <span className="text-xs text-gray-500">VIP and discount upgrade instantly when balance changes.</span>
+
+          <div className="mt-6 flex items-center justify-center gap-2 bg-gray-50 px-4 py-2 rounded-full border border-gray-100">
+            <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+            <span className="text-xs text-gray-500 font-medium">VIP level updates instantly on deposit</span>
           </div>
         </div>
 
-        {/* Resale History */}
-        <div className="bg-white/80 backdrop-blur-2xl border border-emerald-100 shadow-xl rounded-3xl p-6">
-          <h3 className="text-2xl font-bold text-green-800 mb-5 tracking-tight">Resale History</h3>
+        {/* Resale History Section */}
+        <div className="flex-1 bg-white/95 backdrop-blur-xl border border-white/20 shadow-xl rounded-3xl p-5 overflow-hidden flex flex-col">
+          <h3 className="text-xl font-bold text-gray-800 mb-4 flex items-center gap-2">
+            <FaHistory className="text-gray-400" />
+            History
+          </h3>
+          
           {resaleHistory.length === 0 ? (
-            <p className="text-gray-400 text-center py-6 text-lg">
-              No resale orders yet.
-            </p>
+            <div className="flex-1 flex flex-col items-center justify-center text-gray-400 py-10 opacity-70">
+              <FaHistory className="text-4xl mb-2 text-gray-300" />
+              <p>No transactions yet</p>
+            </div>
           ) : (
-            <ul className="flex flex-col gap-5">
+            <ul className="space-y-3 pb-4">
               {resaleHistory.map((order) => (
                 <li
                   key={order.id}
-                  className="bg-gradient-to-br from-white to-emerald-50/80 rounded-2xl border border-gray-100 shadow flex flex-col sm:flex-row items-center gap-4 px-5 py-4 transition-all hover:shadow-lg"
+                  className="bg-gray-50 hover:bg-white rounded-xl border border-gray-100 p-3 shadow-sm flex items-center gap-3 transition-all duration-200 hover:shadow-md hover:-translate-y-0.5"
                 >
-                  <div className="w-20 h-20 flex-shrink-0 flex items-center justify-center rounded-xl bg-gray-50 border border-gray-100 overflow-hidden">
+                  {/* Icon / Image */}
+                  <div className="w-14 h-14 flex-shrink-0 rounded-lg bg-white border border-gray-200 overflow-hidden flex items-center justify-center">
                     {order.image ? (
-                      <img src={order.image} alt="" className="object-cover w-full h-full" />
+                      <img src={order.image} alt="" className="w-full h-full object-cover" />
                     ) : (
-                      <span className="text-4xl text-emerald-400 font-bold">🛒</span>
+                      <span className="text-2xl">🛒</span>
                     )}
                   </div>
-                  <div className="flex-1 w-full flex flex-col gap-1">
-                    <div className="flex items-center gap-3">
-                      <span className="font-semibold text-lg text-green-800">{order.title}</span>
-                      {order.status === "sold" && (
-                        <span className="px-2 py-0.5 rounded-lg bg-green-100 text-green-700 text-xs font-semibold ml-2 animate-pulse">SOLD</span>
-                      )}
-                      {order.status === "refund_pending" && (
-                        <span className="px-2 py-0.5 rounded-lg bg-red-100 text-red-700 text-xs font-semibold ml-2">REFUND PENDING</span>
-                      )}
-                      {order.status === "selling" && (
-                        <span className="px-2 py-0.5 rounded-lg bg-yellow-100 text-yellow-700 text-xs font-semibold ml-2">IN PROGRESS</span>
-                      )}
-                    </div>
-                    <div className="text-xs text-gray-400 font-mono">
-                      {order.created_at ? new Date(order.created_at).toLocaleString() : ""}
-                    </div>
-                    <div className="flex flex-wrap items-center gap-4 mt-1 text-base">
-                      <span className="font-medium text-gray-800">
-                        Amount: <span className="text-green-700">${order.amount}</span>
+
+                  {/* Info */}
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center justify-between mb-0.5">
+                      <span className="font-bold text-gray-800 truncate text-sm">{order.title}</span>
+                      <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded uppercase tracking-wider ${
+                        order.status === 'sold' ? 'bg-green-100 text-green-700' :
+                        order.status === 'refund_pending' ? 'bg-red-100 text-red-600' :
+                        'bg-yellow-100 text-yellow-700'
+                      }`}>
+                        {order.status === 'refund_pending' ? 'Pending' : order.status}
                       </span>
-                      <span className="font-medium text-gray-600">
-                        {order.status === "sold" ? (
-                          <>Profit: <span className="text-emerald-600">+${order.earn ?? order.profit ?? 0}</span></>
-                        ) : (
-                          order.status === "refund_pending" ? (
-                            <span className="text-red-500">Refund Pending</span>
-                          ) : (
-                            <span className="text-gray-400">Selling…</span>
-                          )
-                        )}
-                      </span>
+                    </div>
+                    
+                    <div className="text-xs text-gray-400 mb-1">
+                      {order.created_at ? new Date(order.created_at).toLocaleDateString() : "Unknown Date"}
+                    </div>
+
+                    <div className="flex items-center justify-between text-sm">
+                       <span className="font-medium text-gray-600">${order.amount}</span>
+                       <span className={`font-bold ${order.status === 'sold' ? 'text-emerald-600' : 'text-gray-400'}`}>
+                         {order.status === "sold" ? `+ $${order.earn ?? order.profit ?? 0}` : "..."}
+                       </span>
                     </div>
                   </div>
                 </li>
@@ -292,235 +331,220 @@ const methodInfo = selectedMethod ? PAYMENT_MAP[selectedMethod] : null;
         </div>
       </div>
 
+      {/* --- MODALS --- */}
+      
       {/* Deposit Modal */}
       {modalType === "deposit" && (
-        <div className="fixed inset-0 flex items-center justify-center bg-black/30 z-50">
-          <div className="bg-white/90 backdrop-blur-2xl rounded-3xl shadow-2xl border border-green-100 p-8 w-full max-w-md animate-fade-in">
-            {!selectedMethod ? (
-              <>
-                <h3 className="text-xl font-extrabold text-green-800 mb-5 text-center tracking-tight">
-                  Choose Payment Method
-                </h3>
-                <div className="grid grid-cols-2 gap-5">
-                  <button
-                    onClick={() => setSelectedMethod("AliPay")}
-                    className="flex flex-col items-center justify-center bg-white/70 rounded-2xl border border-green-200 shadow px-8 py-7 transition-all hover:shadow-xl hover:border-green-400 focus:outline-none active:scale-95"
-                  >
-                    <img src="/images/alipay.png" alt="AliPay" className="w-16 h-16 mb-3" />
-                    <span className="font-extrabold text-green-800 text-lg tracking-wide">AliPay</span>
-                  </button>
-                  <button
-                    onClick={() => setSelectedMethod("WeChat")}
-                    className="flex flex-col items-center justify-center bg-white/70 rounded-2xl border border-green-200 shadow px-8 py-7 transition-all hover:shadow-xl hover:border-green-400 focus:outline-none active:scale-95"
-                  >
-                    <img src="/images/wechatpay.png" alt="WeChat Pay" className="w-16 h-16 mb-3" />
-                    <span className="font-extrabold text-green-800 text-lg tracking-wide">WeChat Pay</span>
-                  </button>
-                  <button
-                    onClick={() => setSelectedMethod("USDT(TRC)")}
-                    className="flex flex-col items-center justify-center bg-white/70 rounded-2xl border border-blue-200 shadow px-8 py-7 transition-all hover:shadow-xl hover:border-blue-400 focus:outline-none active:scale-95"
-                  >
-                    <img src="/usdc.jpg" alt="USDT" className="w-16 h-16 mb-3" />
-                    <span className="font-extrabold text-blue-800 text-lg tracking-wide">USDT (Crypto)</span>
-                    <span className="text-sm text-blue-500 font-bold mt-1">+4% Bonus!</span>
-                  </button>
-                  {/* WISE */}
-<button
-  onClick={() => setSelectedMethod("Bank Transfer")}
-  className="flex flex-col items-center justify-center bg-white/70 rounded-2xl border border-green-200 shadow px-8 py-7 transition-all hover:shadow-xl hover:border-green-400 focus:outline-none active:scale-95"
->
-  <img src="/wise-logo.png" alt="Bank Transfer" className="w-16 h-16 mb-3" />
-  <span className="font-extrabold text-green-800 text-lg tracking-wide">Bank Transfer</span>
-  <span className="text-xs mt-1 text-emerald-700 font-semibold">Global (WISE)</span>
-</button>
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-fade-in">
+          <div className="bg-white rounded-3xl shadow-2xl w-full max-w-md overflow-hidden flex flex-col max-h-[90vh]">
+            
+            {/* Modal Header */}
+            <div className="bg-gray-50 px-6 py-4 border-b border-gray-100 flex items-center justify-between">
+              <h3 className="text-lg font-extrabold text-gray-800">
+                {selectedMethod ? `${selectedMethod} Deposit` : "Add Funds"}
+              </h3>
+              <button onClick={() => setModalType(null)} className="text-gray-400 hover:text-gray-600">
+                <FaTimes size={20} />
+              </button>
+            </div>
 
+            <div className="p-6 overflow-y-auto">
+              {!selectedMethod ? (
+                /* Payment Method Selection */
+                <div className="grid grid-cols-2 gap-4">
+                  {[
+                    { id: "AliPay", icon: "/images/alipay.png", color: "border-blue-100 hover:border-blue-400" },
+                    { id: "WeChat", icon: "/images/wechatpay.png", color: "border-green-100 hover:border-green-400" },
+                    { id: "USDT(TRC)", icon: "/usdc.jpg", color: "border-teal-100 hover:border-teal-400", bonus: "+4% Bonus" },
+                    { id: "Bank Transfer", icon: "/wise-logo.png", color: "border-indigo-100 hover:border-indigo-400", sub: "Global (WISE)" }
+                  ].map((m) => (
+                    <button
+                      key={m.id}
+                      onClick={() => setSelectedMethod(m.id)}
+                      className={`flex flex-col items-center justify-center p-4 rounded-2xl border-2 bg-white shadow-sm hover:shadow-md transition-all active:scale-95 ${m.color}`}
+                    >
+                      <img src={m.icon} alt={m.id} className="w-12 h-12 mb-2 object-contain" />
+                      <span className="font-bold text-gray-800 text-sm text-center leading-tight">{m.id}</span>
+                      {m.bonus && <span className="text-[10px] bg-red-500 text-white px-1.5 py-0.5 rounded-full mt-1 font-bold">{m.bonus}</span>}
+                      {m.sub && <span className="text-[10px] text-gray-500 mt-1 font-medium">{m.sub}</span>}
+                    </button>
+                  ))}
                 </div>
-                <button
-                  className="w-full mt-7 bg-gray-100 text-gray-600 rounded-xl py-3 font-semibold hover:bg-gray-200 transition mt-5"
-                  onClick={() => setModalType(null)}
-                >
-                  Cancel
-                </button>
-              </>
-            ) : (
-              <form onSubmit={handleDepositSubmit} className="flex flex-col gap-4 mt-2">
-                <h3 className="text-xl font-bold text-green-800 mb-2 text-center">
-                  {selectedMethod} Deposit
-                </h3>
-                <div className="flex flex-col items-center mb-2">
-                  <img
-                    src={methodInfo.qr}
-                    alt={`${selectedMethod} QR`}
-                    className="w-36 h-36 rounded-2xl border border-gray-200 shadow-sm mb-3"
-                  />
-                  {selectedMethod === "USDT(TRC)" && (
-                    <div className="text-xs text-gray-500 mb-1">
-                      Network: <span className="font-bold text-blue-700">{USDC_INFO.network}</span>
-                    </div>
+              ) : (
+                /* Selected Method Form */
+                <form onSubmit={handleDepositSubmit} className="flex flex-col gap-5">
+                   {/* QR & Address */}
+                  <div className="bg-gray-50 rounded-2xl p-4 border border-gray-100 flex flex-col items-center text-center">
+                    <img
+                      src={methodInfo.qr}
+                      alt="QR Code"
+                      className="w-40 h-40 rounded-xl border border-white shadow-sm mb-3 mix-blend-multiply"
+                    />
+                    
+                    {selectedMethod === "USDT(TRC)" && (
+                      <div className="mb-2 px-3 py-1 bg-blue-50 text-blue-700 text-xs font-bold rounded-full">
+                         Network: {USDC_INFO.network}
+                      </div>
+                    )}
+                    {selectedMethod === "Bank Transfer" && (
+                      <div className="mb-2 text-xs font-medium text-gray-500 bg-white px-2 py-1 rounded border">
+                        Account: BambooMall LLC
+                      </div>
+                    )}
+
+                    <DepositAddress address={methodInfo.address} />
+                  </div>
+
+                  {/* Amount Input */}
+                  <div>
+                     <label className="block text-xs font-bold text-gray-500 uppercase mb-1 ml-1">Amount (USD)</label>
+                     <div className="relative">
+                        <span className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 font-bold">$</span>
+                        <input
+                          type="number"
+                          min={1}
+                          required
+                          value={depositAmount}
+                          onChange={e => setDepositAmount(e.target.value)}
+                          className="w-full bg-gray-50 border border-gray-200 text-gray-900 text-lg font-bold rounded-xl py-3 pl-8 pr-4 focus:ring-2 focus:ring-green-500 focus:bg-white transition-all outline-none"
+                        />
+                     </div>
+                  </div>
+
+                  {/* File Upload */}
+                  <div>
+                    <label className="block text-xs font-bold text-gray-500 uppercase mb-1 ml-1">Payment Screenshot</label>
+                    <input
+                      type="file"
+                      accept="image/*"
+                      required
+                      onChange={e => setDepositScreenshot(e.target.files[0])}
+                      className="w-full text-sm text-gray-500 file:mr-4 file:py-2.5 file:px-4 file:rounded-xl file:border-0 file:text-sm file:font-bold file:bg-green-50 file:text-green-700 hover:file:bg-green-100 transition-all border border-gray-200 rounded-xl bg-white"
+                    />
+                  </div>
+
+                  {/* Actions */}
+                  <div className="flex gap-3 mt-2">
+                    <button
+                      type="button"
+                      onClick={() => { setSelectedMethod(null); setSubmitState("idle"); }}
+                      className="px-5 py-3 rounded-xl font-bold text-gray-500 bg-gray-100 hover:bg-gray-200 transition-colors"
+                    >
+                      Back
+                    </button>
+                    <button
+                      type="submit"
+                      disabled={!depositScreenshot || !depositAmount || submitState === "submitting" || submitState === "success"}
+                      className="flex-1 bg-green-600 hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed text-white rounded-xl py-3 font-bold shadow-lg shadow-green-200 transition-all flex items-center justify-center gap-2"
+                    >
+                      {submitState === "submitting" ? (
+                        <>Processing...</>
+                      ) : submitState === "success" ? (
+                        <><FaCheck /> Sent!</>
+                      ) : (
+                        "Confirm Deposit"
+                      )}
+                    </button>
+                  </div>
+                  
+                  {submitState === "error" && (
+                     <p className="text-center text-red-500 text-sm font-bold">Failed. Please try again.</p>
                   )}
-                  {/* WISE account note */}
-{selectedMethod === "Bank Transfer" && (
-  <div className="mb-1 text-xs text-gray-700">
-    <span className="font-semibold">Account Name:</span> BambooMall LLC
-  </div>
-)}
-
-                  <DepositAddress address={methodInfo.address} />
-                </div>
-                <input
-                  type="number"
-                  min={1}
-                  required
-                  className="border-2 border-green-100 focus:border-green-400 outline-none rounded-xl p-3 w-full text-center text-lg font-bold mb-1 transition"
-                  placeholder="Deposit Amount (USD)"
-                  value={depositAmount}
-                  onChange={e => setDepositAmount(e.target.value)}
-                  disabled={submitState === "submitting" || submitState === "success"}
-                />
-                <input
-                  type="file"
-                  accept="image/*"
-                  required
-                  className="w-full border border-gray-200 rounded-xl p-2 file:mr-3 file:py-2 file:px-4 file:rounded-full file:border-0 file:bg-emerald-50 file:text-emerald-700"
-                  onChange={e => setDepositScreenshot(e.target.files[0])}
-                  disabled={submitState === "submitting" || submitState === "success"}
-                />
-                <div className="flex gap-3 mt-3">
-                  <button
-                    type="submit"
-                    className="flex-1 bg-gradient-to-r from-green-500 to-green-700 hover:from-emerald-600 hover:to-green-800 text-white rounded-xl py-3 font-bold text-lg shadow transition disabled:opacity-50"
-                    disabled={!depositScreenshot || !depositAmount || submitState === "submitting" || submitState === "success"}
-                  >
-                    {submitState === "submitting"
-                      ? "Submitting..."
-                      : submitState === "success"
-                      ? "Submitted!"
-                      : "Submit"}
-                  </button>
-                  <button
-                    type="button"
-                    className="flex-1 bg-gray-100 text-gray-700 rounded-xl py-3 font-bold hover:bg-gray-200 transition"
-                    onClick={() => {
-                      setSelectedMethod(null);
-                      setDepositScreenshot(null);
-                      setSubmitState("idle");
-                    }}
-                    disabled={submitState === "submitting" || submitState === "success"}
-                  >
-                    Back
-                  </button>
-                </div>
-                {submitState === "success" && (
-                  <div className="mt-2 text-green-600 font-bold text-center">
-                    Deposit submitted!
-                  </div>
-                )}
-                {submitState === "error" && (
-                  <div className="mt-2 text-red-600 font-bold text-center">
-                    Error. Please try again.
-                  </div>
-                )}
-              </form>
-            )}
+                </form>
+              )}
+            </div>
           </div>
         </div>
       )}
 
       {/* Withdraw Modal */}
-{modalType === "withdraw" && (
-  <div className="fixed inset-0 flex items-center justify-center bg-black/30 z-50">
-    <div className="bg-white/90 backdrop-blur-2xl rounded-3xl shadow-2xl border border-yellow-100 p-8 w-full max-w-md animate-fade-in">
-      <form onSubmit={handleWithdrawSubmit} className="flex flex-col gap-4">
-        <h3 className="text-xl font-bold text-yellow-700 mb-2 text-center">
-          Withdraw Request
-        </h3>
-        {/* Payment Method Dropdown */}
-        <select
-          className="border-2 border-yellow-100 focus:border-yellow-300 outline-none rounded-xl p-3 w-full text-lg font-bold mb-1 transition bg-white"
-          required
-          value={selectedWithdrawMethod}
-          onChange={e => setSelectedWithdrawMethod(e.target.value)}
-          disabled={submitState === "submitting" || submitState === "success"}
-        >
-          <option value="">Select Payment Method</option>
-          <option value="USDT(TRC)">USDT (TRC20)</option>
-          <option value="AliPay">AliPay</option>
-          <option value="WeChat">WeChat</option>
-          <option value="Bank Transfer">Bank Transfer (WISE)</option>
-        </select>
+      {modalType === "withdraw" && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-fade-in">
+          <div className="bg-white rounded-3xl shadow-2xl w-full max-w-md overflow-hidden flex flex-col">
+            
+             <div className="bg-amber-50 px-6 py-4 border-b border-amber-100 flex items-center justify-between">
+              <h3 className="text-lg font-extrabold text-amber-800">Request Withdraw</h3>
+              <button onClick={() => setModalType(null)} className="text-gray-400 hover:text-gray-600">
+                <FaTimes size={20} />
+              </button>
+            </div>
 
-        <input
-          type="number"
-          min={1}
-          max={balance}
-          required
-          className="border-2 border-yellow-100 focus:border-yellow-300 outline-none rounded-xl p-3 w-full text-center text-lg font-bold mb-1 transition"
-          placeholder="Withdraw Amount (USD)"
-          value={withdrawAmount}
-          onChange={e => setWithdrawAmount(e.target.value)}
-          disabled={submitState === "submitting" || submitState === "success"}
-        />
+            <form onSubmit={handleWithdrawSubmit} className="p-6 flex flex-col gap-4">
+              
+              <div>
+                <label className="block text-xs font-bold text-gray-500 uppercase mb-1 ml-1">Method</label>
+                <div className="relative">
+                  <FaUniversity className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" />
+                  <select
+                    className="w-full bg-gray-50 border border-gray-200 rounded-xl py-3 pl-10 pr-4 appearance-none outline-none focus:ring-2 focus:ring-amber-400 font-medium text-gray-700"
+                    required
+                    value={selectedWithdrawMethod}
+                    onChange={e => setSelectedWithdrawMethod(e.target.value)}
+                  >
+                    <option value="">Select Method...</option>
+                    <option value="USDT(TRC)">USDT (TRC20)</option>
+                    <option value="AliPay">AliPay</option>
+                    <option value="WeChat">WeChat</option>
+                    <option value="Bank Transfer">Bank Transfer (WISE)</option>
+                  </select>
+                </div>
+              </div>
 
-        <input
-          type="text"
-          required
-          className="border-2 border-yellow-100 focus:border-yellow-300 outline-none rounded-xl p-3 w-full font-mono text-lg transition"
-          placeholder={
-            selectedWithdrawMethod === "USDT(TRC)" ? "Your USDT (TRC20) Wallet Address"
-            : selectedWithdrawMethod === "AliPay" ? "Your AliPay Account/Number"
-            : selectedWithdrawMethod === "WeChat" ? "Your WeChat ID"
-            : selectedWithdrawMethod === "Bank Transfer" ? "Your Wise/Bank Details"
-            : "Your Wallet/Recipient Address"
-          }
-          value={withdrawAddress}
-          onChange={e => setWithdrawAddress(e.target.value)}
-          disabled={submitState === "submitting" || submitState === "success"}
-        />
+              <div>
+                <label className="block text-xs font-bold text-gray-500 uppercase mb-1 ml-1">Amount</label>
+                <div className="relative">
+                  <span className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 font-bold">$</span>
+                  <input
+                    type="number"
+                    min={1}
+                    max={balance}
+                    required
+                    placeholder="0.00"
+                    value={withdrawAmount}
+                    onChange={e => setWithdrawAmount(e.target.value)}
+                    className="w-full bg-gray-50 border border-gray-200 text-gray-900 text-lg font-bold rounded-xl py-3 pl-8 pr-4 focus:ring-2 focus:ring-amber-400 focus:bg-white transition-all outline-none"
+                  />
+                </div>
+                <div className="text-right mt-1 text-xs text-gray-400 font-medium">Available: ${balance.toFixed(2)}</div>
+              </div>
 
-        <div className="text-xs text-gray-500 mb-2">
-          * Please double-check your address!
-        </div>
-        <div className="flex gap-3 mt-3">
-          <button
-            type="submit"
-            className="flex-1 bg-gradient-to-r from-yellow-400 to-yellow-600 hover:from-yellow-500 hover:to-yellow-700 text-white rounded-xl py-3 font-bold text-lg shadow transition disabled:opacity-50"
-            disabled={
-              !withdrawAmount ||
-              !withdrawAddress ||
-              !selectedWithdrawMethod ||
-              submitState === "submitting" ||
-              submitState === "success"
-            }
-          >
-            {submitState === "submitting"
-              ? "Submitting..."
-              : submitState === "success"
-              ? "Requested!"
-              : "Submit"}
-          </button>
-          <button
-            type="button"
-            className="flex-1 bg-gray-100 text-gray-700 rounded-xl py-3 font-bold hover:bg-gray-200 transition"
-            onClick={() => setModalType(null)}
-            disabled={submitState === "submitting"}
-          >
-            Cancel
-          </button>
-        </div>
-        {submitState === "success" && (
-          <div className="mt-2 text-yellow-700 font-bold text-center">
-            Withdraw request submitted!
+              <div>
+                <label className="block text-xs font-bold text-gray-500 uppercase mb-1 ml-1">Wallet Address / Account</label>
+                <input
+                  type="text"
+                  required
+                  placeholder={
+                    selectedWithdrawMethod === "USDT(TRC)" ? "TRC20 Address"
+                    : selectedWithdrawMethod === "AliPay" ? "AliPay Number"
+                    : selectedWithdrawMethod === "WeChat" ? "WeChat ID"
+                    : "Account Details"
+                  }
+                  value={withdrawAddress}
+                  onChange={e => setWithdrawAddress(e.target.value)}
+                  className="w-full bg-gray-50 border border-gray-200 text-gray-800 font-mono text-sm rounded-xl py-3 px-4 focus:ring-2 focus:ring-amber-400 focus:bg-white transition-all outline-none"
+                />
+              </div>
+
+              <div className="mt-4 flex gap-3">
+                 <button
+                    type="button"
+                    onClick={() => setModalType(null)}
+                    className="px-5 py-3 rounded-xl font-bold text-gray-500 bg-gray-100 hover:bg-gray-200 transition-colors"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="submit"
+                    disabled={!withdrawAmount || !withdrawAddress || submitState === "submitting" || submitState === "success"}
+                    className="flex-1 bg-gradient-to-r from-amber-400 to-orange-500 text-white hover:from-amber-500 hover:to-orange-600 rounded-xl py-3 font-bold shadow-lg shadow-amber-200 transition-all flex items-center justify-center gap-2"
+                  >
+                    {submitState === "submitting" ? "Processing..." : submitState === "success" ? "Requested!" : "Confirm Withdraw"}
+                  </button>
+              </div>
+            </form>
           </div>
-        )}
-        {submitState === "error" && (
-          <div className="mt-2 text-red-600 font-bold text-center">
-            Error. Please try again.
-          </div>
-        )}
-      </form>
-    </div>
-  </div>
-)}
+        </div>
+      )}
 
     </div>
   );

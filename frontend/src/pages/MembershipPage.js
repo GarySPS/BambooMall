@@ -1,29 +1,32 @@
+//src>pages>MembershipPage.js
+
 import React, { useMemo } from "react";
 import vipTiers from "../data/vipTiers";
 import AnimatedVipBadge from "../components/AnimatedVipBadge";
 import { useUser } from "../contexts/UserContext";
+import { FaCrown, FaGem, FaBolt, FaHandshake, FaStar, FaCheckCircle, FaLock } from "react-icons/fa";
 
 const FEATURES = [
   {
-    icon: "🌟",
+    icon: <FaStar className="text-yellow-400" />,
     title: "EXCLUSIVE",
     subtitle: "VIP CLUB",
     desc: "Unlock members-only deals and events. Your tier rises with your wallet balance.",
   },
   {
-    icon: "💸",
+    icon: <FaGem className="text-emerald-400" />,
     title: "VALUABLE",
     subtitle: "CASHBACK",
     desc: "Extra discounts at every tier—auto applied, no extra work!",
   },
   {
-    icon: "⚡",
+    icon: <FaBolt className="text-amber-400" />,
     title: "LIMITLESS",
     subtitle: "EXPRESS WITHDRAWAL",
     desc: "Enjoy fast, admin-approved withdrawals at higher levels.",
   },
   {
-    icon: "🤝",
+    icon: <FaHandshake className="text-blue-400" />,
     title: "COMMUNITY",
     subtitle: "VIP SUPPORT",
     desc: "Get early access, new launches, and special support.",
@@ -43,175 +46,203 @@ export default function MembershipPage() {
   }, [wallet]);
 
   // VIP Tiers sorted ascending (lowest min first)
-  const sortedTiers = vipTiers.slice().sort((a, b) => a.min - b.min);
+  const sortedTiers = useMemo(() => {
+     return vipTiers ? vipTiers.slice().sort((a, b) => a.min - b.min) : [];
+  }, []);
 
   // Find current and next tier
-  const currentTier =
-    sortedTiers.slice().reverse().find((t) => userBalance >= t.min) || sortedTiers[0];
-  const nextTier =
-    sortedTiers.find((t) => t.min > userBalance) || null;
+  const currentTier = useMemo(() => {
+    return sortedTiers.slice().reverse().find((t) => userBalance >= t.min) || sortedTiers[0] || { min: 0, id: 'MEMBER', name: 'Member', discount: 0 };
+  }, [sortedTiers, userBalance]);
+
+  const nextTier = useMemo(() => {
+    return sortedTiers.find((t) => t.min > userBalance) || null;
+  }, [sortedTiers, userBalance]);
 
   // Progress toward next tier
-  const progress =
-    nextTier && nextTier.min > currentTier.min
-      ? Math.min(1, (userBalance - currentTier.min) / (nextTier.min - currentTier.min))
-      : 1;
+  const progress = useMemo(() => {
+    if (!nextTier || !currentTier) return 1;
+    if (nextTier.min <= currentTier.min) return 1;
+    const p = (userBalance - currentTier.min) / (nextTier.min - currentTier.min);
+    return Math.min(1, Math.max(0, p));
+  }, [userBalance, currentTier, nextTier]);
+
+  if (!currentTier) return null; // Safety
 
   return (
-    <div
-      className="min-h-screen w-full flex flex-col items-center justify-center relative overflow-x-hidden"
-      style={{
-        background: `url('/membership.jpg') center center / cover no-repeat, #19191d`,
-      }}
-    >
-      <div className="absolute inset-0 bg-black bg-opacity-70 z-0" />
-
-      {/* VIP Club Card */}
-      <div className="relative z-10 w-full max-w-2xl mx-auto rounded-3xl shadow-2xl bg-black/80 p-8 pb-6 flex flex-col items-center border border-yellow-900"
+    <div className="min-h-screen w-full bg-[#151516] text-gray-100 font-sans relative overflow-x-hidden selection:bg-yellow-500/30">
+      
+      {/* Background Overlay */}
+      <div 
+        className="fixed inset-0 z-0 opacity-20 pointer-events-none"
         style={{
-          boxShadow: "0 4px 48px 0 #fbbf2440, 0 2px 6px 0 #d4af3740"
+          background: `url('/membership.jpg') center top / cover no-repeat`
         }}
-      >
-        {/* Crown or Badge */}
-        <div className="flex justify-center mb-3">
-          <AnimatedVipBadge level={currentTier.id} active size={92} />
+      />
+      <div className="fixed inset-0 z-0 bg-gradient-to-b from-black/80 via-[#151516]/90 to-[#151516] pointer-events-none" />
+
+      <div className="relative z-10 w-full max-w-6xl mx-auto px-4 py-12 flex flex-col items-center">
+        
+        {/* --- Main VIP Club Card --- */}
+        <div className="w-full max-w-3xl relative group">
+            {/* Glow effect behind card */}
+            <div className="absolute -inset-1 bg-gradient-to-r from-yellow-600 via-yellow-400 to-yellow-600 rounded-[2rem] blur opacity-25 group-hover:opacity-40 transition duration-1000"></div>
+            
+            <div className="relative bg-zinc-900/90 backdrop-blur-xl border border-yellow-500/30 rounded-[2rem] p-8 md:p-10 shadow-2xl flex flex-col items-center text-center overflow-hidden">
+                
+                {/* Decorative background elements inside card */}
+                <div className="absolute top-0 left-0 w-full h-32 bg-gradient-to-b from-yellow-500/10 to-transparent pointer-events-none" />
+                <div className="absolute -top-24 -right-24 w-48 h-48 bg-yellow-500/20 blur-3xl rounded-full pointer-events-none" />
+
+                <div className="relative z-10 mb-6 transform transition-transform hover:scale-105 duration-500">
+                    <AnimatedVipBadge level={currentTier.id} active size={100} />
+                </div>
+
+                <h1 className="relative z-10 text-4xl md:text-5xl font-black font-serif text-transparent bg-clip-text bg-gradient-to-r from-yellow-200 via-yellow-400 to-yellow-200 tracking-wider mb-2 drop-shadow-sm">
+                    VIP CLUB
+                </h1>
+                <p className="relative z-10 text-zinc-400 text-sm md:text-base font-medium max-w-md mx-auto mb-8">
+                    Unlock exclusive privileges, higher discounts, and priority support as your wealth grows.
+                </p>
+
+                {/* Progress Bar Section */}
+                <div className="w-full max-w-lg bg-zinc-800/50 rounded-2xl p-6 border border-white/5 relative z-10">
+                    <div className="flex justify-between items-end mb-2 text-sm font-bold">
+                        <span className="text-yellow-500 flex items-center gap-2">
+                            <FaCrown className="text-xs" /> {currentTier.name}
+                        </span>
+                        {nextTier ? (
+                            <span className="text-zinc-500 text-xs uppercase tracking-wider">Next: {nextTier.name}</span>
+                        ) : (
+                            <span className="text-yellow-400 text-xs uppercase tracking-wider">Max Level Reached</span>
+                        )}
+                    </div>
+                    
+                    <div className="h-3 w-full bg-zinc-900 rounded-full overflow-hidden shadow-inner border border-white/5 relative">
+                        {/* Background Stripes */}
+                         <div className="absolute inset-0 opacity-20" style={{backgroundImage: 'linear-gradient(45deg,rgba(255,255,255,.15) 25%,transparent 25%,transparent 50%,rgba(255,255,255,.15) 50%,rgba(255,255,255,.15) 75%,transparent 75%,transparent)', backgroundSize: '1rem 1rem'}}></div>
+                        
+                        <div 
+                            className="h-full bg-gradient-to-r from-yellow-600 via-yellow-400 to-yellow-300 shadow-[0_0_15px_rgba(250,204,21,0.5)] transition-all duration-1000 ease-out relative"
+                            style={{ width: `${progress * 100}%` }}
+                        >
+                            <div className="absolute right-0 top-0 bottom-0 w-1 bg-white/50 blur-[1px]"></div>
+                        </div>
+                    </div>
+
+                    <div className="flex justify-between items-center mt-3 text-xs font-mono text-zinc-500">
+                        <span>${userBalance.toLocaleString()}</span>
+                        {nextTier ? (
+                            <span>Target: <span className="text-zinc-300">${nextTier.min.toLocaleString()}</span></span>
+                        ) : (
+                            <span className="text-yellow-500">Unstoppable</span>
+                        )}
+                    </div>
+                    
+                    {nextTier && (
+                        <div className="mt-2 text-center text-xs text-zinc-400">
+                             Only <span className="text-yellow-400 font-bold">${(nextTier.min - userBalance).toLocaleString()}</span> more to unlock <span className="text-white">{nextTier.name}</span> benefits!
+                        </div>
+                    )}
+                </div>
+
+                <div className="mt-8 flex items-center gap-2 px-5 py-2 rounded-full bg-yellow-500/10 border border-yellow-500/20 text-yellow-300 text-xs font-bold tracking-wide uppercase">
+                    <FaCheckCircle /> Current Status: {currentTier.id}
+                </div>
+            </div>
         </div>
 
-        {/* Headline */}
-        <div className="text-3xl font-black font-serif text-yellow-200 text-center tracking-wide mb-2">
-          BambooMall <span className="text-yellow-400">VIP Club</span>
-        </div>
-        <div className="text-gray-300 text-center mb-6 text-sm font-light">
-          Unlock higher discounts and exclusive benefits as your wallet grows.
-        </div>
-
-        {/* Progress Bar */}
-        <div className="w-full mb-2 mt-2">
-          <div className="flex justify-between items-center text-gray-400 text-xs mb-1">
-            <span>${currentTier.min.toLocaleString()}</span>
-            {nextTier ? (
-              <span>
-                ${userBalance.toLocaleString()} / ${nextTier.min.toLocaleString()} &nbsp;
-                <span className="text-yellow-300">{`$${(nextTier.min - userBalance).toLocaleString()} left`}</span>
-              </span>
-            ) : (
-              <span className="text-yellow-400 font-bold">MAX VIP</span>
-            )}
-          </div>
-          <div className="bg-gray-700 rounded-full h-4 shadow-inner relative">
-            <div
-              className="bg-gradient-to-r from-yellow-300 to-yellow-500 h-4 rounded-full transition-all duration-700"
-              style={{
-                width: `${progress * 100}%`
-              }}
-            />
-          </div>
-          <div className="flex justify-between items-center mt-1 font-bold text-sm">
-            <span className="text-zinc-400 italic flex items-center gap-2">
-              LVL {currentTier.id}
-            </span>
-            <span className="text-yellow-200 italic flex items-center gap-2">
-              {nextTier ? `LVL ${nextTier.id}` : "TOP VIP"}
-            </span>
-          </div>
+        {/* --- Features Grid --- */}
+        <div className="mt-16 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 w-full max-w-6xl">
+            {FEATURES.map((f, i) => (
+                <div key={i} className="bg-zinc-900/50 backdrop-blur-md border border-white/5 p-6 rounded-2xl hover:bg-zinc-800/50 transition-colors group">
+                    <div className="text-3xl mb-4 p-3 bg-zinc-950/50 rounded-xl w-fit border border-white/5 group-hover:scale-110 transition-transform">
+                        {f.icon}
+                    </div>
+                    <h3 className="text-white font-bold text-lg mb-1">{f.title}</h3>
+                    <div className="text-yellow-500 text-xs font-bold tracking-wider uppercase mb-2">{f.subtitle}</div>
+                    <p className="text-zinc-400 text-sm leading-relaxed">{f.desc}</p>
+                </div>
+            ))}
         </div>
 
-        {/* Tier Info */}
-        <div className="mt-5 flex flex-col items-center">
-          <div className="text-yellow-300 text-xl font-bold mb-1">
-            {currentTier.name}
-          </div>
-          <div className="text-gray-300 text-base mb-1">
-            <span className="font-semibold">+{currentTier.discount}%</span> Extra Discount
-          </div>
-          <div className="text-gray-400 text-xs text-center max-w-sm mb-3">
-            {currentTier.desc}
-          </div>
-          <div className="px-4 py-2 rounded-full bg-gradient-to-r from-yellow-200 via-yellow-300 to-yellow-100 text-yellow-900 text-sm font-bold shadow border-2 border-yellow-200 drop-shadow-lg">
-            Your Current Level
-          </div>
+        {/* --- All Tiers Grid --- */}
+        <div className="mt-20 w-full max-w-6xl">
+            <h2 className="text-3xl font-bold text-center text-white mb-10 flex items-center justify-center gap-3">
+                <span className="bg-gradient-to-r from-yellow-200 to-yellow-500 bg-clip-text text-transparent">Membership Tiers</span>
+            </h2>
+            
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-3 gap-6">
+                {sortedTiers.map((tier) => {
+                    const isCurrent = currentTier.id === tier.id;
+                    const isLocked = userBalance < tier.min;
+                    
+                    return (
+                        <div 
+                            key={tier.id}
+                            className={`relative overflow-hidden rounded-3xl transition-all duration-300 group
+                                ${isCurrent 
+                                    ? "bg-gradient-to-b from-yellow-900/40 to-black border-2 border-yellow-500 shadow-[0_0_30px_rgba(234,179,8,0.2)] scale-105 z-10" 
+                                    : "bg-zinc-900/40 border border-white/5 hover:border-white/10 hover:bg-zinc-800/60"
+                                }
+                            `}
+                        >
+                            {/* Card Background Image */}
+                            <div className="absolute inset-0 z-0 opacity-30 mix-blend-overlay group-hover:opacity-40 transition-opacity">
+                                <img src="/vip.jpg" alt="" className="w-full h-full object-cover grayscale brightness-50" />
+                            </div>
+                            
+                            <div className="relative z-10 p-6 flex flex-col h-full">
+                                <div className="flex justify-between items-start mb-4">
+                                     <div className={`p-3 rounded-2xl ${isCurrent ? 'bg-yellow-500 text-black' : 'bg-zinc-800 text-zinc-500'}`}>
+                                        {isCurrent ? <FaCrown className="text-xl" /> : isLocked ? <FaLock /> : <FaCheckCircle />}
+                                     </div>
+                                     <div className={`text-right ${isCurrent ? 'text-yellow-400' : 'text-zinc-500'}`}>
+                                        <div className="text-xs uppercase font-bold tracking-wider">Entry Balance</div>
+                                        <div className="font-mono font-bold text-lg">${tier.min.toLocaleString()}</div>
+                                     </div>
+                                </div>
+
+                                <div className="mb-4">
+                                    <h3 className={`text-2xl font-bold font-serif ${isCurrent ? 'text-white' : 'text-zinc-300'}`}>{tier.name}</h3>
+                                    <div className={`text-sm ${isCurrent ? 'text-yellow-200' : 'text-zinc-500'}`}>{tier.id} Level</div>
+                                </div>
+
+                                <div className="flex-1">
+                                    <p className="text-zinc-400 text-sm leading-relaxed mb-4 min-h-[40px]">{tier.desc}</p>
+                                    <div className="space-y-2">
+                                        <div className="flex items-center gap-2 text-sm text-zinc-300">
+                                            <FaCheckCircle className={`text-xs ${isCurrent ? 'text-yellow-500' : 'text-zinc-600'}`} />
+                                            <span>
+                                                <span className={`${isCurrent ? 'text-green-400 font-bold' : ''}`}>+{tier.discount}%</span> Fee Discount
+                                            </span>
+                                        </div>
+                                        <div className="flex items-center gap-2 text-sm text-zinc-300">
+                                            <FaCheckCircle className={`text-xs ${isCurrent ? 'text-yellow-500' : 'text-zinc-600'}`} />
+                                            <span>Priority Support</span>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                {isCurrent && (
+                                    <div className="mt-6 w-full py-2 bg-yellow-500/20 rounded-lg border border-yellow-500/30 text-yellow-300 text-center text-xs font-bold uppercase tracking-wider animate-pulse">
+                                        Active Plan
+                                    </div>
+                                )}
+                            </div>
+                        </div>
+                    );
+                })}
+            </div>
         </div>
-      </div>
 
-      {/* Feature Cards */}
-      <div className="relative z-10 mt-8 w-full max-w-4xl grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 px-2">
-        {FEATURES.map((f) => (
-          <div
-            key={f.title}
-            className="rounded-xl bg-gradient-to-br from-yellow-300/80 via-yellow-100 to-yellow-400/60 p-5 shadow-lg border border-yellow-200 flex flex-col items-start"
-          >
-            <div className="text-3xl mb-2">{f.icon}</div>
-            <div className="uppercase text-xs font-extrabold text-yellow-900 tracking-wider mb-1">{f.title}</div>
-            <div className="text-lg font-bold text-yellow-800 mb-1">{f.subtitle}</div>
-            <div className="text-zinc-700 text-xs">{f.desc}</div>
-          </div>
-        ))}
-      </div>
-
-{/* Membership Levels Card Grid */}
-<div className="relative z-10 mt-12 w-full max-w-5xl grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8 px-2">
-  {sortedTiers.map((tier) => (
-    <div
-      key={tier.id}
-      className={`flex flex-col items-center justify-center p-6 rounded-3xl border-4 shadow-xl transition-transform duration-300 relative overflow-hidden
-        ${currentTier.id === tier.id
-          ? "border-yellow-400 scale-105 shadow-yellow-400/70 ring-2 ring-yellow-300"
-          : "border-gray-600"
-        }`}
-      style={{
-        background: `url('/vip.jpg') center center / cover no-repeat`,
-        minHeight: 320,
-      }}
-    >
-      {/* Premium Glass Overlay */}
-      <div className="absolute inset-0 bg-black bg-opacity-50 backdrop-blur-sm" />
-
-      {/* Logo Badge */}
-      <div className="relative z-10 flex justify-center mb-3">
-        <img
-          src="/vip1.png"
-          alt="VIP Logo"
-          className="w-16 h-16 rounded-full object-cover shadow-lg border-2 border-white"
-          style={{ boxShadow: `0 0 16px ${currentTier.id === tier.id ? '#facc15' : '#ffffff88'}` }}
-        />
-      </div>
-
-      {/* Tier Name */}
-      <div className={`relative z-10 text-2xl font-serif font-bold tracking-wide mb-2 
-        ${currentTier.id === tier.id ? "text-yellow-300" : "text-gray-100"}`}>
-        {tier.name}
-      </div>
-
-      {/* Description */}
-      <div className="relative z-10 text-gray-300 text-center text-sm mb-4">
-        {tier.desc}
-      </div>
-
-      {/* Balance & Discount */}
-      <div className="relative z-10 flex flex-col items-center text-base font-semibold space-y-1">
-        <div>
-          <span className="text-gray-400">Balance: </span>
-          <span className="text-green-300 font-bold">${tier.min.toLocaleString()}+</span>
+        <div className="mt-16 text-center max-w-xl mx-auto px-4">
+            <p className="text-zinc-500 text-sm">
+                * VIP tiers and benefits are updated automatically based on your realtime wallet balance. 
+                Discounts apply instantly to all eligible transactions.
+            </p>
         </div>
-        <div className="text-yellow-200 font-bold">
-          +{tier.discount}% Extra Discount
-        </div>
-      </div>
 
-      {/* Current Tier Badge */}
-      {currentTier.id === tier.id && (
-        <div className="relative z-10 mt-3 px-4 py-1 rounded-full bg-gradient-to-r from-yellow-300 to-yellow-400 text-yellow-900 font-bold text-xs shadow-lg animate-pulse">
-          ⭐ Your Level
-        </div>
-      )}
-    </div>
-  ))}
-</div>
-
-      <div className="relative z-10 text-sm text-gray-400 text-center max-w-lg mt-10">
-        <span className="text-yellow-400 font-semibold">Enjoy exclusive BambooMall privileges!</span>
-        <br />
-        Your VIP badge and discount update automatically as your wallet balance changes.
       </div>
     </div>
   );

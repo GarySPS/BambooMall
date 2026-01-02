@@ -1,10 +1,13 @@
+//src>pages>CartPage.js
+
 import React from "react";
 import { fetchCartOrders } from "../utils/api";
 import { useUser } from "../contexts/UserContext";
 import { requestRefund } from "../utils/api";
 import { useLocation } from "react-router-dom";
 import { getProductImage } from "../utils/image";
-import { toast } from "react-toastify"; // Only import toast (not ToastContainer)
+import { toast } from "react-toastify";
+import { FaStore, FaBoxOpen, FaReceipt, FaSpinner } from "react-icons/fa";
 
 const MARKETPLACES = [
   "Alibaba",
@@ -73,115 +76,133 @@ export default function CartPage() {
     (order) => order.status === "selling" || order.status === "refund_pending"
   );
 
+  // ... (keep existing activeOrders logic) ...
+
+  // --- POLISHED LOADING STATE ---
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center text-green-700 text-xl font-bold bg-[#F2E5C0]">
-        Loading your resale orders…
+      <div className="min-h-screen flex flex-col items-center justify-center text-green-800 bg-gradient-to-b from-green-50 to-[#F2E5C0]">
+        <FaSpinner className="animate-spin text-4xl mb-4 text-green-600" />
+        <p className="font-semibold animate-pulse">Syncing Resale Data...</p>
       </div>
     );
   }
 
   if (error) {
     return (
-      <div className="min-h-screen flex items-center justify-center text-red-500 text-lg bg-[#F2E5C0]">
+      <div className="min-h-screen flex items-center justify-center text-red-600 font-bold bg-[#F2E5C0]">
         {error}
       </div>
     );
   }
 
+  // --- POLISHED MAIN UI ---
   return (
     <div
       className="min-h-screen px-4 py-8 flex flex-col items-center"
       style={{
         backgroundImage: "url('/profilebg.jpg')",
         backgroundSize: "cover",
-        backgroundRepeat: "no-repeat",
-        backgroundPosition: "center center",
         backgroundAttachment: "fixed",
-        minHeight: "100vh"
       }}
     >
-      <div className="w-full max-w-md">
-        <h2 className="text-3xl font-extrabold text-green-900 mb-8 text-center drop-shadow-sm">
-          Your Resale Orders
-        </h2>
+      <div className="w-full max-w-lg">
+        {/* Header */}
+        <div className="text-center mb-8">
+          <h2 className="text-3xl font-extrabold text-green-900 drop-shadow-sm flex items-center justify-center gap-2">
+            <FaReceipt className="text-green-700" /> My Resale Store
+          </h2>
+          <p className="text-green-800/70 text-sm font-medium mt-1">
+            Live tracking of your active listings
+          </p>
+        </div>
+
         {notice && (
-          <div className="mb-5 text-center bg-blue-50 border border-blue-200 text-blue-700 font-bold rounded-xl px-4 py-2 transition">
+          <div className="mb-6 text-center bg-blue-50/90 backdrop-blur border border-blue-200 text-blue-800 font-bold rounded-xl px-4 py-3 shadow-sm animate-fade-in">
             {notice}
           </div>
         )}
 
         {activeOrders.length === 0 ? (
-          <div className="bg-white rounded-2xl shadow p-6 text-center text-gray-400">
-            No active resale orders yet.
+          // --- POLISHED EMPTY STATE ---
+          <div className="bg-white/80 backdrop-blur-md rounded-3xl shadow-xl p-10 text-center flex flex-col items-center border border-white/50">
+            <div className="bg-green-100 p-4 rounded-full mb-4">
+              <FaBoxOpen className="text-4xl text-green-600" />
+            </div>
+            <h3 className="text-xl font-bold text-green-900 mb-2">No Active Resales</h3>
+            <p className="text-gray-600 mb-6">You haven't listed any products for resale yet.</p>
           </div>
         ) : (
-          <div className="space-y-6">
+          // --- POLISHED CARD LIST ---
+          <div className="space-y-5 pb-20">
             {activeOrders.map((order) => (
               <div
                 key={order.id}
-                className="bg-white rounded-2xl shadow-md p-5 flex flex-col items-center relative ring-1 ring-green-100 hover:shadow-lg transition"
+                className="group relative bg-white/90 backdrop-blur-sm rounded-2xl shadow-lg p-4 border border-white/60 transition-all duration-300 hover:scale-[1.02] hover:shadow-2xl"
               >
-                <img
-                  src={getProductImage(order.product)}
-                  alt={order.title}
-                  className="w-20 h-20 rounded-xl object-cover border-2 border-green-200 shadow mb-3"
-                />
-                <div className="flex-1 w-full flex flex-col items-center text-center">
-                  <div className="font-semibold text-base text-green-900 mb-1 line-clamp-2">
-                    {order.title}
+                {/* Status Badge (Top Right) */}
+                <div className="absolute top-0 right-0 bg-gradient-to-l from-green-500 to-green-600 text-white text-[10px] font-bold px-3 py-1 rounded-bl-xl rounded-tr-xl shadow-sm z-10 uppercase tracking-wider">
+                  {order.status === "refund_pending" ? "Refund Pending" : "Active Selling"}
+                </div>
+
+                {/* Top Section: Image & Title */}
+                <div className="flex flex-row gap-4 mb-4">
+                  <img
+                    src={getProductImage(order.product)}
+                    alt={order.title}
+                    className="w-24 h-24 rounded-xl object-cover border border-gray-100 shadow-md flex-shrink-0 bg-white"
+                  />
+                  <div className="flex flex-col justify-between flex-1 min-w-0">
+                    <div>
+                      <h3 className="font-bold text-green-950 text-sm leading-snug line-clamp-2 mb-2">
+                        {order.title}
+                      </h3>
+                      {/* Marketplace Tag */}
+                      <div className="inline-flex items-center gap-1.5 bg-blue-50 text-blue-700 px-2 py-1 rounded-lg text-xs font-bold border border-blue-100">
+                        <FaStore /> {getMarketplaceForOrder(order.id)}
+                      </div>
+                    </div>
                   </div>
-                  <div className="flex flex-wrap items-center justify-center gap-2 text-xs mb-2">
-                    <span className="text-gray-500">
-                      Qty: <span className="font-bold text-green-700">{order.qty}</span>
-                    </span>
-                    <span className="text-gray-500">
-                      Price: <span className="font-bold">${Number(order.unit_price).toFixed(2)}</span>
-                    </span>
-                    <span className="text-gray-500">
-                      Discount:
-                      <span className="font-bold ml-1">
-                        {order.admin_discount || 0}% + {order.vip_bonus || 0}% = {order.total_discount || (order.admin_discount || 0) + (order.vip_bonus || 0)}%
-                      </span>
-                    </span>
+                </div>
+
+                {/* Middle Section: Financial Grid (Ticket Style) */}
+                <div className="grid grid-cols-3 gap-2 bg-green-50/50 rounded-xl p-3 border border-green-100/50 mb-4">
+                  <div className="flex flex-col items-center border-r border-green-200/50">
+                    <span className="text-[10px] text-gray-500 uppercase font-bold tracking-wide">Cost</span>
+                    <span className="text-sm font-semibold text-gray-700">${Number(order.amount).toFixed(2)}</span>
                   </div>
-                  <div className="flex items-center justify-center gap-2 mb-2">
-                    <span className="font-medium text-gray-800">Earn After Resale:</span>
-                    <span className="font-bold text-orange-600">
-                      ${Number(order.earn).toFixed(2)}
-                    </span>
-                  </div>
-                  <div className="flex flex-col items-center justify-center text-xs mb-1">
-                    <span>
-                      Cost: <b>${Number(order.amount).toFixed(2)}</b>
-                      {"  |  "}
-                      Sell total: <b>${(Number(order.unit_price || 0) * Number(order.qty || 0)).toFixed(2)}</b>
-                    </span>
-                  </div>
-                  <div className="flex flex-col items-center justify-center gap-1 mt-1 mb-2">
-                    <span className="text-xs text-gray-400">{order.created_at ? new Date(order.created_at).toLocaleString() : ""}</span>
-                    <span className="bg-blue-100 text-blue-700 font-semibold px-3 py-1 rounded-lg text-xs flex items-center shadow-sm mt-1">
-                      <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
-                      </svg>
-                      Selling on <span className="ml-1 font-bold">{getMarketplaceForOrder(order.id)}</span>
+                  <div className="flex flex-col items-center border-r border-green-200/50">
+                    <span className="text-[10px] text-gray-500 uppercase font-bold tracking-wide">Sold For</span>
+                    <span className="text-sm font-semibold text-gray-700">
+                      ${(Number(order.unit_price || 0) * Number(order.qty || 0)).toFixed(2)}
                     </span>
                   </div>
+                  <div className="flex flex-col items-center">
+                    <span className="text-[10px] text-green-600 uppercase font-bold tracking-wide">Profit</span>
+                    <span className="text-base font-extrabold text-green-600 bg-white px-2 rounded shadow-sm">
+                      +${Number(order.earn).toFixed(2)}
+                    </span>
+                  </div>
+                </div>
+
+                {/* Bottom Section: Footer & Actions */}
+                <div className="flex items-center justify-between pt-2 border-t border-dashed border-gray-200">
+                  <span className="text-[10px] text-gray-400 font-mono">
+                    ID: {order.id.slice(0, 8)}...
+                  </span>
+
                   {order.status === "selling" ? (
                     <button
-                      className="bg-red-100 hover:bg-red-200 text-red-700 font-semibold px-4 py-2 rounded-lg text-xs shadow transition mt-2"
                       onClick={() => handleRefund(order.id)}
+                      className="text-xs font-semibold text-red-500 hover:text-red-700 hover:bg-red-50 px-3 py-1.5 rounded-lg transition-colors"
                     >
-                      Refund Request
+                      Request Refund
                     </button>
-                  ) : order.status === "Refund Requested" || order.status === "refund_pending" ? (
-                    <button
-                      className="bg-gray-200 text-gray-500 font-semibold px-4 py-2 rounded-lg text-xs shadow transition cursor-not-allowed mt-2"
-                      disabled
-                    >
-                      Refund Pending...
-                    </button>
-                  ) : null}
+                  ) : (
+                    <span className="text-xs font-bold text-gray-400 italic px-3 py-1.5">
+                      {order.status === "refund_pending" ? "Processing..." : ""}
+                    </span>
+                  )}
                 </div>
               </div>
             ))}

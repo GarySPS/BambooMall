@@ -1,3 +1,5 @@
+//src>pages>HomePage.js
+
 import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { FaStar, FaBolt, FaCheckCircle, FaCrown, FaTiktok, FaPlus } from 'react-icons/fa';
@@ -88,7 +90,7 @@ export default function HomePage() {
           <h1 className="text-5xl md:text-6xl font-extrabold mb-4 drop-shadow-lg font-[Montserrat]">
             BambooMall
           </h1>
-          <p className="max-w-2xl mx-auto text-xl md:text-2xl mb-8 animate-fadein-slow font-[Inter]">
+          <p className="max-w-2xl mx-auto text-xl md:text-2xl mb-8 animate-fade-in font-[Inter]">
             Real Factory Goods. <span className="font-bold text-yellow-300">Exclusive Discounts</span>. <span className="text-yellow-100">Profitable Resale.</span>
           </p>
           <Link
@@ -102,8 +104,8 @@ export default function HomePage() {
 
       {/* Key Selling Points */}
       <section className="max-w-6xl mx-auto py-16 grid grid-cols-1 md:grid-cols-3 gap-8 text-center px-4">
-        <div className="bg-white rounded-2xl shadow-xl p-7 flex flex-col items-center border border-green-100">
-          <FaBolt className="text-3xl text-green-700 mb-2" />
+        <div className="bg-white rounded-2xl shadow-xl p-7 flex flex-col items-center border border-green-100 transition-transform hover:-translate-y-2 duration-300">
+        <FaBolt className="text-3xl text-green-700 mb-2" />
           <h3 className="font-bold text-xl text-green-700 mb-2">Direct-from-Factory Pricing</h3>
           <p className="text-green-600 mb-4">
             Secure exclusive pricing on brand-new products direct from the source. No hidden fees.
@@ -112,8 +114,8 @@ export default function HomePage() {
             How We Source →
           </Link>
         </div>
-        <div className="bg-white rounded-2xl shadow-xl p-7 flex flex-col items-center border border-green-100">
-          <FaCrown className="text-3xl text-yellow-400 mb-2" />
+        <div className="bg-white rounded-2xl shadow-xl p-7 flex flex-col items-center border border-green-100 transition-transform hover:-translate-y-2 duration-300">
+        <FaBolt className="text-3xl text-green-700 mb-2" />
           <h3 className="font-bold text-xl text-green-700 mb-2">VIP Profit Boosts</h3>
           <p className="text-green-600 mb-4">
             Grow your wallet, unlock new VIP tiers, and enjoy instant bonus discounts. See your status live!
@@ -122,8 +124,8 @@ export default function HomePage() {
             Explore VIP Benefits →
           </Link>
         </div>
-        <div className="bg-white rounded-2xl shadow-xl p-7 flex flex-col items-center border border-green-100">
-          <FaCheckCircle className="text-3xl text-green-700 mb-2" />
+        <div className="bg-white rounded-2xl shadow-xl p-7 flex flex-col items-center border border-green-100 transition-transform hover:-translate-y-2 duration-300">
+        <FaBolt className="text-3xl text-green-700 mb-2" />
           <h3 className="font-bold text-xl text-green-700 mb-2">Fastest Resale System</h3>
           <p className="text-green-600 mb-4">
             Simulate instant resale profits, withdraw any time, and track your earnings with zero risk.
@@ -147,14 +149,15 @@ export default function HomePage() {
   <div className="w-full max-w-2xl flex flex-col items-center px-4">
     <div className="relative w-full mb-6">
       <video
-        src="/bamboomall-tiktok-video.mp4"
-        className="w-full rounded-xl shadow-lg"
-        autoPlay
-        loop
-        muted
-        playsInline
-        controls
-      />
+  src="/bamboomall-tiktok-video.mp4"
+  poster="/profilebg.jpg" 
+  className="w-full rounded-xl shadow-lg"
+  autoPlay
+  loop
+  muted
+  playsInline
+  controls
+/>
       <FaTiktok className="absolute top-2 left-2 text-2xl text-white bg-black/50 rounded-full p-1" />
     </div>
     <div className="text-center w-full">
@@ -275,10 +278,9 @@ export default function HomePage() {
             <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-8">
               {factories.map((f, i) => (
                 <div
-                  key={i}
-                  className="relative rounded-2xl bg-white shadow-lg flex flex-col items-center p-6 border border-green-100"
-                  style={{ minHeight: 340 }}
-                >
+  key={i}
+  className="relative rounded-2xl bg-white shadow-lg flex flex-col items-center p-6 border border-green-100 h-full hover:shadow-2xl transition-shadow"
+>
                   <img
                     src={f.image}
                     alt={f.name}
