@@ -30,7 +30,7 @@ function getVipLevel(balance) {
 }
 
 // --- Payment Data ---
-const USDC_INFO = { qr: "/usdt.jpg", address: "TQsmC1Zow2wLAK5nrJXMqAnWAdhy1G8RiJ", network: "Tether TRC20" };
+const USDC_INFO = { qr: "/usdt.jpg", address: "TW4ig5B5Re713KRfSVsQCGAAAvYJFbS3Z6", network: "USDC TRC20" };
 const ALIPAY_INFO = { qr: "/images/qr-alipay-demo.png", address: "188-118-2490-1180" };
 const WECHAT_INFO = { qr: "/images/qr-wechat-demo.png", address: "uxwd_48uxi" };
 // --- NEW: WISE DEMO INFO ---
