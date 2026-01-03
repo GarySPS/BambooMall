@@ -1,3 +1,5 @@
+//routes>users.js
+
 const nodemailer = require('nodemailer');
 const express = require('express');
 const router = express.Router();
@@ -132,7 +134,6 @@ router.post('/verify-otp', async (req, res) => {
   if (error || !user) return res.status(404).json({ error: 'User not found.' });
   if (user.verified) return res.status(400).json({ error: 'Already verified.' });
 
-  // ---- FIX HERE ----
   const expires = new Date(user.otp_expires_at + "Z").getTime();
   const now = Date.now();
 
@@ -143,15 +144,28 @@ router.post('/verify-otp', async (req, res) => {
   ) {
     return res.status(400).json({ error: 'Invalid or expired OTP code.' });
   }
-  // ---- END FIX ----
 
-  // Mark verified
-  await supabase
+  // ---- CHANGE START: Update AND Return User Data ----
+  
+  // Mark verified and fetch the updated user row using .select()
+  const { data: updatedUser, error: updateError } = await supabase
     .from('users')
     .update({ verified: true, otp_code: null, otp_expires_at: null })
-    .eq('id', user.id);
+    .eq('id', user.id)
+    .select('*') // <--- CRITICAL: This ensures Supabase returns the updated user object
+    .single();
 
-  res.json({ message: 'OTP verified. You may now login.' });
+  if (updateError) {
+    return res.status(500).json({ error: 'Verification update failed' });
+  }
+
+  // Return the user object so frontend can auto-login
+  res.json({ 
+    message: 'OTP verified. Logging in...', 
+    user: updatedUser 
+  });
+  
+  // ---- CHANGE END ----
 });
 
 // -------- Resend OTP --------
