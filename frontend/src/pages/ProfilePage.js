@@ -224,6 +224,8 @@ export default function ProfilePage() {
   const [newPass, setNewPass] = useState("");
   const [confirmPass, setConfirmPass] = useState("");
 
+  const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
+
   const navigate = useNavigate();
 
   // Balance logic
@@ -504,18 +506,65 @@ export default function ProfilePage() {
             </div>
         </div>
 
-        {/* Logout */}
+        {/* ---- REPLACEMENT START ---- */}
+        
+        {/* Logout Button Trigger */}
         <button
-          onClick={() => {
-            if (window.confirm("Are you sure you want to logout?")) {
-              logout();
-              navigate("/login");
-            }
-          }}
-          className="w-full py-4 rounded-2xl bg-red-50 text-red-500 font-bold hover:bg-red-100 transition-all flex items-center justify-center gap-2 border border-red-100 shadow-sm"
+          onClick={() => setShowLogoutConfirm(true)}
+          className="w-full py-4 rounded-2xl bg-red-50 text-red-500 font-bold hover:bg-red-100 transition-all flex items-center justify-center gap-2 border border-red-100 shadow-sm mb-8"
         >
           <FaSignOutAlt /> Sign Out
         </button>
+
+        {/* Custom Mobile Logout Modal */}
+        {showLogoutConfirm && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center px-4">
+            {/* Dark Backdrop with Blur */}
+            <div 
+              className="absolute inset-0 bg-gray-900/60 backdrop-blur-sm transition-opacity"
+              onClick={() => setShowLogoutConfirm(false)}
+            ></div>
+
+            {/* Modal Card */}
+            <div className="relative bg-white rounded-[2rem] w-full max-w-xs p-6 shadow-2xl transform transition-all scale-100 text-center z-10">
+              
+              {/* Icon Bubble */}
+              <div className="w-16 h-16 bg-red-50 text-red-500 rounded-full flex items-center justify-center mx-auto mb-4 shadow-inner">
+                <FaSignOutAlt size={24} />
+              </div>
+
+              {/* Title & Text */}
+              <h3 className="text-xl font-extrabold text-gray-900 mb-2 font-[Montserrat]">
+                Sign Out?
+              </h3>
+              <p className="text-gray-500 text-sm mb-6 font-medium leading-relaxed">
+                Are you sure you want to end your session securely?
+              </p>
+
+              {/* Action Buttons */}
+              <div className="grid grid-cols-2 gap-3">
+                <button
+                  onClick={() => setShowLogoutConfirm(false)}
+                  className="py-3.5 rounded-xl bg-gray-100 text-gray-700 font-bold text-sm hover:bg-gray-200 transition-colors"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={() => {
+                    logout();
+                    navigate("/login");
+                  }}
+                  className="py-3.5 rounded-xl bg-red-500 text-white font-bold text-sm hover:bg-red-600 shadow-lg shadow-red-200 transition-transform active:scale-95"
+                >
+                  Yes, Exit
+                </button>
+              </div>
+
+            </div>
+          </div>
+        )}
+        
+        {/* ---- REPLACEMENT END ---- */}
 
       </div>
     </div>

@@ -1,5 +1,8 @@
+// src/pages/OTPPage.js
+
 import React, { useState, useEffect } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
+import { useUser } from "../contexts/UserContext"; // <--- 1. Import Context
 import { API_BASE_URL } from "../config";
 
 export default function OTPPage() {
@@ -8,6 +11,7 @@ export default function OTPPage() {
   const [loading, setLoading] = useState(false);
   const [resendCooldown, setResendCooldown] = useState(0);
 
+  const { login } = useUser(); // <--- 2. Get login function
   const navigate = useNavigate();
   const location = useLocation();
   const email = location.state?.email || "";
@@ -24,6 +28,7 @@ export default function OTPPage() {
     e.preventDefault();
     setError("");
     setLoading(true);
+
     try {
       const res = await fetch(`${API_BASE_URL}/users/verify-otp`, {
         method: "POST",
@@ -31,8 +36,17 @@ export default function OTPPage() {
         body: JSON.stringify({ email, otp_code: otp }),
       });
       const data = await res.json();
+
       if (!res.ok) throw new Error(data.error || "Verification failed");
-      navigate("/login");
+
+      // Check if backend returned the user object
+      if (data.user) {
+          login(data.user);
+          navigate("/");    
+      } else {
+          navigate("/login");
+      }
+
     } catch (err) {
       setError(err.message);
     }
@@ -96,7 +110,7 @@ export default function OTPPage() {
           className="bg-green-600 text-white font-bold rounded-lg py-2 text-base hover:bg-green-700 transition"
           disabled={loading}
         >
-          {loading ? "Verifying..." : "Verify"}
+          {loading ? "Verifying..." : "Verify & Login"}
         </button>
         <div className="text-center text-xs text-gray-500 mt-1">
           Didn&apos;t get the code?{" "}
