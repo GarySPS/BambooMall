@@ -119,8 +119,8 @@ export default function BalancePage() {
   useEffect(() => {
     if (user?.id) {
       fetchWalletFromBackend(user.id)
-        .then(wallet => updateWallet({ usdt: wallet.balance }))
-        .catch(() => updateWallet({ usdt: 0 }));
+        .then(wallet => updateWallet({ usdc: wallet.balance }))
+        .catch(() => updateWallet({ usdc: 0 }));
 
       fetchResaleHistory(user.id)
         .then(data => setResaleHistory(Array.isArray(data.orders) ? data.orders : []))
@@ -138,8 +138,8 @@ export default function BalancePage() {
         setDepositScreenshot(null);
         if (user?.id) {
           fetchWalletFromBackend(user.id)
-            .then(wallet => updateWallet({ usdt: wallet.balance }))
-            .catch(() => updateWallet({ usdt: 0 }));
+            .then(wallet => updateWallet({ usdc: wallet.balance }))
+            .catch(() => updateWallet({ usdc: 0 }));
         }
       }, 1500);
       return () => clearTimeout(timer);
@@ -196,11 +196,11 @@ export default function BalancePage() {
   };
 
   // --- Payment UI logic
-  const balance = (wallet.usdt || 0) + (wallet.alipay || 0) + (wallet.wechat || 0);
+  const balance = (wallet.usdc || 0) + (wallet.alipay || 0) + (wallet.wechat || 0);
   const vipLevel = getVipLevel(balance);
 
   const PAYMENT_MAP = {
-    "USDT(TRC)": USDC_INFO,
+    "USDC(TRC)": USDC_INFO,
     "AliPay": ALIPAY_INFO,
     "WeChat": WECHAT_INFO,
     "Bank Transfer": WISE_INFO,
@@ -355,7 +355,7 @@ export default function BalancePage() {
                   {[
                     { id: "AliPay", icon: "/images/alipay.png", color: "border-blue-100 hover:border-blue-400" },
                     { id: "WeChat", icon: "/images/wechatpay.png", color: "border-green-100 hover:border-green-400" },
-                    { id: "USDT(TRC)", icon: "/usdc.jpg", color: "border-teal-100 hover:border-teal-400", bonus: "+4% Bonus" },
+                    { id: "USDC(TRC)", icon: "/usdc.jpg", color: "border-teal-100 hover:border-teal-400", bonus: "+4% Bonus" },
                     { id: "Bank Transfer", icon: "/wise-logo.png", color: "border-indigo-100 hover:border-indigo-400", sub: "Global (WISE)" }
                   ].map((m) => (
                     <button
@@ -381,7 +381,7 @@ export default function BalancePage() {
                       className="w-40 h-40 rounded-xl border border-white shadow-sm mb-3 mix-blend-multiply"
                     />
                     
-                    {selectedMethod === "USDT(TRC)" && (
+                    {selectedMethod === "USDC(TRC)" && (
                       <div className="mb-2 px-3 py-1 bg-blue-50 text-blue-700 text-xs font-bold rounded-full">
                          Network: {USDC_INFO.network}
                       </div>
@@ -482,7 +482,7 @@ export default function BalancePage() {
                     onChange={e => setSelectedWithdrawMethod(e.target.value)}
                   >
                     <option value="">Select Method...</option>
-                    <option value="USDT(TRC)">USDT (TRC20)</option>
+                    <option value="USDC(TRC)">USDC (TRC20)</option>
                     <option value="AliPay">AliPay</option>
                     <option value="WeChat">WeChat</option>
                     <option value="Bank Transfer">Bank Transfer (WISE)</option>
@@ -514,7 +514,7 @@ export default function BalancePage() {
                   type="text"
                   required
                   placeholder={
-                    selectedWithdrawMethod === "USDT(TRC)" ? "TRC20 Address"
+                    selectedWithdrawMethod === "USDC(TRC)" ? "TRC20 Address"
                     : selectedWithdrawMethod === "AliPay" ? "AliPay Number"
                     : selectedWithdrawMethod === "WeChat" ? "WeChat ID"
                     : "Account Details"
