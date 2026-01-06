@@ -1,10 +1,12 @@
+//routes>admin.js
+
 const express = require('express');
 const router = express.Router();
 
 // 1. Admin: Approve/Reject deposit or withdraw
 router.post('/tx-approve', async (req, res) => {
   const supabase = req.supabase;
-  const { tx_id, approve } = req.body; // tx_id = wallet_transactions.id
+  const { tx_id, approve } = req.body; 
 
   const { data: tx, error: txError } = await supabase
     .from('wallet_transactions')
@@ -63,26 +65,43 @@ router.post('/tx-approve', async (req, res) => {
 // 2. Admin: Approve/Reject KYC
 router.post('/kyc-approve', async (req, res) => {
   const supabase = req.supabase;
-  const { kyc_id, approve } = req.body;
+  const { user_id, approve } = req.body; // Expecting user_id now for bulk update
 
-  const { data: kyc, error: kycError } = await supabase
-    .from('kyc_documents')
-    .select('*')
-    .eq('id', kyc_id)
-    .single();
+  // If we receive a kyc_id instead (legacy support), fetch the user first
+  let targetUserId = user_id;
+  
+  if (!targetUserId && req.body.kyc_id) {
+      const { data: kyc } = await supabase.from('kyc_documents').select('short_id').eq('id', req.body.kyc_id).single();
+      if(kyc) {
+          const { data: u } = await supabase.from('users').select('id').eq('short_id', kyc.short_id).single();
+          targetUserId = u?.id;
+      }
+  }
 
-  if (kycError || !kyc) return res.status(404).json({ error: 'KYC doc not found' });
-  if (kyc.status !== 'pending') return res.status(400).json({ error: 'Already handled' });
+  if (!targetUserId) return res.status(400).json({ error: "User ID required" });
 
   let status = approve ? 'approved' : 'rejected';
 
-  // Update kyc_documents
-  await supabase.from('kyc_documents').update({ status }).eq('id', kyc_id);
+  try {
+      // 1. Update the User's main status
+      await supabase.from('users').update({ kyc_status: status }).eq('id', targetUserId);
 
-  // Update users table if approved/rejected
-  await supabase.from('users').update({ kyc_status: status }).eq('short_id', kyc.short_id);
+      // 2. Get the user's short_id to update docs
+      const { data: user } = await supabase.from('users').select('short_id').eq('id', targetUserId).single();
+      
+      if (user?.short_id) {
+          // 3. Update all pending docs for this user to match the decision
+          await supabase
+            .from('kyc_documents')
+            .update({ status: status })
+            .eq('short_id', user.short_id)
+            .eq('status', 'pending');
+      }
 
-  res.json({ message: `KYC ${status}` });
+      res.json({ message: `KYC ${status}` });
+  } catch (err) {
+      res.status(500).json({ error: err.message });
+  }
 });
 
 // 3. Admin: Approve/Reject order refund
@@ -90,7 +109,6 @@ router.post('/orders/refund-approve', async (req, res) => {
   const supabase = req.supabase;
   const { order_id, approve } = req.body;
 
-  // Get order
   const { data: order, error: getError } = await supabase
     .from('orders')
     .select('*')
@@ -102,16 +120,13 @@ router.post('/orders/refund-approve', async (req, res) => {
     return res.status(400).json({ error: 'Order is not pending refund' });
 
   if (!approve) {
-    // Deny refund
     await supabase.from('orders').update({ status: 'selling' }).eq('id', order_id);
     return res.json({ message: 'Refund denied' });
   }
 
-  // Refund fee is 1% of order amount
   const refund_fee = Math.round(order.amount * 0.01 * 100) / 100;
   const refund_amount = order.amount - refund_fee;
 
-  // 1. Read current balance
   const { data: wallet, error: walletError } = await supabase
     .from('wallets')
     .select('*')
@@ -120,14 +135,12 @@ router.post('/orders/refund-approve', async (req, res) => {
 
   if (walletError || !wallet) return res.status(404).json({ error: 'Wallet not found' });
 
-  // 2. Update with new balance
   const newBalance = Number(wallet.balance || 0) + Number(refund_amount);
   await supabase
     .from('wallets')
     .update({ balance: newBalance })
     .eq('user_id', order.user_id);
 
-  // Update order status
   await supabase
     .from('orders')
     .update({
@@ -144,7 +157,6 @@ router.post('/orders/resale-approve', async (req, res) => {
   const supabase = req.supabase;
   const { order_id, approve } = req.body;
 
-  // 1. Get order
   const { data: order, error: getError } = await supabase
     .from('orders')
     .select('*')
@@ -160,7 +172,6 @@ router.post('/orders/resale-approve', async (req, res) => {
     return res.json({ message: 'Mark as selling (denied)' });
   }
 
-  // Always re-fetch real product price for resale calculation
   const { data: product } = await supabase
     .from('products')
     .select('price')
@@ -170,7 +181,6 @@ router.post('/orders/resale-approve', async (req, res) => {
   const resale_amount = product ? Number(product.price) * Number(order.quantity) : 0;
   const profit = resale_amount - Number(order.amount);
 
-  // 4. Update order status and calculated profit/resale_amount (debug log included)
   const { data: updated, error: updateError } = await supabase
     .from('orders')
     .update({ status: 'sold', sold_at: new Date().toISOString(), earn: profit, resale_amount })
@@ -178,9 +188,6 @@ router.post('/orders/resale-approve', async (req, res) => {
     .select()
     .single();
 
-  console.log('UPDATE RESULT:', updated, updateError);
-
-  // 5. Update user's wallet: add resale_amount
   const { data: wallet, error: walletError } = await supabase
     .from('wallets')
     .select('*')
@@ -191,7 +198,6 @@ router.post('/orders/resale-approve', async (req, res) => {
     return res.status(400).json({ message: "Wallet not found" });
   }
 
-  // Add resale_amount to wallet
   const { error: walletUpdateError } = await supabase
     .from('wallets')
     .update({ balance: Number(wallet.balance) + Number(resale_amount) })
@@ -204,12 +210,44 @@ router.post('/orders/resale-approve', async (req, res) => {
   res.json({ message: 'Order marked as sold. Profit added.', profit, resale_amount });
 });
 
-// 4. Admin: List all users (with KYC, deposit, withdraw, orders)
+// 4. Admin: List all users (UPDATED TO FETCH PROFILE DATA)
 router.get('/users', async (req, res) => {
   const supabase = req.supabase;
+  
+  // --- FIX: Add the missing columns to this list ---
   const { data: users, error } = await supabase
     .from('users')
-    .select(`id, short_id, username, created_at, kyc_status`);
+    .select(`
+      id, 
+      short_id, 
+      username, 
+      created_at, 
+      kyc_status, 
+      email,
+      full_name, 
+      phone, 
+      id_number, 
+      address
+    `);
+
+    // ================= DEBUG START =================
+  if (users) {
+    const targetUser = users.find(u => u.username === 'xiaozhe');
+    console.log("------------------------------------------------");
+    console.log("DEBUG: Checking user 'xiaozhe' data from Database:");
+    if (targetUser) {
+      console.log("Found User:", targetUser.username);
+      console.log("Phone:", targetUser.phone);
+      console.log("ID Number:", targetUser.id_number);
+      console.log("Address:", targetUser.address);
+      console.log("Full Name:", targetUser.full_name);
+    } else {
+      console.log("User 'xiaozhe' not found in the list.");
+    }
+    console.log("------------------------------------------------");
+  }
+  // ================= DEBUG END =================
+
   if (error) return res.status(400).json({ error: error.message });
 
   const userShortIds = users.map(u => u.short_id);
@@ -224,7 +262,6 @@ router.get('/users', async (req, res) => {
     .select('*')
     .in('user_id', userIds);
 
-  // Fetch all orders for all users
   const { data: allOrders } = await supabase
     .from('orders')
     .select('*')
@@ -238,21 +275,29 @@ router.get('/users', async (req, res) => {
       ? deposits.sort((a, b) => new Date(b.created_at) - new Date(a.created_at))[0]
       : null;
 
-    // Withdraws: all for this user, most recent first
     const withdraws = (txs || []).filter(tx => tx.user_id === u.id && tx.type === "withdraw")
       .sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
 
-    // Orders: all for this user, most recent first
     const orders = (allOrders || []).filter(o => o.user_id === u.id)
       .sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
 
     return {
+      // Basic Info
       id: u.id,
       short_id: u.short_id,
       username: u.username,
+      email: u.email,
       createdAt: u.created_at,
       kycStatus: u.kyc_status,
+      
+      // --- FIX: Pass the new data to the frontend ---
+      full_name: u.full_name,
+      phone: u.phone,
+      id_number: u.id_number,
+      address: u.address,
+
       kycDocs: Array.isArray(kycDocs) ? kycDocs : [],
+      
       deposit: latestDeposit
         ? {
             tx_id: latestDeposit.id,
@@ -272,52 +317,37 @@ router.get('/users', async (req, res) => {
           }))
         : [],
       orders: orders.map(o => {
-  let resale_status = "";
-  let refund_status = "";
+        let resale_status = "";
+        let refund_status = "";
 
-  if (o.status === "sold") {
-    resale_status = "sold";
-  } else if (o.status === "selling" || o.status === "pending") {
-    resale_status = "pending";
-  }
+        if (o.status === "sold") resale_status = "sold";
+        else if (o.status === "selling" || o.status === "pending") resale_status = "pending";
 
-  if (o.status === "refunded") {
-    refund_status = "refunded";
-  } else if (o.status === "refund_pending") {
-    refund_status = "pending";
-  }
+        if (o.status === "refunded") refund_status = "refunded";
+        else if (o.status === "refund_pending") refund_status = "pending";
 
-  // Make mutually exclusive for admin logic:
-  // If refund is in progress or done, no resale actions!
-  if (o.status === "refunded" || o.status === "refund_pending") {
-    resale_status = "";
-  }
-  // If sold, no refund possible
-  if (o.status === "sold") {
-    refund_status = "";
-  }
+        if (o.status === "refunded" || o.status === "refund_pending") resale_status = "";
+        if (o.status === "sold") refund_status = "";
 
-  return {
-    id: o.id,
-    product_title: o.product_title || "",
-    quantity: o.quantity || 0,
-    total: o.amount || 0,
-    resale_status,
-    refund_status,
-  };
-}),
-
+        return {
+          id: o.id,
+          product_title: o.product_title || "",
+          quantity: o.quantity || 0,
+          total: o.amount || 0,
+          resale_status,
+          refund_status,
+        };
+      }),
     };
   });
   res.json(mapped);
 });
 
-// DELETE user and related data (NO DUPLICATE)
+// DELETE user and related data
 router.delete('/users/:id', async (req, res) => {
   const supabase = req.supabase;
-  const id = req.params.id; // uuid
+  const id = req.params.id; 
 
-  // Fetch short_id first
   const { data: user, error: getUserError } = await supabase
     .from('users')
     .select('short_id')

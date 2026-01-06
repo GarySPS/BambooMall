@@ -1,40 +1,66 @@
+//routes>kyc.js
+
 const express = require('express');
 const router = express.Router();
 
-// Submit KYC (user uploads document)
-router.post('/submit', async (req, res) => {
-  console.log("KYC SUBMIT BODY:", req.body);
-
+// 1. Submit Full KYC Application (New Endpoint)
+router.post('/submit-application', async (req, res) => {
   const supabase = req.supabase;
-  const { short_id, name, doc_type, doc_url } = req.body; // <--- changed
-  const { data, error } = await supabase
-    .from('kyc_documents')
-    .insert([
-      {
-        short_id, // <--- changed
-        name,
-        doc_type,
-        doc_url,
-        status: 'pending'
-      }
-    ])
-    .select()
-    .single();
+  const { 
+    short_id, 
+    full_name, 
+    id_number, 
+    phone, 
+    address, 
+    front_url, 
+    back_url, 
+    selfie_url 
+  } = req.body;
 
-  if (error) return res.status(400).json({ error: error.message });
+  if (!short_id) return res.status(400).json({ error: "User ID missing" });
 
-  // Update user's kyc_status to 'pending'
-  await supabase.from('users').update({ kyc_status: 'pending' }).eq('short_id', short_id); // <--- changed
+  try {
+    // A. Update User Profile Data
+    const { error: userError } = await supabase
+      .from('users')
+      .update({ 
+        full_name: full_name, // Make sure your users table has this column, or use 'username' if you prefer
+        phone: phone,
+        address: address,
+        id_number: id_number,
+        kyc_status: 'pending' 
+      })
+      .eq('short_id', short_id);
 
-  res.json({ kyc: data });
+    if (userError) throw userError;
+
+    // B. Insert Document Records (3 rows)
+    const docs = [
+      { short_id, name: 'ID Front', doc_type: 'id_front', doc_url: front_url, status: 'pending' },
+      { short_id, name: 'ID Back', doc_type: 'id_back', doc_url: back_url, status: 'pending' },
+      { short_id, name: 'Selfie', doc_type: 'selfie', doc_url: selfie_url, status: 'pending' }
+    ];
+
+    const { data: docData, error: docError } = await supabase
+      .from('kyc_documents')
+      .insert(docs)
+      .select();
+
+    if (docError) throw docError;
+
+    res.json({ success: true, message: "KYC Application Submitted", docs: docData });
+
+  } catch (error) {
+    console.error("KYC Submit Error:", error);
+    res.status(500).json({ error: error.message });
+  }
 });
 
-// Get all KYC docs for admin or for a user (admin view or user KYC history)
+// 2. Get all KYC docs (Existing)
 router.get('/', async (req, res) => {
   const supabase = req.supabase;
   let short_id = req.query.short_id;
 
-  // Defensive: Convert short_id to integer, or skip if not present
   if (short_id && !isNaN(short_id)) {
     short_id = parseInt(short_id, 10);
   } else {
@@ -45,26 +71,9 @@ router.get('/', async (req, res) => {
   if (short_id) query = query.eq('short_id', short_id);
 
   const { data, error } = await query.order('created_at', { ascending: false });
-  if (error) {
-    // Log for debug
-    console.error('KYC GET ERROR:', error);
-    return res.status(400).json({ error: error.message });
-  }
+  if (error) return res.status(400).json({ error: error.message });
+  
   res.json({ kyc_docs: data || [] });
-});
-
-// Get single KYC doc by ID (unchanged)
-router.get('/:id', async (req, res) => {
-  const supabase = req.supabase;
-  const { id } = req.params;
-  const { data, error } = await supabase
-    .from('kyc_documents')
-    .select('*')
-    .eq('id', id)
-    .single();
-
-  if (error || !data) return res.status(404).json({ error: 'KYC doc not found' });
-  res.json({ kyc_doc: data });
 });
 
 module.exports = router;

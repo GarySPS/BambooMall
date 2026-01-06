@@ -281,5 +281,39 @@ router.post('/change-password', async (req, res) => {
   res.json({ message: 'Password changed' });
 });
 
+// -------- Get User Profile By SHORT_ID (Used for refreshUser) --------
+router.get('/profile', async (req, res) => {
+  const supabase = req.supabase;
+  const { short_id } = req.query;
+
+  if (!short_id) return res.status(400).json({ error: 'Missing short_id' });
+
+  try {
+    // 1. Get User
+    const { data: user, error: userError } = await supabase
+      .from('users')
+      .select('*')
+      .eq('short_id', short_id)
+      .single();
+
+    if (userError || !user) {
+      return res.status(404).json({ error: 'User not found' });
+    }
+
+    // 2. Return User & Wallet info
+    // (Assuming wallet balances are columns in the users table based on your previous code)
+    const wallet = {
+      usdt: user.usdt_balance || 0,
+      alipay: user.alipay_balance || 0,
+      wechat: user.wechat_balance || 0
+    };
+
+    res.json({ user, wallet });
+
+  } catch (error) {
+    console.error("Profile fetch error:", error);
+    res.status(500).json({ error: error.message });
+  }
+});
 
 module.exports = router;
