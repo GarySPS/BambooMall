@@ -1,14 +1,14 @@
 //src>pages>KYCVerificationPage.js
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react'; // Added useEffect
 import { useUser } from "../contexts/UserContext"; 
-import { toast } from "react-toastify"; // <--- IMPORT TOAST
+import { toast } from "react-toastify"; 
 import { 
   ShieldCheck, Camera, User, IdCard, CheckCircle2, 
-  ChevronRight, ArrowLeft, Lock, Info, FileText, Smartphone
+  ChevronRight, ArrowLeft, Lock, Info, FileText, Smartphone, Clock // Added Clock icon
 } from 'lucide-react';
 
-// --- Sub-components ---
+// --- Sub-components (Kept the same) ---
 const StepIndicator = ({ currentStep }) => {
   const steps = [
     { id: 1, label: 'Personal', icon: User },
@@ -77,6 +77,11 @@ export default function KYCVerificationPage() {
   const [isSuccess, setIsSuccess] = useState(false);
   const [statusMessage, setStatusMessage] = useState(""); 
 
+  // Ensure we have the latest status when the page loads
+  useEffect(() => {
+    refreshUser();
+  }, []);
+
   const nextStep = () => setStep(prev => prev + 1);
   const prevStep = () => setStep(prev => prev - 1);
 
@@ -92,7 +97,7 @@ export default function KYCVerificationPage() {
 
   const handleSubmit = async () => {
     if(!user) {
-        toast.error("User session not found. Please login again."); // <--- REPLACED ALERT
+        toast.error("User session not found. Please login again."); 
         return;
     }
     setIsSubmitting(true);
@@ -133,16 +138,58 @@ export default function KYCVerificationPage() {
       // 3. Success
       await refreshUser(); 
       setIsSuccess(true);
-      toast.success("KYC Submitted Successfully!"); // <--- ADDED SUCCESS TOAST
+      toast.success("KYC Submitted Successfully!"); 
       
     } catch (error) {
       console.error(error);
-      toast.error(error.message || "Error submitting KYC"); // <--- REPLACED ALERT
+      toast.error(error.message || "Error submitting KYC"); 
       setStatusMessage("");
     } finally {
       setIsSubmitting(false);
     }
   };
+
+  // --- NEW: BLOCKING SCREEN IF PENDING ---
+  if (user?.kyc_status === 'pending' && !isSuccess) {
+    return (
+      <div className="min-h-screen bg-white flex flex-col items-center justify-center p-6 text-center animate-in fade-in zoom-in duration-500">
+        <div className="w-24 h-24 bg-amber-100 text-amber-600 rounded-full flex items-center justify-center mb-6 animate-pulse">
+          <Clock size={48} />
+        </div>
+        <h1 className="text-3xl font-black text-gray-900 tracking-tight mb-2">In Review</h1>
+        <p className="text-gray-500 max-w-xs mx-auto leading-relaxed">
+          Your documents are currently being reviewed by our team. You cannot submit a new application until this one is processed.
+        </p>
+        <button 
+          onClick={() => window.location.href = '/profile'} 
+          className="mt-10 px-8 py-4 bg-gray-900 text-white font-bold rounded-2xl shadow-xl hover:bg-black transition-all active:scale-95"
+        >
+          Back to Dashboard
+        </button>
+      </div>
+    );
+  }
+
+  // --- NEW: BLOCKING SCREEN IF APPROVED ---
+  if (user?.kyc_status === 'approved') {
+    return (
+      <div className="min-h-screen bg-white flex flex-col items-center justify-center p-6 text-center animate-in fade-in zoom-in duration-500">
+        <div className="w-24 h-24 bg-green-100 text-green-600 rounded-full flex items-center justify-center mb-6">
+          <CheckCircle2 size={48} />
+        </div>
+        <h1 className="text-3xl font-black text-gray-900 tracking-tight mb-2">Verified!</h1>
+        <p className="text-gray-500 max-w-xs mx-auto leading-relaxed">
+          Your identity has been verified. You have full access to all features.
+        </p>
+        <button 
+          onClick={() => window.location.href = '/profile'} 
+          className="mt-10 px-8 py-4 bg-gray-900 text-white font-bold rounded-2xl shadow-xl hover:bg-black transition-all active:scale-95"
+        >
+          Back to Dashboard
+        </button>
+      </div>
+    );
+  }
 
   if (isSuccess) {
     return (
@@ -164,7 +211,7 @@ export default function KYCVerificationPage() {
     );
   }
 
-  // ... (Rest of JSX remains exactly the same as before) ...
+  // ... (The rest of your JSX form code is below, unchanged)
   return (
     <div className="min-h-screen bg-[#F8FAFC] text-slate-900 font-sans antialiased pb-12">
       <header className="bg-white border-b border-gray-100 sticky top-0 z-50">
