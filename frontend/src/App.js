@@ -1,3 +1,5 @@
+//src>App.js
+
 import React from "react";
 import { BrowserRouter as Router, Routes, Route, useLocation } from "react-router-dom";
 import HomePage from "./pages/HomePage";
@@ -5,6 +7,7 @@ import ProductsPage from "./pages/ProductsPage";
 import ProductDetailPage from "./pages/ProductDetailPage";
 import CartPage from "./pages/CartPage";
 import BalancePage from "./pages/BalancePage";
+import KYCVerificationPage from "./pages/KYCVerificationPage";
 import ProfilePage from "./pages/ProfilePage";
 import NewsPage from "./pages/NewsPage";
 import AboutUsPage from "./pages/AboutUsPage";
@@ -62,6 +65,7 @@ function AppContent() {
           <Route path="/cart" element={<CartPage />} />
           <Route path="/balance" element={<BalancePage />} />
           <Route path="/profile" element={<ProfilePage />} />
+          <Route path="/kyc-verification" element={<KYCVerificationPage />} />
           <Route path="/news" element={<NewsPage />} />
           <Route path="/about-us" element={<AboutUsPage />} />
           <Route path="/membership" element={<MembershipPage />} />

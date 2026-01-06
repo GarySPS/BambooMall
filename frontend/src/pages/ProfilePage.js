@@ -1,5 +1,4 @@
-// ---- Google Fonts (add to your public/index.html <head>):
-// <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+//src>pages>ProfilePage.js
 
 import React, { useEffect, useState } from "react";
 import { useUser } from "../contexts/UserContext";
@@ -212,10 +211,6 @@ export default function ProfilePage() {
   const [showAvatar, setShowAvatar] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
 
-  // KYC Uploads
-  const [kycSelfie, setKycSelfie] = useState(null);
-  const [kycId, setKycId] = useState(null);
-
   // Edit Profile
   const [profileAvatar, setProfileAvatar] = useState(null);
 
@@ -379,44 +374,23 @@ export default function ProfilePage() {
            </div>
         </div>
 
-        {/* KYC Verification Card */}
+        {/* KYC Verification Card - UPDATED */}
         <div className="bg-white rounded-3xl shadow-lg border border-gray-100 p-8 text-center">
              <div className="w-16 h-16 rounded-2xl bg-blue-50 text-blue-500 mx-auto flex items-center justify-center mb-4 text-3xl shadow-sm">
                 <FaShieldAlt />
              </div>
              <h3 className="text-xl font-bold text-gray-900 mb-2">Identity Verification</h3>
+             <p className="text-gray-400 text-sm mb-6 max-w-xs mx-auto">
+               Complete your verification to unlock higher withdrawal limits and VIP benefits.
+             </p>
              
-             <div className="mb-6 flex justify-center">
-                {user.kyc_status === "pending" ? (
-                  <span className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-amber-50 text-amber-600 text-xs font-bold uppercase tracking-wider">
-                    <FaLock size={12} /> Pending Review
-                  </span>
-                ) : user.kyc_status === "approved" ? (
-                  <div className="text-center">
-                    <span className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-green-50 text-green-600 text-xs font-bold uppercase tracking-wider">
-                      <FaCheckCircle size={12} /> Verified Account
-                    </span>
-                    <p className="text-gray-400 text-xs mt-2">Your account is fully secured.</p>
-                  </div>
-                ) : (
-                  <span className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-gray-100 text-gray-500 text-xs font-bold uppercase tracking-wider">
-                    <FaTimesCircle size={12} /> Unverified
-                  </span>
-                )}
-             </div>
-
-             {showKYC && (
-                <div className="w-full">
-                  <KYCForm
-                    user={user}
-                    kycSelfie={kycSelfie}
-                    setKycSelfie={setKycSelfie}
-                    kycId={kycId}
-                    setKycId={setKycId}
-                    refreshUser={refreshUser}
-                  />
-                </div>
-             )}
+             {/* Navigation Button */}
+             <button 
+               onClick={() => navigate('/kyc-verification')}
+               className="w-full py-4 rounded-xl bg-blue-600 text-white font-bold shadow-lg shadow-blue-200 hover:bg-blue-700 transition-all flex items-center justify-center gap-2 active:scale-95"
+             >
+               Start Verification
+             </button>
         </div>
 
         {/* Settings Grid */}
