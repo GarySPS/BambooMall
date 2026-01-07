@@ -14,7 +14,6 @@ import {
   FaCopy, 
   FaCheck, 
   FaTimes, 
-  FaChevronLeft,
   FaMoneyBillWave,
   FaUniversity
 } from "react-icons/fa";
@@ -33,7 +32,6 @@ function getVipLevel(balance) {
 const USDC_INFO = { qr: "/usdt.jpg", address: "TW4ig5B5Re713KRfSVsQCGAAAvYJFbS3Z6", network: "USDC TRC20" };
 const ALIPAY_INFO = { qr: "/images/qr-alipay-demo.png", address: "188-118-2490-1180" };
 const WECHAT_INFO = { qr: "/images/qr-wechat-demo.png", address: "uxwd_48uxi" };
-// --- NEW: WISE DEMO INFO ---
 const WISE_INFO = { qr: "/usdt.jpg", address: "wise.bamboomall@pay.com", note: "Name: BambooMall LLC" };
 const TOP_UP_AMOUNT = 1000;
 
@@ -106,7 +104,7 @@ async function submitWithdrawToBackend({ user_id, amount, address, note }) {
 export default function BalancePage() {
   const { wallet, updateWallet, user } = useUser();
   const [resaleHistory, setResaleHistory] = useState([]);
-  const [modalType, setModalType] = useState(null); // 'deposit' | 'withdraw' | null
+  const [modalType, setModalType] = useState(null); 
   const [selectedMethod, setSelectedMethod] = useState(null);
   const [selectedWithdrawMethod, setSelectedWithdrawMethod] = useState("");
   const [depositAmount, setDepositAmount] = useState(TOP_UP_AMOUNT);
@@ -221,12 +219,11 @@ export default function BalancePage() {
       {/* Content Container */}
       <div className="relative z-10 max-w-lg mx-auto min-h-screen flex flex-col p-4">
         
-        {/* Header Title (Optional, fits context) */}
+        {/* Header Title */}
         <div className="flex items-center justify-between py-2 mb-2">
            <h1 className="text-white text-xl font-bold flex items-center gap-2">
              <FaWallet className="text-emerald-400" /> My Assets
            </h1>
-           {/* Placeholder for settings or user icon if needed */}
         </div>
 
         {/* Balance Card */}
@@ -239,7 +236,8 @@ export default function BalancePage() {
           
           <div className="text-gray-500 text-sm font-medium tracking-wide uppercase mb-1">Total Balance</div>
           <div className="text-5xl font-extrabold text-transparent bg-clip-text bg-gradient-to-br from-gray-900 to-gray-600 mb-6 tracking-tight">
-            ${balance.toLocaleString()}
+            {/* UPDATED: Force 2 decimal places for clean look */}
+            ${balance.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
           </div>
 
           <div className="grid grid-cols-2 w-full gap-4">
@@ -318,10 +316,13 @@ export default function BalancePage() {
                     </div>
 
                     <div className="flex items-center justify-between text-sm">
-                       <span className="font-medium text-gray-600">${order.amount}</span>
-                       <span className={`font-bold ${order.status === 'sold' ? 'text-emerald-600' : 'text-gray-400'}`}>
-                         {order.status === "sold" ? `+ $${order.earn ?? order.profit ?? 0}` : "..."}
-                       </span>
+                        {/* UPDATED: Format Amount to 2 decimals */}
+                        <span className="font-medium text-gray-600">${Number(order.amount).toFixed(2)}</span>
+                        
+                        <span className={`font-bold ${order.status === 'sold' ? 'text-emerald-600' : 'text-gray-400'}`}>
+                          {/* UPDATED: Format Profit to 2 decimals */}
+                          {order.status === "sold" ? `+ $${Number(order.earn ?? order.profit ?? 0).toFixed(2)}` : "..."}
+                        </span>
                     </div>
                   </div>
                 </li>
@@ -383,7 +384,7 @@ export default function BalancePage() {
                     
                     {selectedMethod === "USDC(TRC)" && (
                       <div className="mb-2 px-3 py-1 bg-blue-50 text-blue-700 text-xs font-bold rounded-full">
-                         Network: {USDC_INFO.network}
+                          Network: {USDC_INFO.network}
                       </div>
                     )}
                     {selectedMethod === "Bank Transfer" && (
@@ -397,8 +398,8 @@ export default function BalancePage() {
 
                   {/* Amount Input */}
                   <div>
-                     <label className="block text-xs font-bold text-gray-500 uppercase mb-1 ml-1">Amount (USD)</label>
-                     <div className="relative">
+                      <label className="block text-xs font-bold text-gray-500 uppercase mb-1 ml-1">Amount (USD)</label>
+                      <div className="relative">
                         <span className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 font-bold">$</span>
                         <input
                           type="number"
@@ -408,7 +409,7 @@ export default function BalancePage() {
                           onChange={e => setDepositAmount(e.target.value)}
                           className="w-full bg-gray-50 border border-gray-200 text-gray-900 text-lg font-bold rounded-xl py-3 pl-8 pr-4 focus:ring-2 focus:ring-green-500 focus:bg-white transition-all outline-none"
                         />
-                     </div>
+                      </div>
                   </div>
 
                   {/* File Upload */}
@@ -448,7 +449,7 @@ export default function BalancePage() {
                   </div>
                   
                   {submitState === "error" && (
-                     <p className="text-center text-red-500 text-sm font-bold">Failed. Please try again.</p>
+                      <p className="text-center text-red-500 text-sm font-bold">Failed. Please try again.</p>
                   )}
                 </form>
               )}
@@ -526,7 +527,7 @@ export default function BalancePage() {
               </div>
 
               <div className="mt-4 flex gap-3">
-                 <button
+                  <button
                     type="button"
                     onClick={() => setModalType(null)}
                     className="px-5 py-3 rounded-xl font-bold text-gray-500 bg-gray-100 hover:bg-gray-200 transition-colors"

@@ -1,10 +1,11 @@
-//src>pages>HomePage.js
+// src/pages/HomePage.js
 
 import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { FaStar, FaBolt, FaCheckCircle, FaCrown, FaTiktok, FaPlus } from 'react-icons/fa';
 import { fetchProducts } from '../utils/api';
 import { getProductImage } from '../utils/image';
+import { useUser } from '../contexts/UserContext'; // 1. Import User Context
 
 // --- 1. Factory Data ---
 const factories = [
@@ -65,8 +66,12 @@ const factories = [
 ];
 
 export default function HomePage() {
+  const { user } = useUser(); // 2. Get user state
   const [homeProducts, setHomeProducts] = useState([]);
   const [loading, setLoading] = useState(true);
+
+  // Check verification status
+  const isVerified = user && user.kyc_verified;
 
   useEffect(() => {
     fetchProducts()
@@ -201,7 +206,11 @@ export default function HomePage() {
                   -{product.discount}%
                 </span>
               )}
-              <Link to={`/products/${product.id}`} className="flex-1 flex items-center justify-center px-1 pt-3">
+              {/* 3. Logic: If verified, go to product details. If not, go to KYC page */}
+              <Link 
+                to={isVerified ? `/products/${product.id}` : "/kyc-verification"} 
+                className="flex-1 flex items-center justify-center px-1 pt-3"
+              >
                 <img
                   src={getProductImage(product)}
                   alt={product.title || "Product"}
@@ -218,7 +227,12 @@ export default function HomePage() {
                   <FaPlus size={16} />
                 </button>
               </div>
-              <Link to={`/products/${product.id}`} className="block px-2 text-xs text-gray-800 font-semibold line-clamp-2 leading-tight mt-1 hover:underline">
+              
+              {/* 4. Apply same logic to Title Link */}
+              <Link 
+                 to={isVerified ? `/products/${product.id}` : "/kyc-verification"} 
+                 className="block px-2 text-xs text-gray-800 font-semibold line-clamp-2 leading-tight mt-1 hover:underline"
+              >
                 {product.title}
               </Link>
               {product.size && (
