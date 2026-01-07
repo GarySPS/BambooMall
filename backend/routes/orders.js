@@ -1,3 +1,5 @@
+//routes>orders.js
+
 const express = require('express');
 const router = express.Router();
 
@@ -264,70 +266,111 @@ router.get('/history/:user_id', async (req, res) => {
   res.json({ orders: mappedOrders });
 });
 
-// -------- Approve Resale Order (ADMIN, AUTO CALC) -------- //
+// -------- Approve Resale Order (ADMIN, PARTIAL & FULL SELL) -------- //
 router.post('/admin/orders/resale-approve', async (req, res) => {
   const supabase = req.supabase;
-  const { order_id, approve } = req.body;
+  const { order_id, sell_quantity, approve } = req.body; // Added 'approve'
 
-  // 1. Fetch order
+  // 1. If Admin DENIES the sale
+  if (approve === false) {
+    // Option A: Just keep it as 'selling' (do nothing)
+    // Option B: Cancel the order (refund)? 
+    // Option C: Mark as 'denied' (if you have that status)
+    
+    // Assuming you want to revert it to normal "selling" or just ignore the request:
+    const { data: order, error } = await supabase
+      .from('orders')
+      .update({ status: 'selling' }) // Ensure it stays/returns to selling
+      .eq('id', order_id)
+      .select()
+      .single();
+      
+    if (error) return res.status(400).json({ error: error.message });
+    return res.json({ message: "Resale denied. Order remains 'selling'.", order });
+  }
+
+  // 2. If Admin APPROVES (The logic we wrote before)
+  // ... Fetch order ...
   const { data: order, error: fetchError } = await supabase
     .from('orders')
     .select('*')
     .eq('id', order_id)
     .single();
 
-  if (fetchError || !order) {
-    return res.status(404).json({ message: "Order not found" });
+  if (fetchError || !order) return res.status(404).json({ message: "Order not found" });
+
+  // ... Validation ...
+  const currentQty = parseInt(order.quantity);
+  const qtyToSell = parseInt(sell_quantity || currentQty); 
+
+  if (qtyToSell > currentQty) {
+    return res.status(400).json({ message: "Cannot sell more than available quantity" });
   }
 
-  // 2. Fetch product
+  // ... Fetch product ...
   const { data: product, error: productError } = await supabase
     .from('products')
     .select('price')
     .eq('id', order.product_id)
     .single();
 
-  if (productError || !product) {
-    return res.status(404).json({ message: "Product not found" });
+  if (productError || !product) return res.status(404).json({ message: "Product not found" });
+
+  // ... Calculate Financials ...
+  const costOfSoldItems = (parseFloat(order.amount) / currentQty) * qtyToSell;
+  const resale_amount = parseFloat(product.price) * qtyToSell;
+  const profit = resale_amount - costOfSoldItems;
+
+  // ... Handle Split vs Full Sell ...
+  if (qtyToSell === currentQty) {
+    // SCENARIO A: FULL SELL
+    const { error: updateError } = await supabase
+      .from('orders')
+      .update({ 
+        status: 'sold', 
+        earn: profit, 
+        resale_amount: resale_amount,
+        sold_at: new Date().toISOString()
+      })
+      .eq('id', order_id);
+    if (updateError) return res.status(400).json({ message: "Update failed", error: updateError.message });
+  } else {
+    // SCENARIO B: PARTIAL SELL
+    // Update Old Order (Remaining)
+    const remainingQty = currentQty - qtyToSell;
+    const remainingCost = parseFloat(order.amount) - costOfSoldItems;
+
+    const { error: updateOldError } = await supabase
+      .from('orders')
+      .update({ quantity: remainingQty, amount: remainingCost })
+      .eq('id', order_id);
+    if (updateOldError) return res.status(400).json({ message: "Update remaining failed", error: updateOldError.message });
+
+    // Create New Order (Sold)
+    const { error: insertNewError } = await supabase
+      .from('orders')
+      .insert([{
+        user_id: order.user_id,
+        product_id: order.product_id,
+        quantity: qtyToSell,
+        amount: costOfSoldItems,
+        status: 'sold',
+        type: order.type,
+        admin_discount: order.admin_discount,
+        vip_bonus: order.vip_bonus,
+        total_discount: order.total_discount,
+        earn: profit,
+        resale_amount: resale_amount,
+        sold_at: new Date().toISOString()
+      }]);
+    if (insertNewError) return res.status(400).json({ message: "Insert sold order failed", error: insertNewError.message });
   }
 
-  // 3. Calculate resale_amount and profit using real data
-  const resale_amount = parseFloat(product.price) * parseFloat(order.quantity);
-  const profit = resale_amount - parseFloat(order.amount);
+  // ... Update Wallet ...
+  const { data: wallet } = await supabase.from('wallets').select('*').eq('user_id', order.user_id).single();
+  await supabase.from('wallets').update({ balance: wallet.balance + resale_amount }).eq('id', wallet.id);
 
-  // 4. Update order to sold
-  const { error: updateError } = await supabase
-    .from('orders')
-    .update({ status: 'sold', earn: profit, resale_amount })
-    .eq('id', order_id);
-
-  if (updateError) {
-    return res.status(400).json({ message: "Order update failed", error: updateError.message });
-  }
-
-  // 5. Update user's wallet: add resale_amount
-  // Fetch wallet
-  const { data: wallet, error: walletError } = await supabase
-    .from('wallets')
-    .select('*')
-    .eq('user_id', order.user_id)
-    .single();
-
-  if (walletError || !wallet) {
-    return res.status(400).json({ message: "Wallet not found" });
-  }
-
-  // Add resale_amount to wallet
-  const { error: walletUpdateError } = await supabase
-    .from('wallets')
-    .update({ balance: wallet.balance + resale_amount })
-    .eq('id', wallet.id);
-
-  if (walletUpdateError) {
-    return res.status(400).json({ message: "Wallet update failed", error: walletUpdateError.message });
-  }
-
-  return res.json({ message: "Order marked as sold. Profit added.", profit, resale_amount });
+  return res.json({ message: "Success", profit, resale_amount });
 });
 
 module.exports = router;
