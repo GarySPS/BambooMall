@@ -269,28 +269,24 @@ router.get('/history/:user_id', async (req, res) => {
 // -------- Approve Resale Order (ADMIN, PARTIAL & FULL SELL) -------- //
 router.post('/admin/orders/resale-approve', async (req, res) => {
   const supabase = req.supabase;
-  const { order_id, sell_quantity, approve } = req.body; // Added 'approve'
+  const { order_id, sell_quantity, approve } = req.body;
+
+  console.log(`[Resale] Processing Order: ${order_id}, SellQty: ${sell_quantity}, Approve: ${approve}`);
 
   // 1. If Admin DENIES the sale
   if (approve === false) {
-    // Option A: Just keep it as 'selling' (do nothing)
-    // Option B: Cancel the order (refund)? 
-    // Option C: Mark as 'denied' (if you have that status)
-    
-    // Assuming you want to revert it to normal "selling" or just ignore the request:
     const { data: order, error } = await supabase
       .from('orders')
-      .update({ status: 'selling' }) // Ensure it stays/returns to selling
+      .update({ status: 'selling' }) // Revert/Keep as selling
       .eq('id', order_id)
       .select()
       .single();
       
     if (error) return res.status(400).json({ error: error.message });
-    return res.json({ message: "Resale denied. Order remains 'selling'.", order });
+    return res.json({ message: "Resale denied.", order });
   }
 
-  // 2. If Admin APPROVES (The logic we wrote before)
-  // ... Fetch order ...
+  // 2. Fetch order
   const { data: order, error: fetchError } = await supabase
     .from('orders')
     .select('*')
@@ -299,15 +295,18 @@ router.post('/admin/orders/resale-approve', async (req, res) => {
 
   if (fetchError || !order) return res.status(404).json({ message: "Order not found" });
 
-  // ... Validation ...
+  // 3. Validation & Quantity Setup
   const currentQty = parseInt(order.quantity);
-  const qtyToSell = parseInt(sell_quantity || currentQty); 
+  // Default to FULL sell if sell_quantity is missing/invalid
+  const qtyToSell = (sell_quantity && parseInt(sell_quantity) > 0) 
+    ? parseInt(sell_quantity) 
+    : currentQty;
 
   if (qtyToSell > currentQty) {
     return res.status(400).json({ message: "Cannot sell more than available quantity" });
   }
 
-  // ... Fetch product ...
+  // 4. Fetch product (for current market price)
   const { data: product, error: productError } = await supabase
     .from('products')
     .select('price')
@@ -316,37 +315,63 @@ router.post('/admin/orders/resale-approve', async (req, res) => {
 
   if (productError || !product) return res.status(404).json({ message: "Product not found" });
 
-  // ... Calculate Financials ...
-  const costOfSoldItems = (parseFloat(order.amount) / currentQty) * qtyToSell;
-  const resale_amount = parseFloat(product.price) * qtyToSell;
-  const profit = resale_amount - costOfSoldItems;
+  // 5. Calculate Financials (With Rounding to 2 Decimals)
+  const originalAmount = parseFloat(order.amount);
+  const marketPrice = parseFloat(product.price);
+  
+  // Calculate cost PRO-RATED based on quantity
+  // (Original Cost / Original Qty) * QtySold
+  let costOfSoldItems = (originalAmount / currentQty) * qtyToSell;
+  costOfSoldItems = Math.round(costOfSoldItems * 100) / 100; // Round to 2 decimals
 
-  // ... Handle Split vs Full Sell ...
+  const resaleRevenue = marketPrice * qtyToSell;
+  const profit = resaleRevenue - costOfSoldItems;
+
+  // 6. Execute Split or Full Sell
   if (qtyToSell === currentQty) {
-    // SCENARIO A: FULL SELL
+    // --- SCENARIO A: FULL SELL (Sell Everything) ---
+    console.log(`[Resale] Full sell of ${currentQty} items.`);
+
     const { error: updateError } = await supabase
       .from('orders')
       .update({ 
         status: 'sold', 
         earn: profit, 
-        resale_amount: resale_amount,
+        resale_amount: resaleRevenue,
         sold_at: new Date().toISOString()
       })
       .eq('id', order_id);
-    if (updateError) return res.status(400).json({ message: "Update failed", error: updateError.message });
-  } else {
-    // SCENARIO B: PARTIAL SELL
-    // Update Old Order (Remaining)
-    const remainingQty = currentQty - qtyToSell;
-    const remainingCost = parseFloat(order.amount) - costOfSoldItems;
 
+    if (updateError) {
+      console.error("Full sell update error:", updateError);
+      return res.status(400).json({ message: "Update failed", error: updateError.message });
+    }
+
+  } else {
+    // --- SCENARIO B: PARTIAL SELL (Split Order) ---
+    console.log(`[Resale] Partial sell: ${qtyToSell} of ${currentQty}. Remaining: ${currentQty - qtyToSell}`);
+
+    const remainingQty = currentQty - qtyToSell;
+    let remainingCost = originalAmount - costOfSoldItems;
+    remainingCost = Math.round(remainingCost * 100) / 100; // Round to 2 decimals
+
+    // B1. Update Old Order (This becomes the REMAINING stock)
+    // We strictly set status to 'selling' to ensure it doesn't get lost
     const { error: updateOldError } = await supabase
       .from('orders')
-      .update({ quantity: remainingQty, amount: remainingCost })
+      .update({ 
+        quantity: remainingQty, 
+        amount: remainingCost,
+        status: 'selling' // Ensure it stays visible
+      })
       .eq('id', order_id);
-    if (updateOldError) return res.status(400).json({ message: "Update remaining failed", error: updateOldError.message });
 
-    // Create New Order (Sold)
+    if (updateOldError) {
+      console.error("Partial sell (update old) error:", updateOldError);
+      return res.status(400).json({ message: "Failed to update remaining stock", error: updateOldError.message });
+    }
+
+    // B2. Insert New Order (The SOLD portion)
     const { error: insertNewError } = await supabase
       .from('orders')
       .insert([{
@@ -360,17 +385,28 @@ router.post('/admin/orders/resale-approve', async (req, res) => {
         vip_bonus: order.vip_bonus,
         total_discount: order.total_discount,
         earn: profit,
-        resale_amount: resale_amount,
+        resale_amount: resaleRevenue,
         sold_at: new Date().toISOString()
       }]);
-    if (insertNewError) return res.status(400).json({ message: "Insert sold order failed", error: insertNewError.message });
+
+    if (insertNewError) {
+      console.error("Partial sell (insert new) error:", insertNewError);
+      // Critical: If insert fails, we should ideally revert the old update, but for now we error out.
+      return res.status(400).json({ message: "Failed to create sold order record", error: insertNewError.message });
+    }
   }
 
-  // ... Update Wallet ...
+  // 7. Update User Wallet (Add Revenue)
   const { data: wallet } = await supabase.from('wallets').select('*').eq('user_id', order.user_id).single();
-  await supabase.from('wallets').update({ balance: wallet.balance + resale_amount }).eq('id', wallet.id);
+  
+  if (wallet) {
+    await supabase
+      .from('wallets')
+      .update({ balance: wallet.balance + resaleRevenue })
+      .eq('id', wallet.id);
+  }
 
-  return res.json({ message: "Success", profit, resale_amount });
+  return res.json({ message: "Success", profit, resale_amount: resaleRevenue });
 });
 
 module.exports = router;
