@@ -1,12 +1,14 @@
-//src>pages>LoginPage.js
+// src/pages/LoginPage.js
 
 import React, { useState, useEffect, useRef } from "react";
 import { useUser } from "../contexts/UserContext";
 import { useNavigate } from "react-router-dom";
 import { API_BASE_URL } from "../config";
-import { FaShieldAlt, FaGlobeAsia, FaCheckCircle } from "react-icons/fa";
+// Added FaLock for the password field
+import { FaShieldAlt, FaGlobeAsia, FaCheckCircle, FaLock } from "react-icons/fa";
 
 // --- COMPONENT: ANIMATED NETWORK BACKGROUND (Canvas) ---
+// We keep this because it looks premium and high-tech
 const NetworkCanvas = () => {
   const canvasRef = useRef(null);
 
@@ -42,8 +44,6 @@ const NetworkCanvas = () => {
       update() {
         this.x += this.vx;
         this.y += this.vy;
-
-        // Bounce off edges
         if (this.x < 0 || this.x > width) this.vx *= -1;
         if (this.y < 0 || this.y > height) this.vy *= -1;
       }
@@ -66,18 +66,14 @@ const NetworkCanvas = () => {
 
     const animate = () => {
       ctx.clearRect(0, 0, width, height);
-      
       particles.forEach((p, index) => {
         p.update();
         p.draw();
-
-        // Draw Connections
         for (let j = index + 1; j < particles.length; j++) {
           const p2 = particles[j];
           const dx = p.x - p2.x;
           const dy = p.y - p2.y;
           const distance = Math.sqrt(dx * dx + dy * dy);
-
           if (distance < connectionDistance) {
             ctx.beginPath();
             ctx.strokeStyle = `rgba(16, 185, 129, ${1 - distance / connectionDistance})`;
@@ -94,7 +90,6 @@ const NetworkCanvas = () => {
     window.addEventListener("resize", resize);
     init();
     animate();
-
     return () => window.removeEventListener("resize", resize);
   }, []);
 
@@ -108,11 +103,9 @@ export default function LoginPage() {
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
   
-  // Real Context Hooks
   const { login, user } = useUser(); 
   const navigate = useNavigate();
 
-  // Auto-redirect if already logged in
   useEffect(() => {
     if (user) {
       if (user.is_admin) navigate("/admin");
@@ -141,7 +134,6 @@ export default function LoginPage() {
       if (!res.ok) throw new Error(data.error || "Login failed");
       
       login(data.user);
-      // Navigation is handled by useEffect
       
     } catch (err) {
       setError(err.message);
@@ -152,15 +144,12 @@ export default function LoginPage() {
   return (
     <div className="min-h-screen flex font-sans text-slate-800 bg-white">
       
-      {/* --- LEFT SIDE: BRANDING & ANIMATION (Hidden on mobile) --- */}
+      {/* --- LEFT SIDE: ANIMATED CANVAS (Kept from your original code) --- */}
       <div className="hidden lg:flex w-1/2 relative bg-slate-900 items-center justify-center overflow-hidden">
-        {/* Animated Canvas */}
         <NetworkCanvas />
         
-        {/* Content Overlay */}
         <div className="relative z-10 p-12 text-white max-w-lg">
           <div className="flex items-center gap-3 mb-6">
-             {/* Simple 'B' Logo placeholder if SVG not available */}
              <div className="w-12 h-12 bg-emerald-600 rounded-lg flex items-center justify-center font-bold text-2xl shadow-lg shadow-emerald-900/50">B</div>
              <h1 className="text-4xl font-extrabold tracking-tight">Bamboo<span className="text-emerald-500">Mall</span></h1>
           </div>
@@ -191,14 +180,13 @@ export default function LoginPage() {
           </div>
         </div>
 
-        {/* Decorative Gradient Overlay */}
         <div className="absolute inset-0 bg-gradient-to-t from-slate-900 via-transparent to-slate-900/50 pointer-events-none" />
       </div>
 
-      {/* --- RIGHT SIDE: LOGIN FORM --- */}
+      {/* --- RIGHT SIDE: LOGIN FORM (Updated with cleaner inputs) --- */}
       <div className="w-full lg:w-1/2 flex flex-col justify-center items-center p-8 bg-white relative">
         
-        {/* Mobile Header (Only visible on small screens) */}
+        {/* Mobile Header */}
         <div className="lg:hidden absolute top-8 text-center">
            <span className="text-2xl font-extrabold tracking-tight">Bamboo<span className="text-emerald-600">Mall</span></span>
         </div>
@@ -206,33 +194,41 @@ export default function LoginPage() {
         <div className="w-full max-w-md space-y-8">
           <div className="text-center lg:text-left">
             <h2 className="text-3xl font-bold text-slate-900">Welcome back</h2>
-            <p className="mt-2 text-slate-500">Please enter your details to access your dashboard.</p>
+            <p className="mt-2 text-slate-500">Sign in to manage your orders and shipments.</p>
           </div>
 
-          <form className="mt-8 space-y-6" onSubmit={handleSubmit}>
-            <div className="space-y-4">
+          <form className="mt-8 space-y-5" onSubmit={handleSubmit}>
+            <div className="space-y-5">
+              
+              {/* Email Input */}
               <div>
-                <label className="block text-sm font-medium text-slate-700 mb-1">Email or Username</label>
+                <label className="block text-sm font-semibold text-slate-700 mb-1.5">Email or Username</label>
                 <input
                   type="text"
                   required
                   value={userOrEmail}
                   onChange={(e) => setUserOrEmail(e.target.value)}
-                  className="appearance-none relative block w-full px-4 py-3 border border-slate-300 placeholder-slate-400 text-slate-900 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 focus:z-10 sm:text-sm transition-all"
-                  placeholder="Enter your email"
+                  className="block w-full px-4 py-3 border border-slate-300 rounded-lg text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-500/50 focus:border-emerald-500 transition-all shadow-sm"
+                  placeholder="name@company.com"
                 />
               </div>
               
+              {/* Password Input (Updated with Lock Icon) */}
               <div>
-                <label className="block text-sm font-medium text-slate-700 mb-1">Password</label>
-                <input
-                  type="password"
-                  required
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  className="appearance-none relative block w-full px-4 py-3 border border-slate-300 placeholder-slate-400 text-slate-900 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 focus:z-10 sm:text-sm transition-all"
-                  placeholder="••••••••"
-                />
+                <label className="block text-sm font-semibold text-slate-700 mb-1.5">Password</label>
+                <div className="relative">
+                  <input
+                    type="password"
+                    required
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    className="block w-full px-4 py-3 border border-slate-300 rounded-lg text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-500/50 focus:border-emerald-500 transition-all shadow-sm"
+                    placeholder="••••••••"
+                  />
+                  <div className="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none text-slate-400">
+                    <FaLock className="w-4 h-4" />
+                  </div>
+                </div>
               </div>
             </div>
 
@@ -242,15 +238,15 @@ export default function LoginPage() {
                   id="remember-me"
                   name="remember-me"
                   type="checkbox"
-                  className="h-4 w-4 text-emerald-600 focus:ring-emerald-500 border-slate-300 rounded"
+                  className="h-4 w-4 text-emerald-600 focus:ring-emerald-500 border-slate-300 rounded cursor-pointer"
                 />
-                <label htmlFor="remember-me" className="ml-2 block text-sm text-slate-600">
-                  Remember me
+                <label htmlFor="remember-me" className="ml-2 block text-sm text-slate-600 cursor-pointer select-none">
+                  Keep me logged in
                 </label>
               </div>
 
               <div className="text-sm">
-                <span onClick={() => navigate("/forgot")} className="font-medium text-emerald-600 hover:text-emerald-500 cursor-pointer hover:underline">
+                <span onClick={() => navigate("/forgot")} className="font-semibold text-emerald-600 hover:text-emerald-700 cursor-pointer hover:underline">
                   Forgot password?
                 </span>
               </div>
@@ -266,32 +262,30 @@ export default function LoginPage() {
               <button
                 type="submit"
                 disabled={loading}
-                className="group relative w-full flex justify-center py-3 px-4 border border-transparent text-sm font-bold rounded-lg text-white bg-emerald-600 hover:bg-emerald-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-emerald-500 transition-all shadow-lg shadow-emerald-200 disabled:opacity-70 disabled:cursor-not-allowed"
+                className="w-full flex justify-center py-3.5 px-4 border border-transparent text-sm font-bold rounded-lg text-white bg-emerald-600 hover:bg-emerald-700 active:scale-[0.99] focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-emerald-500 transition-all shadow-md hover:shadow-lg disabled:opacity-70 disabled:cursor-not-allowed"
               >
                 {loading ? "Signing in..." : "Sign in to account"}
               </button>
             </div>
           </form>
 
-          {/* Social / Alternate Actions */}
-          <div className="mt-6">
-             <div className="relative">
-                <div className="absolute inset-0 flex items-center">
-                  <div className="w-full border-t border-slate-200"></div>
-                </div>
-                <div className="relative flex justify-center text-sm">
-                  <span className="px-2 bg-white text-slate-500">Don't have an account?</span>
-                </div>
+          {/* Divider */}
+          <div className="relative">
+             <div className="absolute inset-0 flex items-center">
+               <div className="w-full border-t border-slate-200"></div>
              </div>
-             <div className="mt-6">
-                <button 
-                  onClick={() => navigate("/signup")}
-                  className="w-full flex justify-center py-3 px-4 border border-slate-300 rounded-lg shadow-sm bg-white text-sm font-medium text-slate-700 hover:bg-slate-50 transition-colors"
-                >
-                  Create free account
-                </button>
+             <div className="relative flex justify-center text-sm">
+               <span className="px-4 bg-white text-slate-500">New to BambooMall?</span>
              </div>
           </div>
+
+          {/* Create Account Button (Updated Style) */}
+          <button 
+             onClick={() => navigate("/signup")}
+             className="w-full flex justify-center py-3 px-4 border border-slate-300 rounded-lg bg-white text-sm font-semibold text-slate-700 hover:bg-slate-50 hover:border-slate-400 transition-all shadow-sm"
+           >
+             Create Business Account
+           </button>
           
           {/* Footer Links */}
           <div className="pt-8 text-center text-xs text-slate-400 flex justify-center gap-6">
