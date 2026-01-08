@@ -2,25 +2,22 @@
 
 import React, { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
-import { FaPlus, FaSearch, FaFilter, FaBolt, FaSpinner, FaLock, FaUserShield } from "react-icons/fa"; 
+import { FaPlus, FaSearch, FaFilter, FaBolt, FaSpinner, FaLock, FaUserShield } from "react-icons/fa"; // Added Lock icons
 import { fetchProducts } from "../utils/api";
 import { getProductImage } from "../utils/image";
-import { useUser } from "../contexts/UserContext"; 
+import { useUser } from "../contexts/UserContext"; // Import User Context
 
 export default function ProductsPage() {
-  const { user } = useUser(); 
+  const { user } = useUser(); // Get current user state
   const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [searchTerm, setSearchTerm] = useState("");
 
-  // Check if user is verified
+  // Check if user is verified (Adjust 'kyc_verified' to match your actual DB field, e.g., 'is_verified' or 'status')
   const isVerified = user && user.kyc_verified; 
 
   useEffect(() => {
-    // --- FIX: Scroll to top immediately when component mounts ---
-    window.scrollTo(0, 0);
-
     setLoading(true);
     fetchProducts()
       .then((data) => {

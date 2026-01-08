@@ -1,4 +1,6 @@
-import React from "react";
+//src>App.js
+
+import React, { useEffect } from "react"; // 1. Added useEffect
 import { BrowserRouter as Router, Routes, Route, useLocation } from "react-router-dom";
 import HomePage from "./pages/HomePage";
 import ProductsPage from "./pages/ProductsPage";
@@ -36,6 +38,12 @@ import AdminOrderPage from "./pages/AdminOrderPage";
 function AppContent() {
   const location = useLocation();
   
+  // --- GLOBAL SCROLL TO TOP FIX ---
+  // This ensures that every time you switch pages, the window starts at the top
+  useEffect(() => {
+    window.scrollTo(0, 0);
+  }, [location.pathname]); 
+
   // Define routes where we want a clean look (No Navbar, No Footer, No Global Background)
   const hideNavbarRoutes = ["/login", "/signup", "/otp", "/forgot"];
   const isAuthPage = hideNavbarRoutes.includes(location.pathname);
