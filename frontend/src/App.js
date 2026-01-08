@@ -13,7 +13,7 @@ import Navbar from "./components/Navbar";
 import MembershipPage from "./pages/MembershipPage";
 import FAQPage from "./pages/FAQPage";
 import { UserProvider } from "./contexts/UserContext";
-import Footer from "./components/Footer"; // <--- Ensure this file exists in src/components/
+import Footer from "./components/Footer";
 import LoginPage from "./pages/LoginPage";
 import SignupPage from "./pages/SignupPage";
 import OTPPage from "./pages/OTPPage";
@@ -22,10 +22,10 @@ import PrivateRoute from "./components/PrivateRoute";
 import { ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 
-// --- NEW: Import Legal Pages ---
+// Legal Pages
 import { TermsPage, PrivacyPage, CookiePage } from "./LegalPages"; 
 
-// --- Admin Layout & Pages ---
+// Admin Pages
 import AdminLayout from "./components/AdminLayout";
 import AdminUserPage from "./pages/AdminUserPage";
 import AdminKYCPage from "./pages/AdminKYCPage";
@@ -33,23 +33,39 @@ import AdminDepositPage from "./pages/AdminDepositPage";
 import AdminWithdrawPage from "./pages/AdminWithdrawPage";
 import AdminOrderPage from "./pages/AdminOrderPage";
 
-// Helper for showing/hiding navbar
 function AppContent() {
   const location = useLocation();
   
-  // Define where the main Navbar/Footer should be hidden
+  // Define routes where we want a clean look (No Navbar, No Footer, No Global Background)
   const hideNavbarRoutes = ["/login", "/signup", "/otp", "/forgot"];
   const isAuthPage = hideNavbarRoutes.includes(location.pathname);
   const isAdmin = location.pathname.startsWith("/admin");
 
+  // --- LOGIC TO REMOVE BACKGROUND ON LOGIN PAGE ---
+  const appStyle = {
+    minHeight: "100vh",
+    minWidth: "100vw",
+    display: "flex",
+    flexDirection: "column",
+    // Only show profilebg.jpg if we are NOT on a login/signup page
+    backgroundImage: !isAuthPage ? "url('/profilebg.jpg')" : "none",
+    backgroundColor: !isAuthPage ? "transparent" : "#fff", // Fallback color
+    backgroundSize: "cover",
+    backgroundRepeat: "no-repeat",
+    backgroundPosition: "center center",
+    backgroundAttachment: "fixed",
+    position: "relative",
+  };
+
   return (
-    <>
-      {/* 1. NAVBAR - Only show if NOT auth page and NOT admin */}
+    <div style={appStyle}>
+      {/* 1. NAVBAR (Hidden on Auth & Admin) */}
       {!isAuthPage && !isAdmin && <Navbar />}
       
-      <div className="flex-grow"> {/* Ensures footer pushes to bottom */}
+      {/* 2. MAIN CONTENT */}
+      <div className="flex-grow z-10 relative">
         <Routes>
-          {/* --- ADMIN ROUTES WITH SIDEBAR --- */}
+          {/* Admin */}
           <Route path="/admin" element={<AdminLayout />}>
             <Route index element={<AdminUserPage />} />
             <Route path="users" element={<AdminUserPage />} />
@@ -59,19 +75,18 @@ function AppContent() {
             <Route path="orders" element={<AdminOrderPage />} />
           </Route>
 
-          {/* --- AUTH ROUTES (public) --- */}
+          {/* Auth (Public) */}
           <Route path="/login" element={<LoginPage />} />
           <Route path="/signup" element={<SignupPage />} />
           <Route path="/otp" element={<OTPPage />} />
           <Route path="/forgot" element={<ForgotPasswordPage />} />
 
-          {/* --- LEGAL ROUTES (public) --- */}
-          {/* These must be public so new users can read them before joining */}
+          {/* Legal (Public) */}
           <Route path="/terms" element={<TermsPage />} />
           <Route path="/privacy" element={<PrivacyPage />} />
           <Route path="/cookies" element={<CookiePage />} />
 
-          {/* --- MAIN SITE ROUTES (PROTECTED) --- */}
+          {/* Main App (Protected) */}
           <Route element={<PrivateRoute />}>
             <Route path="/" element={<HomePage />} />
             <Route path="/products" element={<ProductsPage />} />
@@ -88,9 +103,9 @@ function AppContent() {
         </Routes>
       </div>
 
-      {/* 2. FOOTER - Only show if NOT auth page and NOT admin */}
+      {/* 3. FOOTER (Hidden on Auth & Admin) */}
       {!isAdmin && !isAuthPage && <Footer />}
-    </>
+    </div>
   );
 }
 
@@ -99,39 +114,8 @@ export default function App() {
     <UserProvider>
       <Router>
         <ToastContainer position="top-center" autoClose={1800} />
-        <div
-          style={{
-            minHeight: "100vh",
-            minWidth: "100vw",
-            backgroundImage: "url('/profilebg.jpg')",
-            backgroundSize: "cover",
-            backgroundRepeat: "no-repeat",
-            backgroundPosition: "center center",
-            backgroundAttachment: "fixed",
-            position: "relative",
-            display: "flex",         // <--- Added flex
-            flexDirection: "column"  // <--- Added column to make footer stick properly
-          }}
-        >
-          {/* --- Optional overlay for readability (uncomment if needed) --- */}
-          {/* <div
-            style={{
-              position: "fixed",
-              top: 0,
-              left: 0,
-              width: "100vw",
-              height: "100vh",
-              background: "rgba(255,255,255,0.85)", 
-              zIndex: 0,
-              pointerEvents: "none"
-            }}
-          /> */}
-          
-          {/* --- Your main app content --- */}
-          <div style={{ position: "relative", zIndex: 1, display: "flex", flexDirection: "column", minHeight: "100vh" }}>
-            <AppContent />
-          </div>
-        </div>
+        {/* We moved the <div> and background logic INSIDE AppContent above */}
+        <AppContent />
       </Router>
     </UserProvider>
   );
