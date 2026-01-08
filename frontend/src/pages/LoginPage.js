@@ -1,4 +1,4 @@
-// src/pages/LoginPage.js
+//src>pages>LoginPage.js
 
 import React, { useState, useEffect, useRef } from "react";
 import { useUser } from "../contexts/UserContext";
@@ -12,18 +12,22 @@ const NetworkCanvas = () => {
 
   useEffect(() => {
     const canvas = canvasRef.current;
+    if (!canvas) return;
+    
     const ctx = canvas.getContext("2d");
     let width, height;
     let particles = [];
 
-    // Configuration
+    // Animation Config
     const particleCount = 60;
     const connectionDistance = 150;
     const speed = 0.5;
 
     const resize = () => {
-      width = canvas.width = canvas.parentElement.offsetWidth;
-      height = canvas.height = canvas.parentElement.offsetHeight;
+      if (canvas.parentElement) {
+        width = canvas.width = canvas.parentElement.offsetWidth;
+        height = canvas.height = canvas.parentElement.offsetHeight;
+      }
     };
 
     class Particle {
@@ -63,7 +67,6 @@ const NetworkCanvas = () => {
     const animate = () => {
       ctx.clearRect(0, 0, width, height);
       
-      // Draw Particles
       particles.forEach((p, index) => {
         p.update();
         p.draw();
@@ -105,6 +108,7 @@ export default function LoginPage() {
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
   
+  // Real Context Hooks
   const { login, user } = useUser(); 
   const navigate = useNavigate();
 
@@ -150,12 +154,13 @@ export default function LoginPage() {
       
       {/* --- LEFT SIDE: BRANDING & ANIMATION (Hidden on mobile) --- */}
       <div className="hidden lg:flex w-1/2 relative bg-slate-900 items-center justify-center overflow-hidden">
-        {/* The Animated Canvas Network */}
+        {/* Animated Canvas */}
         <NetworkCanvas />
         
         {/* Content Overlay */}
         <div className="relative z-10 p-12 text-white max-w-lg">
           <div className="flex items-center gap-3 mb-6">
+             {/* Simple 'B' Logo placeholder if SVG not available */}
              <div className="w-12 h-12 bg-emerald-600 rounded-lg flex items-center justify-center font-bold text-2xl shadow-lg shadow-emerald-900/50">B</div>
              <h1 className="text-4xl font-extrabold tracking-tight">Bamboo<span className="text-emerald-500">Mall</span></h1>
           </div>

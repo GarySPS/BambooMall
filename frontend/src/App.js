@@ -23,7 +23,7 @@ import { ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 
 // Legal Pages
-import { TermsPage, PrivacyPage, CookiePage } from "./LegalPages"; 
+import { TermsPage, PrivacyPage, CookiePage } from "./pages/LegalPages";
 
 // Admin Pages
 import AdminLayout from "./components/AdminLayout";

@@ -1,5 +1,7 @@
+//src>pages>LegalPages.js
+
 import React from 'react';
-import './Legal.css';
+import '../Legal.css';
 
 // --- 1. TERMS OF SERVICE ---
 export const TermsPage = () => {
