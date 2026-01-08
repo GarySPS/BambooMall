@@ -1,4 +1,4 @@
-//src>pages>AdminOrderPage.js
+//src>pages>AdminOrdrPage.js
 
 import React, { useEffect, useState, useCallback } from "react";
 import { FaCheck, FaTimes, FaClipboardList } from "react-icons/fa";
@@ -40,13 +40,21 @@ export default function AdminOrderPage() {
   };
 
   const handleApproveResale = async (userId, orderId, approve, maxQty) => {
-    // Determine quantity to sell. 
-    // If admin typed something, use it. If not, use full maxQty.
-    const qtyInput = sellQuantities[orderId];
-    const qtyToSell = qtyInput ? parseInt(qtyInput) : maxQty;
+    // If we are DENYING, we don't care about quantity validation
+    if (!approve) {
+        // You can choose to skip validation here if you want
+    }
 
-    if (approve && (qtyToSell <= 0 || qtyToSell > maxQty)) {
-      alert(`Invalid quantity. Must be between 1 and ${maxQty}`);
+    // Determine quantity to sell
+    const qtyInput = sellQuantities[orderId];
+    
+    // If input is empty/undefined, default to maxQty (Full Sell).
+    // If input has number, use that number.
+    const qtyToSell = (qtyInput && qtyInput !== "") ? parseInt(qtyInput) : maxQty;
+
+    // Safety check for APPROVAL
+    if (approve && (isNaN(qtyToSell) || qtyToSell <= 0 || qtyToSell > maxQty)) {
+      alert(`Invalid quantity. Please enter a number between 1 and ${maxQty}`);
       return;
     }
 
@@ -57,10 +65,10 @@ export default function AdminOrderPage() {
         body: JSON.stringify({ 
           order_id: orderId, 
           approve, 
-          sell_quantity: qtyToSell // Send the quantity to backend
+          sell_quantity: qtyToSell 
         }),
       });
-
+      
       // Clear the input for this order
       setSellQuantities(prev => {
         const newState = { ...prev };
@@ -69,15 +77,13 @@ export default function AdminOrderPage() {
       });
 
       // RE-FETCH DATA
-      // Since partial selling splits one order into two (Sold + Remaining),
-      // it is safer to refetch than to try and manipulate the local state complexly.
       await fetchOrders();
 
     } catch (err) {
       console.error("Failed to approve resale:", err);
       alert("Action failed. Please check console.");
     }
-  };
+  }; // <--- THIS WAS MISSING IN YOUR SNIPPET
 
   const handleApproveRefund = async (userId, orderId, approve) => {
     try {
