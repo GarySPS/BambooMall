@@ -155,8 +155,9 @@ router.post('/orders/refund-approve', async (req, res) => {
 // 3b. Admin: Approve/Reject order resale ("Sold")
 router.post('/orders/resale-approve', async (req, res) => {
   const supabase = req.supabase;
-  const { order_id, approve } = req.body;
+  const { order_id, approve, sell_quantity } = req.body; // <--- 1. Get sell_quantity
 
+  // Get Order
   const { data: order, error: getError } = await supabase
     .from('orders')
     .select('*')
@@ -164,30 +165,63 @@ router.post('/orders/resale-approve', async (req, res) => {
     .single();
 
   if (getError || !order) return res.status(404).json({ error: 'Order not found' });
+  
+  // Basic validation
   if (order.status !== 'selling' && order.status !== 'pending')
     return res.status(400).json({ error: 'Order is not pending resale' });
 
+  // --- DENY LOGIC ---
   if (!approve) {
     await supabase.from('orders').update({ status: 'selling' }).eq('id', order_id);
     return res.json({ message: 'Mark as selling (denied)' });
   }
 
+  // --- APPROVE LOGIC ---
+  
+  // 2. Determine exact quantity to sell
+  // If sell_quantity is provided, use it. Otherwise use full order quantity.
+  const qtyToSell = sell_quantity ? Number(sell_quantity) : Number(order.quantity);
+  
+  // 3. Get Product Price
   const { data: product } = await supabase
     .from('products')
     .select('price')
     .eq('id', order.product_id)
     .single();
 
-  const resale_amount = product ? Number(product.price) * Number(order.quantity) : 0;
-  const profit = resale_amount - Number(order.amount);
+  // 4. Calculate Financials
+  // Revenue = Market Price * Qty Sold
+  const resale_amount = product ? Number(product.price) * qtyToSell : 0;
+  
+  // Cost Ratio (in case of partial sell, we only calculate cost for the sold part)
+  const ratio = qtyToSell / Number(order.quantity);
+  const costOfSoldItems = Number(order.amount) * ratio;
 
+  // Profit = Revenue - Cost
+  const profit = resale_amount - costOfSoldItems;
+
+  // 5. Update Order
+  // We mark it 'sold'. Note: If you sell partial (e.g. 5/10), this closes the order.
+  // If you want to keep the remainder, you'd need logic to split the order, 
+  // but for now we treat this action as "Closing the order with this quantity".
   const { data: updated, error: updateError } = await supabase
     .from('orders')
-    .update({ status: 'sold', sold_at: new Date().toISOString(), earn: profit, resale_amount })
+    .update({ 
+        status: 'sold', 
+        resale_status: 'sold', // Ensure this matches your frontend check
+        sold_at: new Date().toISOString(), 
+        earn: profit, 
+        resale_amount,
+        // Optional: Update quantity to what was actually sold if different?
+        // quantity: qtyToSell 
+    })
     .eq('id', order_id)
     .select()
     .single();
 
+  if (updateError) return res.status(400).json({ error: updateError.message });
+
+  // 6. Update Wallet
   const { data: wallet, error: walletError } = await supabase
     .from('wallets')
     .select('*')
@@ -198,6 +232,7 @@ router.post('/orders/resale-approve', async (req, res) => {
     return res.status(400).json({ message: "Wallet not found" });
   }
 
+  // Add the Total Revenue (Principal + Profit) to wallet
   const { error: walletUpdateError } = await supabase
     .from('wallets')
     .update({ balance: Number(wallet.balance) + Number(resale_amount) })
@@ -207,7 +242,7 @@ router.post('/orders/resale-approve', async (req, res) => {
     return res.status(400).json({ message: "Wallet update failed", error: walletUpdateError.message });
   }
 
-  res.json({ message: 'Order marked as sold. Profit added.', profit, resale_amount });
+  res.json({ message: 'Order marked as sold. Profit added.', profit, resale_amount, qty_sold: qtyToSell });
 });
 
 // 4. Admin: List all users (UPDATED TO FETCH PROFILE DATA)
