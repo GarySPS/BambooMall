@@ -117,8 +117,11 @@ export default function BalancePage() {
   useEffect(() => {
     if (user?.id) {
       fetchWalletFromBackend(user.id)
-        .then(wallet => updateWallet({ usdc: wallet.balance }))
-        .catch(() => updateWallet({ usdc: 0 }));
+        .then(walletData => {
+           // Save the whole wallet object (including .balance) to context
+           updateWallet(walletData); 
+        })
+        .catch(() => updateWallet({ balance: 0 }));
 
       fetchResaleHistory(user.id)
         .then(data => setResaleHistory(Array.isArray(data.orders) ? data.orders : []))
@@ -136,8 +139,8 @@ export default function BalancePage() {
         setDepositScreenshot(null);
         if (user?.id) {
           fetchWalletFromBackend(user.id)
-            .then(wallet => updateWallet({ usdc: wallet.balance }))
-            .catch(() => updateWallet({ usdc: 0 }));
+            .then(walletData => updateWallet(walletData)) // Correct
+            .catch(() => updateWallet({ balance: 0 }));
         }
       }, 1500);
       return () => clearTimeout(timer);
@@ -194,7 +197,7 @@ export default function BalancePage() {
   };
 
   // --- Payment UI logic
-  const balance = (wallet.usdc || 0) + (wallet.alipay || 0) + (wallet.wechat || 0);
+  const balance = Number(wallet?.balance || 0);
   const vipLevel = getVipLevel(balance);
 
   const PAYMENT_MAP = {

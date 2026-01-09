@@ -13,7 +13,7 @@ import PriceTiersCard from "../components/PriceTiersCard";
 
 // --- Get VIP Discount from wallet balance (mock) ---
 function getVipDiscount(wallet) {
-  const balance = (wallet?.usdc || 0) + (wallet?.alipay || 0) + (wallet?.wechat || 0);
+  const balance = Number(wallet?.balance || 0);
   if (balance >= 40000) return 10;
   if (balance >= 20000) return 8;
   if (balance >= 15000) return 6;
@@ -143,49 +143,27 @@ export default function ProductDetailPage() {
       return;
     }
     if (!product) return;
+    
     const minOrder = product.min_order || product.minQty || 1;
     if (Number(quantity) < minOrder) {
       setShowNotice(`Minimum order is ${minOrder} pieces.`);
       setTimeout(() => setShowNotice(""), 2000);
       return;
     }
-    const { discounted, profit, totalDiscount } = getResaleCalc(product, quantity);
 
-    let deducted = false;
-    let newWallet = { ...wallet };
-    
-    // 2. FIX: Change "usdt" to "usdc" in this array
-    ["usdc", "alipay", "wechat"].forEach((key) => {
-      if (!deducted && (wallet[key] || 0) >= discounted) {
-        newWallet[key] = wallet[key] - discounted;
-        deducted = true;
-      }
-    });
+    const { discounted } = getResaleCalc(product, quantity);
 
-    if (!deducted) {
-      // 3. FIX: Change wallet.usdt to wallet.usdc
-      const totalBalance =
-        (wallet.usdc || 0) + (wallet.alipay || 0) + (wallet.wechat || 0);
-      
-      if (totalBalance < discounted) {
-        setShowNotice("Insufficient wallet balance!");
-        setTimeout(() => setShowNotice(""), 2000);
-        return;
-      } else {
-        // split payment logic
-        let remaining = discounted;
-        // 4. FIX: Change "usdt" to "usdc" here as well
-        let keys = ["usdc", "alipay", "wechat"];
-        let update = { ...wallet };
-        for (let key of keys) {
-          const canTake = Math.min(update[key] || 0, remaining);
-          update[key] = (update[key] || 0) - canTake;
-          remaining -= canTake;
-          if (remaining <= 0) break;
-        }
-        newWallet = update;
-      }
+    // 1. Check Wallet Balance (Using 'balance' from DB)
+    const currentBalance = Number(wallet?.balance || 0);
+
+    if (currentBalance < discounted) {
+      setShowNotice("Insufficient wallet balance!");
+      setTimeout(() => setShowNotice(""), 2000);
+      return;
     }
+
+    // 2. Prepare Local Optimistic Update
+    const newWallet = { ...wallet, balance: currentBalance - discounted };
 
     setBuying(true);
     try {
@@ -203,7 +181,7 @@ export default function ProductDetailPage() {
       navigate("/cart", { state: { notice: "Your order is submitted!" } });
     } catch (err) {
       setBuying(false);
-      setShowNotice("Order failed. Try again.");
+      setShowNotice(err.message || "Order failed. Try again.");
       setTimeout(() => setShowNotice(""), 2400);
     }
   }
