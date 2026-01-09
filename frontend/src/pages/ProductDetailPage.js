@@ -1,3 +1,5 @@
+//src>pages>ProductDetailPage.js
+
 import React from "react";
 import { useParams, Link, useNavigate } from "react-router-dom";
 import { fetchProductById, createOrder } from "../utils/api";
@@ -11,7 +13,7 @@ import PriceTiersCard from "../components/PriceTiersCard";
 
 // --- Get VIP Discount from wallet balance (mock) ---
 function getVipDiscount(wallet) {
-  const balance = (wallet?.usdt || 0) + (wallet?.alipay || 0) + (wallet?.wechat || 0);
+  const balance = (wallet?.usdc || 0) + (wallet?.alipay || 0) + (wallet?.wechat || 0);
   if (balance >= 40000) return 10;
   if (balance >= 20000) return 8;
   if (balance >= 15000) return 6;
@@ -151,22 +153,29 @@ export default function ProductDetailPage() {
 
     let deducted = false;
     let newWallet = { ...wallet };
-    ["usdt", "alipay", "wechat"].forEach((key) => {
+    
+    // 2. FIX: Change "usdt" to "usdc" in this array
+    ["usdc", "alipay", "wechat"].forEach((key) => {
       if (!deducted && (wallet[key] || 0) >= discounted) {
         newWallet[key] = wallet[key] - discounted;
         deducted = true;
       }
     });
+
     if (!deducted) {
+      // 3. FIX: Change wallet.usdt to wallet.usdc
       const totalBalance =
-        (wallet.usdt || 0) + (wallet.alipay || 0) + (wallet.wechat || 0);
+        (wallet.usdc || 0) + (wallet.alipay || 0) + (wallet.wechat || 0);
+      
       if (totalBalance < discounted) {
         setShowNotice("Insufficient wallet balance!");
         setTimeout(() => setShowNotice(""), 2000);
         return;
       } else {
+        // split payment logic
         let remaining = discounted;
-        let keys = ["usdt", "alipay", "wechat"];
+        // 4. FIX: Change "usdt" to "usdc" here as well
+        let keys = ["usdc", "alipay", "wechat"];
         let update = { ...wallet };
         for (let key of keys) {
           const canTake = Math.min(update[key] || 0, remaining);
@@ -181,11 +190,14 @@ export default function ProductDetailPage() {
     setBuying(true);
     try {
       await createOrder({
-  user_id: user?.id,
-  product_id: product.id,
-  quantity: Number(quantity),
-  type: "resale"
-});
+        user_id: user?.id,
+        product_id: product.id,
+        quantity: Number(quantity),
+        type: "resale"
+      });
+
+      // Update local wallet state so user sees balance drop immediately
+      updateWallet(newWallet); 
 
       setBuying(false);
       navigate("/cart", { state: { notice: "Your order is submitted!" } });
