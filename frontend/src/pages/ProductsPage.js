@@ -1,23 +1,26 @@
-// src/pages/ProductsPage.js
+//src>pages>ProductsPage.js
 
 import React, { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
-import { FaPlus, FaSearch, FaFilter, FaBolt, FaSpinner, FaLock, FaUserShield } from "react-icons/fa"; // Added Lock icons
+import { FaPlus, FaSearch, FaFilter, FaBolt, FaSpinner, FaLock, FaUserShield } from "react-icons/fa"; 
 import { fetchProducts } from "../utils/api";
 import { getProductImage } from "../utils/image";
-import { useUser } from "../contexts/UserContext"; // Import User Context
+import { useUser } from "../contexts/UserContext"; 
 
 export default function ProductsPage() {
-  const { user } = useUser(); // Get current user state
+  const { user } = useUser(); 
   const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [searchTerm, setSearchTerm] = useState("");
 
-  // Check if user is verified (Adjust 'kyc_verified' to match your actual DB field, e.g., 'is_verified' or 'status')
-  const isVerified = user && user.kyc_verified; 
+  // --- FIX: Check kyc_status === 'approved' instead of kyc_verified ---
+  // Your DB uses 'kyc_status' with values like 'pending', 'approved', etc.
+  const isVerified = user && user.kyc_status === 'approved'; 
 
   useEffect(() => {
+    window.scrollTo(0, 0);
+
     setLoading(true);
     fetchProducts()
       .then((data) => {
@@ -82,9 +85,13 @@ export default function ProductsPage() {
                     Register & Verify Now
                 </Link>
                 
-                <p className="text-xs text-gray-400 mt-4">
-                    Already verified? <span className="underline cursor-pointer hover:text-green-600">Refresh Page</span>
-                </p>
+                {/* Optional: Add a refresh button to help users update their status immediately */}
+                <button 
+                  onClick={() => window.location.reload()}
+                  className="mt-4 text-xs text-gray-500 underline hover:text-green-600 bg-transparent border-none cursor-pointer"
+                >
+                    Already verified? Refresh Page
+                </button>
             </div>
         </div>
       )}

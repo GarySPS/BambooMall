@@ -70,8 +70,8 @@ export default function HomePage() {
   const [homeProducts, setHomeProducts] = useState([]);
   const [loading, setLoading] = useState(true);
 
-  // Check verification status
-  const isVerified = user && user.kyc_verified;
+  // --- FIX: Check kyc_status === 'approved' instead of kyc_verified ---
+  const isVerified = user && user.kyc_status === 'approved';
 
   useEffect(() => {
     fetchProducts()
