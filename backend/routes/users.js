@@ -65,10 +65,9 @@ router.post('/register', async (req, res) => {
   const otp_expires_at = new Date(Date.now() + 5 * 60 * 1000); // 5 minutes
 
   if (exist && exist.verified) {
-    // If verified, block registration
     return res.status(400).json({ error: 'Email already registered' });
   } else if (exist && !exist.verified) {
-    // If exists and NOT verified, allow reset OTP, password, username
+    // If exists and NOT verified, allow reset OTP
     const { data: updated, error: updateError } = await supabase
       .from('users')
       .update({
@@ -76,7 +75,7 @@ router.post('/register', async (req, res) => {
         username,
         otp_code,
         otp_expires_at,
-        kyc_status: 'pending',
+        kyc_status: 'unverified', // <--- CHANGE 1: Was 'pending'
         verified: false
       })
       .eq('email', email)
@@ -92,7 +91,7 @@ router.post('/register', async (req, res) => {
   try {
     short_id = await generateUniqueShortId(supabase);
   } catch (err) {
-    return res.status(500).json({ error: 'Could not generate user ID, please try again.' });
+    return res.status(500).json({ error: 'Could not generate user ID.' });
   }
 
   // New user, insert as normal
@@ -100,11 +99,11 @@ router.post('/register', async (req, res) => {
     .from('users')
     .insert([
       {
-        short_id, // Custom 6-digit ID
+        short_id,
         email,
         password,
         username,
-        kyc_status: 'pending',
+        kyc_status: 'unverified', // <--- CHANGE 2: Was 'pending'
         otp_code,
         otp_expires_at,
         verified: false
@@ -112,12 +111,15 @@ router.post('/register', async (req, res) => {
     ])
     .select()
     .single();
+    
   if (error) return res.status(400).json({ error: error.message });
 
   await sendOtpMail(email, otp_code);
 
   res.json({ user: data, message: 'OTP sent to email.' });
 });
+
+// ... (rest of the file is fine)
 
 // -------- Verify OTP --------
 router.post('/verify-otp', async (req, res) => {
