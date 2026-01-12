@@ -1,12 +1,10 @@
-//routes>auth.js
+// src/routes/auth.js
 
 const express = require('express');
 const router = express.Router();
 const nodemailer = require('nodemailer');
 
-// Setup transporter, sendOtpMail, and generateOTP same as in your users.js (copy the same code here or require it if you modularize later)
-
-// --- COPY this from your users.js top section ---
+// --- 1. EMAIL CONFIGURATION ---
 const transporter = nodemailer.createTransport({
   host: process.env.MAIL_HOST,
   port: process.env.MAIL_PORT,
@@ -18,23 +16,31 @@ const transporter = nodemailer.createTransport({
 });
 
 async function sendOtpMail(email, code) {
-  await transporter.sendMail({
-    from: `"BambooMall" <${process.env.MAIL_FROM}>`,
-    to: email,
-    subject: 'Your BambooMall OTP Code',
-    html: `<div>
-      <h2>Your OTP Code</h2>
-      <p><b>${code}</b></p>
-      <p>This code will expire in 5 minutes.</p>
-    </div>`
-  });
+  try {
+    await transporter.sendMail({
+      from: `"BambooMall Security" <${process.env.MAIL_FROM}>`,
+      to: email,
+      subject: 'Password Reset OTP',
+      html: `
+        <div style="font-family: Arial, sans-serif; color: #333;">
+          <h2>Reset Your Password</h2>
+          <p>Use the code below to reset your BambooMall password:</p>
+          <h1 style="color: #d97706; background: #fffbeb; padding: 10px; display: inline-block; border-radius: 8px;">${code}</h1>
+          <p>This code expires in 5 minutes.</p>
+          <p style="font-size: 12px; color: #666;">If you didn't request this, please ignore this email.</p>
+        </div>
+      `
+    });
+  } catch (err) {
+    console.error("Email error:", err);
+  }
 }
 
 function generateOTP() {
   return Math.floor(100000 + Math.random() * 900000).toString();
 }
 
-// --- END COPY ---
+// --- 2. PASSWORD RESET ROUTES ---
 
 // Step 1: Send OTP for password reset
 router.post('/forgot-password/send-otp', async (req, res) => {
@@ -52,7 +58,8 @@ router.post('/forgot-password/send-otp', async (req, res) => {
 
   // Generate OTP and expiry
   const otp_code = generateOTP();
-  const otp_expires_at = new Date(Date.now() + 5 * 60 * 1000);
+  // FIX: Use .toISOString() for proper database storage
+  const otp_expires_at = new Date(Date.now() + 5 * 60 * 1000).toISOString();
 
   // Save OTP to user
   await supabase
@@ -79,8 +86,9 @@ router.post('/forgot-password/verify-otp', async (req, res) => {
 
   if (error || !user) return res.status(404).json({ error: 'User not found.' });
 
-  const expires = new Date(user.otp_expires_at + "Z").getTime();
-  const now = Date.now();
+  // FIX: Standard Date comparison
+  const now = new Date();
+  const expires = new Date(user.otp_expires_at);
 
   if (
     String(user.otp_code).trim() !== String(otp_code).trim() ||
@@ -90,7 +98,7 @@ router.post('/forgot-password/verify-otp', async (req, res) => {
     return res.status(400).json({ error: 'Invalid or expired OTP code.' });
   }
 
-  // OTP is correct, allow next step
+  // OTP is correct
   res.json({ message: 'OTP verified. You may set new password now.' });
 });
 
@@ -108,8 +116,9 @@ router.post('/forgot-password/reset', async (req, res) => {
 
   if (error || !user) return res.status(404).json({ error: 'User not found.' });
 
-  const expires = new Date(user.otp_expires_at + "Z").getTime();
-  const now = Date.now();
+  // Double Check OTP (Security Best Practice)
+  const now = new Date();
+  const expires = new Date(user.otp_expires_at);
 
   if (
     String(user.otp_code).trim() !== String(otp_code).trim() ||
