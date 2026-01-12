@@ -1,6 +1,6 @@
-//src>App.js
+// src/App.js
 
-import React, { useEffect } from "react"; // 1. Added useEffect
+import React, { useEffect } from "react"; 
 import { BrowserRouter as Router, Routes, Route, useLocation } from "react-router-dom";
 import HomePage from "./pages/HomePage";
 import ProductsPage from "./pages/ProductsPage";
@@ -39,12 +39,11 @@ function AppContent() {
   const location = useLocation();
   
   // --- GLOBAL SCROLL TO TOP FIX ---
-  // This ensures that every time you switch pages, the window starts at the top
   useEffect(() => {
     window.scrollTo(0, 0);
   }, [location.pathname]); 
 
-  // Define routes where we want a clean look (No Navbar, No Footer, No Global Background)
+  // Define routes where we want a clean look (No Navbar, No Footer)
   const hideNavbarRoutes = ["/login", "/signup", "/otp", "/forgot"];
   const isAuthPage = hideNavbarRoutes.includes(location.pathname);
   const isAdmin = location.pathname.startsWith("/admin");
@@ -55,9 +54,8 @@ function AppContent() {
     minWidth: "100vw",
     display: "flex",
     flexDirection: "column",
-    // Only show profilebg.jpg if we are NOT on a login/signup page
     backgroundImage: !isAuthPage ? "url('/profilebg.jpg')" : "none",
-    backgroundColor: !isAuthPage ? "transparent" : "#fff", // Fallback color
+    backgroundColor: !isAuthPage ? "transparent" : "#fff",
     backgroundSize: "cover",
     backgroundRepeat: "no-repeat",
     backgroundPosition: "center center",
@@ -73,7 +71,7 @@ function AppContent() {
       {/* 2. MAIN CONTENT */}
       <div className="flex-grow z-10 relative">
         <Routes>
-          {/* Admin */}
+          {/* --- ADMIN ROUTES --- */}
           <Route path="/admin" element={<AdminLayout />}>
             <Route index element={<AdminUserPage />} />
             <Route path="users" element={<AdminUserPage />} />
@@ -83,30 +81,33 @@ function AppContent() {
             <Route path="orders" element={<AdminOrderPage />} />
           </Route>
 
-          {/* Auth (Public) */}
+          {/* --- AUTH ROUTES (Public) --- */}
           <Route path="/login" element={<LoginPage />} />
           <Route path="/signup" element={<SignupPage />} />
           <Route path="/otp" element={<OTPPage />} />
           <Route path="/forgot" element={<ForgotPasswordPage />} />
 
-          {/* Legal (Public) */}
+          {/* --- LEGAL ROUTES (Public) --- */}
           <Route path="/terms" element={<TermsPage />} />
           <Route path="/privacy" element={<PrivacyPage />} />
           <Route path="/cookies" element={<CookiePage />} />
 
-          {/* Main App (Protected) */}
+          {/* --- PUBLIC SHOP ROUTES (Accessible without login) --- */}
+          {/* I moved these OUT of PrivateRoute so visitors can see them */}
+          <Route path="/" element={<HomePage />} />
+          <Route path="/products" element={<ProductsPage />} />
+          <Route path="/products/:id" element={<ProductDetailPage />} />
+          <Route path="/news" element={<NewsPage />} />
+          <Route path="/about-us" element={<AboutUsPage />} />
+          <Route path="/faq" element={<FAQPage />} />
+
+          {/* --- PROTECTED ROUTES (Login Required) --- */}
           <Route element={<PrivateRoute />}>
-            <Route path="/" element={<HomePage />} />
-            <Route path="/products" element={<ProductsPage />} />
-            <Route path="/products/:id" element={<ProductDetailPage />} />
             <Route path="/cart" element={<CartPage />} />
             <Route path="/balance" element={<BalancePage />} />
             <Route path="/profile" element={<ProfilePage />} />
             <Route path="/kyc-verification" element={<KYCVerificationPage />} />
-            <Route path="/news" element={<NewsPage />} />
-            <Route path="/about-us" element={<AboutUsPage />} />
             <Route path="/membership" element={<MembershipPage />} />
-            <Route path="/faq" element={<FAQPage />} />
           </Route>
         </Routes>
       </div>
@@ -122,7 +123,6 @@ export default function App() {
     <UserProvider>
       <Router>
         <ToastContainer position="top-center" autoClose={1800} />
-        {/* We moved the <div> and background logic INSIDE AppContent above */}
         <AppContent />
       </Router>
     </UserProvider>

@@ -4,11 +4,9 @@ import React, { useState, useEffect, useRef } from "react";
 import { useUser } from "../contexts/UserContext";
 import { useNavigate } from "react-router-dom";
 import { API_BASE_URL } from "../config";
-// Added FaLock for the password field
 import { FaShieldAlt, FaGlobeAsia, FaCheckCircle, FaLock } from "react-icons/fa";
 
-// --- COMPONENT: ANIMATED NETWORK BACKGROUND (Canvas) ---
-// We keep this because it looks premium and high-tech
+// --- COMPONENT: ANIMATED NETWORK BACKGROUND (Optimized) ---
 const NetworkCanvas = () => {
   const canvasRef = useRef(null);
 
@@ -19,9 +17,10 @@ const NetworkCanvas = () => {
     const ctx = canvas.getContext("2d");
     let width, height;
     let particles = [];
+    let animationFrameId; // To track and stop animation
 
-    // Animation Config
-    const particleCount = 60;
+    // OPTIMIZATION: Reduced from 60 to 35 for better performance
+    const particleCount = 35; 
     const connectionDistance = 150;
     const speed = 0.5;
 
@@ -51,7 +50,7 @@ const NetworkCanvas = () => {
       draw() {
         ctx.beginPath();
         ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
-        ctx.fillStyle = "rgba(16, 185, 129, 0.6)"; // Emerald Green
+        ctx.fillStyle = "rgba(16, 185, 129, 0.6)"; 
         ctx.fill();
       }
     }
@@ -66,31 +65,44 @@ const NetworkCanvas = () => {
 
     const animate = () => {
       ctx.clearRect(0, 0, width, height);
+      
+      // Optimization: Set line style once per frame instead of per line
+      ctx.lineWidth = 0.5;
+      
       particles.forEach((p, index) => {
         p.update();
         p.draw();
+        
+        // Draw connections
         for (let j = index + 1; j < particles.length; j++) {
           const p2 = particles[j];
           const dx = p.x - p2.x;
           const dy = p.y - p2.y;
-          const distance = Math.sqrt(dx * dx + dy * dy);
-          if (distance < connectionDistance) {
+          const distSq = dx * dx + dy * dy; // Distance squared avoids slow Math.sqrt
+          
+          // 150 * 150 = 22500
+          if (distSq < 22500) {
+            const distance = Math.sqrt(distSq); // Only calculate sqrt if needed for opacity
             ctx.beginPath();
             ctx.strokeStyle = `rgba(16, 185, 129, ${1 - distance / connectionDistance})`;
-            ctx.lineWidth = 0.5;
             ctx.moveTo(p.x, p.y);
             ctx.lineTo(p2.x, p2.y);
             ctx.stroke();
           }
         }
       });
-      requestAnimationFrame(animate);
+      animationFrameId = requestAnimationFrame(animate);
     };
 
     window.addEventListener("resize", resize);
     init();
     animate();
-    return () => window.removeEventListener("resize", resize);
+
+    // CLEANUP: Stop animation when component unmounts
+    return () => {
+      window.removeEventListener("resize", resize);
+      cancelAnimationFrame(animationFrameId);
+    };
   }, []);
 
   return <canvas ref={canvasRef} className="absolute inset-0 w-full h-full z-0" />;
@@ -118,7 +130,9 @@ export default function LoginPage() {
     setError("");
     setLoading(true);
 
-    if (!userOrEmail.trim() || !password) {
+    const cleanInput = userOrEmail.trim();
+
+    if (!cleanInput || !password) {
       setLoading(false);
       return;
     }
@@ -127,7 +141,7 @@ export default function LoginPage() {
       const res = await fetch(`${API_BASE_URL}/users/login`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email: userOrEmail.trim(), password }),
+        body: JSON.stringify({ email: cleanInput, password }),
       });
       const data = await res.json();
       
@@ -144,7 +158,7 @@ export default function LoginPage() {
   return (
     <div className="min-h-screen flex font-sans text-slate-800 bg-white">
       
-      {/* --- LEFT SIDE: ANIMATED CANVAS (Kept from your original code) --- */}
+      {/* --- LEFT SIDE: ANIMATED CANVAS --- */}
       <div className="hidden lg:flex w-1/2 relative bg-slate-900 items-center justify-center overflow-hidden">
         <NetworkCanvas />
         
@@ -183,7 +197,7 @@ export default function LoginPage() {
         <div className="absolute inset-0 bg-gradient-to-t from-slate-900 via-transparent to-slate-900/50 pointer-events-none" />
       </div>
 
-      {/* --- RIGHT SIDE: LOGIN FORM (Updated with cleaner inputs) --- */}
+      {/* --- RIGHT SIDE: LOGIN FORM --- */}
       <div className="w-full lg:w-1/2 flex flex-col justify-center items-center p-8 bg-white relative">
         
         {/* Mobile Header */}
@@ -213,7 +227,7 @@ export default function LoginPage() {
                 />
               </div>
               
-              {/* Password Input (Updated with Lock Icon) */}
+              {/* Password Input */}
               <div>
                 <label className="block text-sm font-semibold text-slate-700 mb-1.5">Password</label>
                 <div className="relative">
@@ -279,7 +293,6 @@ export default function LoginPage() {
              </div>
           </div>
 
-          {/* Create Account Button (Updated Style) */}
           <button 
              onClick={() => navigate("/signup")}
              className="w-full flex justify-center py-3 px-4 border border-slate-300 rounded-lg bg-white text-sm font-semibold text-slate-700 hover:bg-slate-50 hover:border-slate-400 transition-all shadow-sm"
@@ -287,7 +300,6 @@ export default function LoginPage() {
              Create Business Account
            </button>
           
-          {/* Footer Links */}
           <div className="pt-8 text-center text-xs text-slate-400 flex justify-center gap-6">
              <span onClick={() => navigate("/terms")} className="cursor-pointer hover:text-emerald-600 transition">Terms</span>
              <span onClick={() => navigate("/privacy")} className="cursor-pointer hover:text-emerald-600 transition">Privacy</span>
