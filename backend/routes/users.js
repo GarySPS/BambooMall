@@ -243,10 +243,56 @@ router.post('/login', async (req, res) => {
 
 // --- 4. PROFILE ROUTES ---
 
+// 1. PUT THIS FIRST (Specific Route)
+// -------- Get Profile by Short ID --------
+router.get('/profile', async (req, res) => {
+  const supabase = req.supabase;
+  const { short_id } = req.query;
+
+  if (!short_id) return res.status(400).json({ error: 'Missing short_id' });
+
+  try {
+    const { data: user, error: userError } = await supabase
+      .from('users')
+      .select('*')
+      .eq('short_id', short_id)
+      .single();
+
+    if (userError || !user) {
+      return res.status(404).json({ error: 'User not found' });
+    }
+
+    const { data: walletData } = await supabase
+      .from('wallets')
+      .select('balance')
+      .eq('user_id', user.id)
+      .single();
+
+    const wallet = {
+      balance: walletData?.balance || 0,
+      usdt: 0,
+      alipay: 0,
+      wechat: 0
+    };
+
+    res.json({ user, wallet });
+
+  } catch (error) {
+    console.error("Profile fetch error:", error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+
+// 2. PUT THIS SECOND (Generic Route)
 // -------- Get User Profile By USER_ID --------
 router.get('/:user_id', async (req, res) => {
   const supabase = req.supabase;
   const { user_id } = req.params;
+  
+  // Safety check to ensure 'profile' requests didn't slip through
+  if (user_id === 'profile') return res.status(404).json({error: "Invalid ID"});
+
   const { data, error } = await supabase
     .from('users')
     .select('*')
@@ -257,6 +303,8 @@ router.get('/:user_id', async (req, res) => {
 
   res.json({ user: data });
 });
+
+// ... (Rest of your routes like Update User and Change Password)
 
 // -------- Update User Profile By USER_ID --------
 router.put('/:user_id', async (req, res) => {
@@ -296,46 +344,6 @@ router.post('/change-password', async (req, res) => {
 
   if (updateError) return res.status(400).json({ error: updateError.message });
   res.json({ message: 'Password changed' });
-});
-
-// -------- Get Profile by Short ID (For Refresh - FIXED) --------
-router.get('/profile', async (req, res) => {
-  const supabase = req.supabase;
-  const { short_id } = req.query;
-
-  if (!short_id) return res.status(400).json({ error: 'Missing short_id' });
-
-  try {
-    const { data: user, error: userError } = await supabase
-      .from('users')
-      .select('*')
-      .eq('short_id', short_id)
-      .single();
-
-    if (userError || !user) {
-      return res.status(404).json({ error: 'User not found' });
-    }
-
-    // FIX: Fetch from wallets table
-    const { data: walletData } = await supabase
-      .from('wallets')
-      .select('balance')
-      .eq('user_id', user.id)
-      .single();
-
-    const wallet = {
-      balance: walletData?.balance || 0,
-      usdt: 0,
-      alipay: 0,
-      wechat: 0
-    };
-
-    res.json({ user, wallet });
-
-  } catch (error) {
-    console.error("Profile fetch error:", error);
-    res.status(500).json({ error: error.message });
-  }
 });
 
 module.exports = router;

@@ -3,7 +3,7 @@
 const express = require('express');
 const router = express.Router();
 
-// 1. Submit Full KYC Application (New Endpoint)
+// 1. Submit Full KYC Application (Updated)
 router.post('/submit-application', async (req, res) => {
   const supabase = req.supabase;
   const { 
@@ -20,21 +20,30 @@ router.post('/submit-application', async (req, res) => {
   if (!short_id) return res.status(400).json({ error: "User ID missing" });
 
   try {
-    // A. Update User Profile Data
+    // A. CLEANUP: Delete ALL previous documents for this user before adding new ones
+    // This prevents "stacking" images if they got rejected and are trying again.
+    const { error: deleteError } = await supabase
+      .from('kyc_documents')
+      .delete()
+      .eq('short_id', short_id);
+
+    if (deleteError) throw deleteError;
+
+    // B. Update User Profile Data
     const { error: userError } = await supabase
       .from('users')
       .update({ 
-        full_name: full_name, // Make sure your users table has this column, or use 'username' if you prefer
-        phone: phone,
-        address: address,
-        id_number: id_number,
+        full_name: full_name, 
+        phone: phone, 
+        address: address, 
+        id_number: id_number, 
         kyc_status: 'pending' 
       })
       .eq('short_id', short_id);
 
     if (userError) throw userError;
 
-    // B. Insert Document Records (3 rows)
+    // C. Insert Document Records (3 rows)
     const docs = [
       { short_id, name: 'ID Front', doc_type: 'id_front', doc_url: front_url, status: 'pending' },
       { short_id, name: 'ID Back', doc_type: 'id_back', doc_url: back_url, status: 'pending' },
