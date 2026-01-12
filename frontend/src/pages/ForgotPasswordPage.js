@@ -233,9 +233,18 @@ export default function ForgotPasswordPage() {
         <div className="hidden lg:flex w-1/2 relative bg-slate-900 items-center justify-center overflow-hidden">
           <NetworkCanvas />
           <div className="relative z-10 p-12 text-white max-w-lg text-center">
-            <div className="inline-flex p-6 rounded-3xl bg-emerald-900/40 mb-8 backdrop-blur-md border border-emerald-500/30 shadow-2xl">
-              <FaKey className="text-5xl text-emerald-400" />
+            
+            <div className="flex flex-col items-center mb-8">
+               <img 
+                 src="/logo192.png" 
+                 alt="BambooMall Logo" 
+                 className="w-24 h-24 object-contain mb-5 drop-shadow-[0_0_20px_rgba(16,185,129,0.5)]"
+               />
+               <h1 className="text-5xl font-extrabold tracking-tight mb-2">
+                 Bamboo<span className="text-emerald-500">Mall</span>
+               </h1>
             </div>
+
             <h1 className="text-4xl font-bold mb-4">Forgot Password?</h1>
             <p className="text-slate-300 text-lg leading-relaxed">
               Don't worry, it happens to the best of us.<br/>

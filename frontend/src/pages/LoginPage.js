@@ -160,10 +160,18 @@ export default function LoginPage() {
         <div className="hidden lg:flex w-1/2 relative bg-slate-900 items-center justify-center overflow-hidden">
           <NetworkCanvas />
           <div className="relative z-10 p-12 text-white max-w-lg">
-            <div className="flex items-center gap-3 mb-6">
-               <div className="w-12 h-12 bg-emerald-600 rounded-lg flex items-center justify-center font-bold text-2xl shadow-lg shadow-emerald-900/50">B</div>
-               <h1 className="text-4xl font-extrabold tracking-tight">Bamboo<span className="text-emerald-500">Mall</span></h1>
+            
+            <div className="flex items-center gap-4 mb-6">
+               <img 
+                 src="/logo192.png" 
+                 alt="BambooMall Logo" 
+                 className="w-16 h-16 object-contain drop-shadow-[0_0_15px_rgba(16,185,129,0.4)] hover:scale-105 transition-transform duration-300"
+               />
+               <h1 className="text-4xl font-extrabold tracking-tight">
+                 Bamboo<span className="text-emerald-500">Mall</span>
+               </h1>
             </div>
+
             <h2 className="text-3xl font-bold mb-6 leading-tight">
               The World's Factory, <br/> 
               <span className="text-emerald-400">Direct to Your Door.</span>
