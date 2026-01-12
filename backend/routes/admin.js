@@ -1,4 +1,4 @@
-//routes>admin.js
+//src>routes>admin.js
 
 const express = require('express');
 const router = express.Router();
@@ -152,97 +152,135 @@ router.post('/orders/refund-approve', async (req, res) => {
   res.json({ message: 'Refund completed', refund_amount, refund_fee });
 });
 
-// 3b. Admin: Approve/Reject order resale ("Sold")
+// 3b. Admin: Approve/Reject order resale ("Sold") - WITH SPLIT LOGIC
 router.post('/orders/resale-approve', async (req, res) => {
   const supabase = req.supabase;
-  const { order_id, approve, sell_quantity } = req.body; // <--- 1. Get sell_quantity
+  const { order_id, approve, sell_quantity } = req.body;
 
-  // Get Order
-  const { data: order, error: getError } = await supabase
+  // 1. If Admin DENIES the sale
+  if (approve === false) {
+    const { data: order, error } = await supabase
+      .from('orders')
+      .update({ status: 'selling' }) // Force status back to 'selling'
+      .eq('id', order_id)
+      .select()
+      .single();
+      
+    if (error) return res.status(400).json({ error: error.message });
+    return res.json({ message: "Mark as selling (denied)", order });
+  }
+
+  // 2. Fetch order
+  const { data: order, error: fetchError } = await supabase
     .from('orders')
     .select('*')
     .eq('id', order_id)
     .single();
 
-  if (getError || !order) return res.status(404).json({ error: 'Order not found' });
-  
-  // Basic validation
-  if (order.status !== 'selling' && order.status !== 'pending')
-    return res.status(400).json({ error: 'Order is not pending resale' });
-
-  // --- DENY LOGIC ---
-  if (!approve) {
-    await supabase.from('orders').update({ status: 'selling' }).eq('id', order_id);
-    return res.json({ message: 'Mark as selling (denied)' });
+  if (fetchError || !order) return res.status(404).json({ message: "Order not found" });
+  if (order.status !== 'selling' && order.status !== 'pending') {
+     return res.status(400).json({ error: 'Order is not pending resale' });
   }
 
-  // --- APPROVE LOGIC ---
+  // 3. Validation & Quantity Setup
+  const currentQty = parseInt(order.quantity, 10);
+  const inputQty = parseInt(sell_quantity, 10);
   
-  // 2. Determine exact quantity to sell
-  // If sell_quantity is provided, use it. Otherwise use full order quantity.
-  const qtyToSell = sell_quantity ? Number(sell_quantity) : Number(order.quantity);
-  
-  // 3. Get Product Price
-  const { data: product } = await supabase
+  // Logic: Use inputQty if valid, otherwise default to "Sell All"
+  const qtyToSell = (!isNaN(inputQty) && inputQty > 0) ? inputQty : currentQty;
+
+  if (qtyToSell > currentQty) {
+    return res.status(400).json({ message: "Cannot sell more than you have!" });
+  }
+
+  // 4. Fetch product (for price)
+  const { data: product, error: productError } = await supabase
     .from('products')
     .select('price')
     .eq('id', order.product_id)
     .single();
 
-  // 4. Calculate Financials
-  // Revenue = Market Price * Qty Sold
-  const resale_amount = product ? Number(product.price) * qtyToSell : 0;
-  
-  // Cost Ratio (in case of partial sell, we only calculate cost for the sold part)
-  const ratio = qtyToSell / Number(order.quantity);
-  const costOfSoldItems = Number(order.amount) * ratio;
+  if (productError || !product) return res.status(404).json({ message: "Product not found" });
 
-  // Profit = Revenue - Cost
-  const profit = resale_amount - costOfSoldItems;
+  // 5. Calculate Financials (Strict Rounding)
+  const originalCost = parseFloat(order.amount);
+  const marketPrice = parseFloat(product.price);
 
-  // 5. Update Order
-  // We mark it 'sold'. Note: If you sell partial (e.g. 5/10), this closes the order.
-  // If you want to keep the remainder, you'd need logic to split the order, 
-  // but for now we treat this action as "Closing the order with this quantity".
-  const { data: updated, error: updateError } = await supabase
-    .from('orders')
-    .update({ 
+  // Pro-rated cost for the items being sold
+  let soldCost = (originalCost / currentQty) * qtyToSell;
+  soldCost = Math.round(soldCost * 100) / 100; // Round to 2 decimals
+
+  const resaleRevenue = marketPrice * qtyToSell;
+  const profit = resaleRevenue - soldCost;
+
+  // 6. Execute Split or Full Sell
+  if (qtyToSell === currentQty) {
+    // --- SCENARIO A: FULL SELL ---
+    const { error: updateError } = await supabase
+      .from('orders')
+      .update({ 
         status: 'sold', 
-        resale_status: 'sold', // Ensure this matches your frontend check
-        sold_at: new Date().toISOString(), 
+        resale_status: 'sold',
         earn: profit, 
-        resale_amount,
-        // Optional: Update quantity to what was actually sold if different?
-        // quantity: qtyToSell 
-    })
-    .eq('id', order_id)
-    .select()
-    .single();
+        resale_amount: resaleRevenue,
+        sold_at: new Date().toISOString()
+      })
+      .eq('id', order_id);
 
-  if (updateError) return res.status(400).json({ error: updateError.message });
+    if (updateError) return res.status(400).json({ message: "Update failed", error: updateError.message });
 
-  // 6. Update Wallet
-  const { data: wallet, error: walletError } = await supabase
-    .from('wallets')
-    .select('*')
-    .eq('user_id', order.user_id)
-    .single();
+  } else {
+    // --- SCENARIO B: PARTIAL SELL (SPLIT) ---
+    const remainingQty = currentQty - qtyToSell;
+    let remainingCost = originalCost - soldCost;
+    remainingCost = Math.round(remainingCost * 100) / 100; 
 
-  if (walletError || !wallet) {
-    return res.status(400).json({ message: "Wallet not found" });
+    // B1. Update Old Order (REMAINING STOCK)
+    const { error: updateOldError } = await supabase
+      .from('orders')
+      .update({ 
+        quantity: remainingQty, 
+        amount: remainingCost,
+        status: 'selling' 
+      })
+      .eq('id', order_id);
+
+    if (updateOldError) return res.status(400).json({ message: "Failed to update remaining stock", error: updateOldError.message });
+
+    // B2. Insert New Order (SOLD STOCK)
+    const { error: insertNewError } = await supabase
+      .from('orders')
+      .insert([{
+        user_id: order.user_id,
+        product_id: order.product_id,
+        quantity: qtyToSell,
+        amount: soldCost,
+        status: 'sold',
+        resale_status: 'sold',
+        type: order.type,
+        admin_discount: order.admin_discount,
+        vip_bonus: order.vip_bonus,
+        total_discount: order.total_discount,
+        earn: profit,
+        resale_amount: resaleRevenue,
+        sold_at: new Date().toISOString()
+      }]);
+
+    if (insertNewError) return res.status(400).json({ message: "Failed to create sold order record", error: insertNewError.message });
   }
 
-  // Add the Total Revenue (Principal + Profit) to wallet
-  const { error: walletUpdateError } = await supabase
-    .from('wallets')
-    .update({ balance: Number(wallet.balance) + Number(resale_amount) })
-    .eq('id', wallet.id);
-
-  if (walletUpdateError) {
-    return res.status(400).json({ message: "Wallet update failed", error: walletUpdateError.message });
+  // 7. Update User Wallet
+  const { data: wallet } = await supabase.from('wallets').select('*').eq('user_id', order.user_id).single();
+  if (wallet) {
+    // Use 'balance' column
+    const currentBalance = parseFloat(wallet.balance || 0);
+    await supabase
+      .from('wallets')
+      .update({ balance: currentBalance + resaleRevenue }) 
+      .eq('id', wallet.id);
   }
 
-  res.json({ message: 'Order marked as sold. Profit added.', profit, resale_amount, qty_sold: qtyToSell });
+  return res.json({ message: "Success", profit, resale_amount: resaleRevenue, qty_sold: qtyToSell });
 });
 
 // 4. Admin: List all users (UPDATED TO FETCH PROFILE DATA)
@@ -264,24 +302,6 @@ router.get('/users', async (req, res) => {
       id_number, 
       address
     `);
-
-    // ================= DEBUG START =================
-  if (users) {
-    const targetUser = users.find(u => u.username === 'xiaozhe');
-    console.log("------------------------------------------------");
-    console.log("DEBUG: Checking user 'xiaozhe' data from Database:");
-    if (targetUser) {
-      console.log("Found User:", targetUser.username);
-      console.log("Phone:", targetUser.phone);
-      console.log("ID Number:", targetUser.id_number);
-      console.log("Address:", targetUser.address);
-      console.log("Full Name:", targetUser.full_name);
-    } else {
-      console.log("User 'xiaozhe' not found in the list.");
-    }
-    console.log("------------------------------------------------");
-  }
-  // ================= DEBUG END =================
 
   if (error) return res.status(400).json({ error: error.message });
 
