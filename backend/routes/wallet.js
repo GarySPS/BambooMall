@@ -64,7 +64,7 @@ router.post('/withdraw', async (req, res) => {
   const supabase = req.supabase;
   const { user_id, amount, address, note } = req.body;
 
-  // OTP verification check
+  // 1. OTP verification check
   const { data: user } = await supabase
     .from('users')
     .select('verified')
@@ -72,6 +72,18 @@ router.post('/withdraw', async (req, res) => {
     .single();
   if (!user?.verified) return res.status(403).json({ error: "OTP verification required." });
 
+  // 2. CHECK BALANCE (New Safety Step)
+  const { data: wallet } = await supabase
+    .from('wallets')
+    .select('balance')
+    .eq('user_id', user_id)
+    .single();
+
+  if (!wallet || (wallet.balance || 0) < amount) {
+    return res.status(400).json({ error: "Insufficient balance" });
+  }
+
+  // 3. Create Transaction
   const { data, error } = await supabase
     .from('wallet_transactions')
     .insert([{
