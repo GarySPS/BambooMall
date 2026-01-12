@@ -1,7 +1,7 @@
 // src/contexts/UserContext.js
 
 import React, { createContext, useContext, useState, useEffect } from "react";
-import { API_BASE_URL } from "../config"; // <--- 1. Import this
+import { API_BASE_URL } from "../config";
 
 const UserContext = createContext();
 
@@ -11,9 +11,11 @@ export function UserProvider({ children }) {
     return saved ? JSON.parse(saved) : null;
   });
   
+  // FIX: Default wallet is just a single balance now
   const [wallet, setWallet] = useState(() => {
     const saved = localStorage.getItem("bamboomall_wallet");
-    return saved ? JSON.parse(saved) : { usdt: 0, alipay: 0, wechat: 0 };
+    // Default to a simple object with balance: 0
+    return saved ? JSON.parse(saved) : { balance: 0 };
   });
 
   // Persist user
@@ -33,21 +35,22 @@ export function UserProvider({ children }) {
 
   function logout() {
     setUser(null);
-    setWallet({ usdt: 0, alipay: 0, wechat: 0 });
+    // FIX: Reset to single balance 0 on logout
+    setWallet({ balance: 0 });
     localStorage.removeItem("bamboomall_user");
     localStorage.removeItem("bamboomall_wallet");
   }
 
-  function updateWallet(amounts) {
-    setWallet((prev) => ({ ...prev, ...amounts }));
+  function updateWallet(newData) {
+    setWallet((prev) => ({ ...prev, ...newData }));
   }
 
-  // --- NEW FUNCTION: Fetch latest user data from DB ---
+  // --- Fetch latest user data from DB ---
   async function refreshUser() {
     if (!user || !user.short_id) return;
 
     try {
-      // <--- 2. UPDATED: Use API_BASE_URL here
+      // Calls the /profile route you just fixed in auth.js
       const res = await fetch(`${API_BASE_URL}/users/profile?short_id=${user.short_id}`);
       
       if (res.ok) {
