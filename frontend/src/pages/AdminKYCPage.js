@@ -93,15 +93,15 @@ export default function AdminKYCPage() {
         <div className="overflow-hidden rounded-2xl shadow-xl bg-white/70 backdrop-blur border border-white/60">
           <div className="overflow-x-auto">
             <table className="min-w-full text-sm divide-y divide-[#e3e9ef]">
-              <thead>
-                <tr className="bg-[#17604e]/90 text-white">
-                  <th className="py-4 px-4 text-left font-bold w-48">User Account</th>
-                  <th className="py-4 px-4 text-left font-bold w-64">Identity Info</th> {/* NEW COLUMN */}
-                  <th className="py-4 px-4 text-left font-bold">Status</th>
-                  <th className="py-4 px-4 text-left font-bold">Documents</th>
-                  <th className="py-4 px-4 text-left font-bold text-center">Action</th>
-                </tr>
-              </thead>
+<thead>
+  <tr className="bg-[#17604e]/90 text-white">
+    <th className="py-4 px-4 text-left font-bold w-48">User Account</th>
+    <th className="py-4 px-4 text-left font-bold w-64">Identity Info</th>
+    <th className="py-4 px-4 text-left font-bold">Status</th>
+    <th className="py-4 px-4 text-left font-bold">Documents</th>
+    <th className="py-4 px-4 text-left font-bold text-center">Action</th>
+  </tr>
+</thead>
               <tbody className="divide-y divide-gray-100">
                 {loading ? (
                   <tr>
