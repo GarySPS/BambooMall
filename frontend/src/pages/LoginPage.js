@@ -191,9 +191,15 @@ export default function LoginPage() {
 
         {/* --- MOBILE TOP: BRANDING AREA (New Premium Look) --- */}
         <div className="lg:hidden flex-shrink-0 flex flex-col justify-center items-center h-[35vh] p-8 text-center">
-             <div className="mb-6 p-4 bg-white/10 backdrop-blur-md rounded-2xl shadow-2xl ring-1 ring-white/20 transform transition-transform hover:scale-105 duration-500">
-               <FaShoppingBag className="w-10 h-10 text-emerald-300" />
+             {/* UPDATE: Reduced padding (p-4 -> p-2) and increased image size */}
+             <div className="mb-6 p-2 bg-white/10 backdrop-blur-md rounded-2xl shadow-2xl ring-1 ring-white/20 transform transition-transform hover:scale-105 duration-500">
+               <img 
+                 src="/logo192.png" 
+                 alt="BambooMall Logo" 
+                 className="w-20 h-20 object-contain drop-shadow-lg" 
+               />
              </div>
+             
              <h1 className="text-4xl font-bold text-white tracking-tight mb-2 drop-shadow-lg">
                Bamboo<span className="text-emerald-400">Mall</span>
              </h1>

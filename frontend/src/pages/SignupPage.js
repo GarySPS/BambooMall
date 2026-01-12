@@ -184,9 +184,15 @@ export default function SignupPage() {
 
         {/* --- MOBILE TOP: BRANDING AREA --- */}
         <div className="lg:hidden flex-shrink-0 flex flex-col justify-center items-center h-[30vh] p-8 text-center">
-             <div className="mb-4 p-3 bg-white/10 backdrop-blur-md rounded-2xl shadow-2xl ring-1 ring-white/20">
-               <FaShoppingBag className="w-8 h-8 text-emerald-300" />
+             {/* UPDATE: Reduced padding (p-3 -> p-2) and replaced icon with Logo */}
+             <div className="mb-4 p-2 bg-white/10 backdrop-blur-md rounded-2xl shadow-2xl ring-1 ring-white/20">
+               <img 
+                 src="/logo192.png" 
+                 alt="BambooMall Logo" 
+                 className="w-20 h-20 object-contain drop-shadow-lg" 
+               />
              </div>
+             
              <h1 className="text-3xl font-bold text-white tracking-tight mb-2 drop-shadow-lg">
                Create Account
              </h1>
