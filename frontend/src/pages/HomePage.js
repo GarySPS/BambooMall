@@ -99,7 +99,7 @@ export default function HomePage() {
             Real Factory Goods. <span className="font-bold text-yellow-300">Exclusive Discounts</span>. <span className="text-yellow-100">Profitable Resale.</span>
           </p>
           <Link
-            to="/products"
+            to={user ? "/products" : "/login"}  // <--- CHANGED THIS LINE
             className="mt-4 inline-block bg-white text-green-700 font-bold px-8 py-3 rounded-full shadow-xl hover:bg-yellow-100 hover:text-green-900 transition text-lg"
           >
             Start Reselling
