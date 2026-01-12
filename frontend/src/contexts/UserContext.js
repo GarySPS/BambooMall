@@ -1,6 +1,7 @@
-//src>contexts>UserContext.js
+// src/contexts/UserContext.js
 
 import React, { createContext, useContext, useState, useEffect } from "react";
+import { API_BASE_URL } from "../config"; // <--- 1. Import this
 
 const UserContext = createContext();
 
@@ -46,8 +47,8 @@ export function UserProvider({ children }) {
     if (!user || !user.short_id) return;
 
     try {
-      // Fetch fresh user data using short_id
-      const res = await fetch(`/api/users/profile?short_id=${user.short_id}`);
+      // <--- 2. UPDATED: Use API_BASE_URL here
+      const res = await fetch(`${API_BASE_URL}/users/profile?short_id=${user.short_id}`);
       
       if (res.ok) {
         const data = await res.json();

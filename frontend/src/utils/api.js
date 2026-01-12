@@ -1,3 +1,5 @@
+//src>utils>api.js
+
 import { API_BASE_URL } from "../config";
 
 // Fetch user profile by userId
@@ -49,7 +51,11 @@ export async function fetchCartOrders(userId) {
     product: o.product, // Pass through the product for getProductImage
     image: getFirstProductImage(o.product),
     title: o.title || o.product?.title || "Product",
-    qty: o.qty !== undefined ? o.qty : o.quantity,
+    
+    // --- FIX IS HERE: Change key from 'qty' to 'quantity' ---
+    quantity: o.qty !== undefined ? o.qty : o.quantity, 
+    // --------------------------------------------------------
+
     unit_price: o.unit_price !== undefined ? o.unit_price : (o.product?.price || 0),
     admin_discount: o.admin_discount || 0,
     vip_bonus: o.vip_bonus || 0,

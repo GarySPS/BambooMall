@@ -224,8 +224,8 @@ export default function ProfilePage() {
   const navigate = useNavigate();
 
   // Balance logic
-  const totalBalance = (wallet?.usdt || 0) + (wallet?.alipay || 0) + (wallet?.wechat || 0);
-  const currentVipTier = getVipTier(totalBalance);
+const totalBalance = wallet?.balance || 0; 
+const currentVipTier = getVipTier(totalBalance);
 
   useEffect(() => {
     if (!user?.user_id) return setLoadingProducts(false);

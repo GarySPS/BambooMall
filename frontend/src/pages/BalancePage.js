@@ -197,8 +197,8 @@ export default function BalancePage() {
   };
 
   // --- Payment UI logic
-  const balance = Number(wallet?.balance || 0);
-  const vipLevel = getVipLevel(balance);
+const balance = Number(wallet?.balance || 0);
+const vipLevel = getVipLevel(balance);
 
   const PAYMENT_MAP = {
     "USDC(TRC)": USDC_INFO,
