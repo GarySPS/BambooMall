@@ -60,9 +60,14 @@ const UploadZone = ({ label, description, onFileSelect, file, icon: Icon }) => (
   </div>
 );
 
-// --- Main Component ---
+
 export default function KYCVerificationPage() {
-  const { user, refreshUser } = useUser(); 
+  const { user, refreshUser } = useUser();
+  
+  // 1. ADD THIS CONSTANT TO USE YOUR ENV VARIABLE
+  // This ensures we use the full backend URL in production
+  const API_BASE = process.env.REACT_APP_API_BASE_URL; 
+
   const [step, setStep] = useState(1);
   const [formData, setFormData] = useState({
     fullName: '',
@@ -75,9 +80,8 @@ export default function KYCVerificationPage() {
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isSuccess, setIsSuccess] = useState(false);
-  const [statusMessage, setStatusMessage] = useState(""); 
+  const [statusMessage, setStatusMessage] = useState("");
 
-  // Ensure we have the latest status when the page loads
   useEffect(() => {
     refreshUser();
   }, []);
@@ -85,25 +89,32 @@ export default function KYCVerificationPage() {
   const nextStep = () => setStep(prev => prev + 1);
   const prevStep = () => setStep(prev => prev - 1);
 
-  // Helper to upload a single file
+  // 2. UPDATE THIS FUNCTION
   const uploadFile = async (file) => {
     const data = new FormData();
     data.append("file", file);
-    const res = await fetch("/api/upload/kyc", { method: "POST", body: data });
+
+    // FIXED: Use API_BASE instead of hardcoded "/api"
+    // Remove the '/api' from the string if your env variable already includes it
+    const res = await fetch(`${API_BASE}/upload/kyc`, { 
+      method: "POST", 
+      body: data 
+    });
+
     if (!res.ok) throw new Error("File upload failed");
     const json = await res.json();
     return json.url;
   };
 
+  // 3. UPDATE THIS FUNCTION
   const handleSubmit = async () => {
     if(!user) {
-        toast.error("User session not found. Please login again."); 
+        toast.error("User session not found. Please login again.");
         return;
     }
     setIsSubmitting(true);
     
     try {
-      // 1. Upload Images
       setStatusMessage("Uploading Front ID...");
       const frontUrl = await uploadFile(formData.idFront);
       
@@ -113,9 +124,10 @@ export default function KYCVerificationPage() {
       setStatusMessage("Uploading Selfie...");
       const selfieUrl = await uploadFile(formData.selfie);
 
-      // 2. Submit Data to Backend
       setStatusMessage("Finalizing Application...");
-      const res = await fetch("/api/kyc/submit-application", {
+      
+      // FIXED: Use API_BASE here as well
+      const res = await fetch(`${API_BASE}/kyc/submit-application`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -135,14 +147,13 @@ export default function KYCVerificationPage() {
         throw new Error(errData.error || "Submission failed");
       }
 
-      // 3. Success
-      await refreshUser(); 
+      await refreshUser();
       setIsSuccess(true);
-      toast.success("KYC Submitted Successfully!"); 
+      toast.success("KYC Submitted Successfully!");
       
     } catch (error) {
       console.error(error);
-      toast.error(error.message || "Error submitting KYC"); 
+      toast.error(error.message || "Error submitting KYC");
       setStatusMessage("");
     } finally {
       setIsSubmitting(false);
