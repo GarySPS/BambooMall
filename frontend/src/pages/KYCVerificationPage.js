@@ -304,7 +304,7 @@ export default function KYCVerificationPage() {
               </button>
               <div className="mb-8">
                 <h2 className="text-2xl font-black text-gray-900 tracking-tight">Biometric Check</h2>
-                <p className="text-gray-500 text-sm mt-1 font-medium">Take a live selfie holding your ID next to your face.</p>
+                <p className="text-gray-500 text-sm mt-1 font-medium">Take a selfie face.</p>
               </div>
               <div className="flex justify-center mb-8">
                 <div className="w-48 h-48 rounded-full border-4 border-dashed border-gray-200 flex items-center justify-center relative bg-gray-50">
@@ -329,7 +329,7 @@ export default function KYCVerificationPage() {
                 </div>
                 <div className="p-3 bg-gray-50 rounded-xl border border-gray-100">
                   <IdCard size={16} className="mx-auto mb-2 text-blue-500" />
-                  <p className="text-[10px] font-bold text-gray-400 uppercase">ID Visible</p>
+                  <p className="text-[10px] font-bold text-gray-400 uppercase">ID Avatar Visible</p>
                 </div>
               </div>
               <button onClick={handleSubmit} disabled={!formData.selfie || isSubmitting} className="w-full py-5 bg-gray-900 text-white font-bold rounded-2xl flex items-center justify-center gap-2 hover:bg-black disabled:opacity-50 transition-all shadow-xl">
