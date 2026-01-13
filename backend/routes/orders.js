@@ -275,7 +275,7 @@ router.post('/admin/orders/resale-approve', async (req, res) => {
   if (approve === false) {
     const { data: order, error } = await supabase
       .from('orders')
-      .update({ status: 'selling' }) // Force status back to 'selling'
+      .update({ status: 'selling' })
       .eq('id', order_id)
       .select()
       .single();
@@ -293,18 +293,16 @@ router.post('/admin/orders/resale-approve', async (req, res) => {
 
   if (fetchError || !order) return res.status(404).json({ message: "Order not found" });
 
-  // 3. Validation & Quantity Setup
+  // 3. Validation
   const currentQty = parseInt(order.quantity, 10);
   const inputQty = parseInt(sell_quantity, 10);
-  
-  // Logic: Use inputQty if valid, otherwise default to "Sell All"
   const qtyToSell = (!isNaN(inputQty) && inputQty > 0) ? inputQty : currentQty;
 
   if (qtyToSell > currentQty) {
     return res.status(400).json({ message: "Cannot sell more than you have!" });
   }
 
-  // 4. Fetch product (for price)
+  // 4. Fetch product price
   const { data: product, error: productError } = await supabase
     .from('products')
     .select('price')
@@ -313,13 +311,12 @@ router.post('/admin/orders/resale-approve', async (req, res) => {
 
   if (productError || !product) return res.status(404).json({ message: "Product not found" });
 
-  // 5. Calculate Financials (Strict Rounding)
+  // 5. Calculate Financials
   const originalCost = parseFloat(order.amount);
   const marketPrice = parseFloat(product.price);
 
-  // Pro-rated cost for the items being sold
   let soldCost = (originalCost / currentQty) * qtyToSell;
-  soldCost = Math.round(soldCost * 100) / 100; // Round to 2 decimals
+  soldCost = Math.round(soldCost * 100) / 100;
 
   const resaleRevenue = marketPrice * qtyToSell;
   const profit = resaleRevenue - soldCost;
@@ -332,7 +329,7 @@ router.post('/admin/orders/resale-approve', async (req, res) => {
       .update({ 
         status: 'sold', 
         earn: profit, 
-        resale_amount: resaleRevenue,
+        resale_amount: resaleRevenue, 
         sold_at: new Date().toISOString()
       })
       .eq('id', order_id);
@@ -345,20 +342,8 @@ router.post('/admin/orders/resale-approve', async (req, res) => {
     let remainingCost = originalCost - soldCost;
     remainingCost = Math.round(remainingCost * 100) / 100; 
 
-    // B1. Update Old Order (REMAINING STOCK)
-    // CRITICAL: We explicitly set status: 'selling' so it doesn't disappear
-    const { error: updateOldError } = await supabase
-      .from('orders')
-      .update({ 
-        quantity: remainingQty, 
-        amount: remainingCost,
-        status: 'selling' 
-      })
-      .eq('id', order_id);
-
-    if (updateOldError) return res.status(400).json({ message: "Failed to update remaining stock", error: updateOldError.message });
-
-    // B2. Insert New Order (SOLD STOCK)
+    // FIX: Insert NEW record FIRST. 
+    // This prevents "Zombie Orders". If this fails, the user still keeps their original stock.
     const { error: insertNewError } = await supabase
       .from('orders')
       .insert([{
@@ -376,13 +361,29 @@ router.post('/admin/orders/resale-approve', async (req, res) => {
         sold_at: new Date().toISOString()
       }]);
 
-    if (insertNewError) return res.status(400).json({ message: "Failed to create sold order record", error: insertNewError.message });
+    if (insertNewError) {
+      console.error("Insert failed:", insertNewError);
+      return res.status(400).json({ message: "Failed to create sold record.", error: insertNewError.message });
+    }
+
+    // Only if Insert succeeded, update the OLD order
+    const { error: updateOldError } = await supabase
+      .from('orders')
+      .update({ 
+        quantity: remainingQty, 
+        amount: remainingCost,
+        status: 'selling' 
+      })
+      .eq('id', order_id);
+
+    if (updateOldError) {
+      return res.status(400).json({ message: "Failed to update remaining stock", error: updateOldError.message });
+    }
   }
 
   // 7. Update User Wallet
   const { data: wallet } = await supabase.from('wallets').select('*').eq('user_id', order.user_id).single();
   if (wallet) {
-    // Use 'balance' column
     const currentBalance = parseFloat(wallet.balance || 0);
     await supabase
       .from('wallets')
