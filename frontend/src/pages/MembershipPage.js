@@ -39,7 +39,7 @@ export default function MembershipPage() {
   const userBalance = useMemo(() => {
     if (!wallet) return 0;
     return (
-      Number(wallet.usdt || 0) +
+      Number(wallet.usdc || 0) + 
       Number(wallet.alipay || 0) +
       Number(wallet.wechat || 0)
     );
