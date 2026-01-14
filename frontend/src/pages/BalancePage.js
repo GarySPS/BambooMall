@@ -204,7 +204,7 @@ const vipLevel = getVipLevel(balance);
     "USDC(TRC)": USDC_INFO,
     "AliPay": ALIPAY_INFO,
     "WeChat": WECHAT_INFO,
-    "Bank Transfer": WISE_INFO,
+    "Bitcoin": WISE_INFO,
   };
 
   const methodInfo = selectedMethod ? PAYMENT_MAP[selectedMethod] : null;
@@ -360,7 +360,7 @@ const vipLevel = getVipLevel(balance);
                     { id: "AliPay", icon: "/images/alipay.png", color: "border-blue-100 hover:border-blue-400" },
                     { id: "WeChat", icon: "/images/wechatpay.png", color: "border-green-100 hover:border-green-400" },
                     { id: "USDC(TRC)", icon: "/usdc.jpg", color: "border-teal-100 hover:border-teal-400" },
-                    { id: "Bank Transfer", icon: "/wise-logo.png", color: "border-indigo-100 hover:border-indigo-400", sub: "Global (WISE)" }
+                    { id: "Bitcoin", icon: "/images/bitcoin.png", color: "border-orange-100 hover:border-orange-400", sub: "BTC" }
                   ].map((m) => (
                     <button
                       key={m.id}
@@ -390,7 +390,8 @@ const vipLevel = getVipLevel(balance);
                           Network: {USDC_INFO.network}
                       </div>
                     )}
-                    {selectedMethod === "Bank Transfer" && (
+                    {/* UPDATED LINE BELOW */}
+                    {selectedMethod === "Bitcoin" && (
                       <div className="mb-2 text-xs font-medium text-gray-500 bg-white px-2 py-1 rounded border">
                         Account: BambooMall LLC
                       </div>
@@ -444,7 +445,7 @@ const vipLevel = getVipLevel(balance);
                       {submitState === "submitting" ? (
                         <>Processing...</>
                       ) : submitState === "success" ? (
-                        <><FaCheck /> Sent!</>
+                        <><FaCheck /> Funded!</>
                       ) : (
                         "Confirm Deposit"
                       )}
@@ -489,7 +490,8 @@ const vipLevel = getVipLevel(balance);
                     <option value="USDC(TRC)">USDC (TRC20)</option>
                     <option value="AliPay">AliPay</option>
                     <option value="WeChat">WeChat</option>
-                    <option value="Bank Transfer">Bank Transfer (WISE)</option>
+                    {/* UPDATED LINE BELOW */}
+                    <option value="Bitcoin">Bitcoin</option>
                   </select>
                 </div>
               </div>
@@ -542,7 +544,7 @@ const vipLevel = getVipLevel(balance);
                     disabled={!withdrawAmount || !withdrawAddress || submitState === "submitting" || submitState === "success"}
                     className="flex-1 bg-gradient-to-r from-amber-400 to-orange-500 text-white hover:from-amber-500 hover:to-orange-600 rounded-xl py-3 font-bold shadow-lg shadow-amber-200 transition-all flex items-center justify-center gap-2"
                   >
-                    {submitState === "submitting" ? "Processing..." : submitState === "success" ? "Requested!" : "Confirm Withdraw"}
+                    {submitState === "submitting" ? "Processing..." : submitState === "success" ? "Refunded!" : "Confirm Withdraw"}
                   </button>
               </div>
             </form>
