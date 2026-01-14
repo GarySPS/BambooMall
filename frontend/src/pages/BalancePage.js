@@ -359,7 +359,7 @@ const vipLevel = getVipLevel(balance);
                   {[
                     { id: "AliPay", icon: "/images/alipay.png", color: "border-blue-100 hover:border-blue-400" },
                     { id: "WeChat", icon: "/images/wechatpay.png", color: "border-green-100 hover:border-green-400" },
-                    { id: "USDC(TRC)", icon: "/usdc.jpg", color: "border-teal-100 hover:border-teal-400", bonus: "+4% Bonus" },
+                    { id: "USDC(TRC)", icon: "/usdc.jpg", color: "border-teal-100 hover:border-teal-400" },
                     { id: "Bank Transfer", icon: "/wise-logo.png", color: "border-indigo-100 hover:border-indigo-400", sub: "Global (WISE)" }
                   ].map((m) => (
                     <button
