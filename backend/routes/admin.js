@@ -389,6 +389,7 @@ router.get('/users', async (req, res) => {
           product_title: o.product_title || "",
           quantity: o.quantity || 0,
           total: o.amount || 0,
+          status: o.status,
           resale_status,
           refund_status,
         };
