@@ -102,19 +102,32 @@ export default function KYCVerificationPage() {
   const nextStep = () => setStep(prev => prev + 1);
   const prevStep = () => setStep(prev => prev - 1);
 
-  // 2. UPDATE THIS FUNCTION
+  // 2. UPDATE THIS FUNCTION (FIXED FOR RENDER 404s)
   const uploadFile = async (file) => {
     const data = new FormData();
     data.append("file", file);
 
-    // FIXED: Use API_BASE instead of hardcoded "/api"
-    // Remove the '/api' from the string if your env variable already includes it
-    const res = await fetch(`${API_BASE}/upload/kyc`, { 
+    // 1. CLEAN UP THE URL
+    // Remove trailing slash if present, and remove '/api' if it's already there to prevent duplicates
+    let cleanBase = API_BASE.replace(/\/$/, "").replace(/\/api$/, "");
+    
+    // 2. BUILD THE CORRECT URL
+    // We manually add '/api/upload/kyc' to ensure it's always right
+    const url = `${cleanBase}/api/upload/kyc`;
+
+    console.log("UPLOADING TO:", url); // Check console to see the fixed URL
+
+    const res = await fetch(url, { 
       method: "POST", 
       body: data 
     });
 
-    if (!res.ok) throw new Error("File upload failed");
+    if (!res.ok) {
+        const errorText = await res.text(); 
+        console.error("Server Error:", errorText);
+        throw new Error(errorText || "File upload failed");
+    }
+
     const json = await res.json();
     return json.url;
   };
