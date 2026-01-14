@@ -82,9 +82,22 @@ export default function KYCVerificationPage() {
   const [isSuccess, setIsSuccess] = useState(false);
   const [statusMessage, setStatusMessage] = useState("");
 
+  // 1. Initial Load
   useEffect(() => {
     refreshUser();
   }, []);
+
+  // 2. NEW: Auto-refresh every 5 seconds if status is 'pending'
+  // This automatically switches the screen to "Verified" when Admin approves
+  useEffect(() => {
+    let interval;
+    if (user?.kyc_status === 'pending') {
+      interval = setInterval(() => {
+        refreshUser(); 
+      }, 5000);
+    }
+    return () => clearInterval(interval);
+  }, [user?.kyc_status, refreshUser]);
 
   const nextStep = () => setStep(prev => prev + 1);
   const prevStep = () => setStep(prev => prev - 1);
@@ -170,6 +183,10 @@ export default function KYCVerificationPage() {
         <h1 className="text-3xl font-black text-gray-900 tracking-tight mb-2">In Review</h1>
         <p className="text-gray-500 max-w-xs mx-auto leading-relaxed">
           Your documents are currently being reviewed by our team. You cannot submit a new application until this one is processed.
+          {/* New Auto-Check Text */}
+          <span className="text-xs font-bold text-blue-500 mt-3 block animate-pulse">
+            Checking status automatically...
+          </span>
         </p>
         <button 
           onClick={() => window.location.href = '/profile'} 
