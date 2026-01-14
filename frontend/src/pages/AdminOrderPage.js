@@ -1,4 +1,4 @@
-//src>pages>AdminOrdrPage.js
+//src>pages>AdminOrderPage.js
 
 import React, { useEffect, useState, useCallback } from "react";
 import { FaCheck, FaTimes, FaClipboardList } from "react-icons/fa";
@@ -83,20 +83,20 @@ export default function AdminOrderPage() {
       console.error("Failed to approve resale:", err);
       alert("Action failed. Please check console.");
     }
-  }; // <--- THIS WAS MISSING IN YOUR SNIPPET
+  }; 
 
-  const handleApprove = async (userId, orderId, approve) => {
+  // --- REPLACEMENT FOR handleApprove ---
+  const handleApproveRefund = async (userId, orderId, approve) => {
     try {
-      await fetch(`${API_URL}/orders/-approve`, {
+      // Fixed URL: points to /refund-approve
+      await fetch(`${API_URL}/orders/refund-approve`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ order_id: orderId, approve }),
       });
-      // Simple status update can be done locally or via refetch. 
-      // Refetch is consistent.
       await fetchOrders();
     } catch (err) {
-      console.error("Failed to approve :", err);
+      console.error("Failed to approve refund:", err);
     }
   };
 
@@ -157,64 +157,78 @@ export default function AdminOrderPage() {
                             {o.resale_status}
                           </span>
                         </td>
+                        {/* --- 5. RESALE STATUS COLUMN --- */}
                         <td className="px-3 py-3">
-                          <span className={`px-2 py-1 rounded-2xl text-xs font-bold shadow
-                            ${o._status === "ed"
+                          <span className={`px-2 py-1 rounded-2xl text-xs font-bold shadow 
+                            ${o.resale_status === "sold"
                               ? "bg-green-100 text-green-700 border border-green-300"
-                              : o._status === "pending"
+                              : o.resale_status === "pending"
                               ? "bg-yellow-100 text-yellow-700 border border-yellow-300"
                               : "bg-gray-200 text-gray-700 border border-gray-300"}
                           `}>
-                            {o._status}
+                            {o.resale_status || "None"}
                           </span>
                         </td>
+
+                        {/* --- 6. MAIN STATUS COLUMN (Refunds) --- */}
                         <td className="px-3 py-3">
-                          {/* Only show resale actions if NO  in progress or completed */}
-                          {o.resale_status === "pending" && o._status !== "pending" && o._status !== "ed" && (
+                          {o.status === "refund_pending" ? (
+                            <span className="px-2 py-1 rounded-2xl text-xs font-bold bg-red-100 text-red-700 border border-red-300 animate-pulse">
+                              Refund Req
+                            </span>
+                          ) : o.status === "refunded" ? (
+                            <span className="px-2 py-1 rounded-2xl text-xs font-bold bg-gray-200 text-gray-500 line-through">
+                              Refunded
+                            </span>
+                          ) : (
+                            <span className="px-2 py-1 rounded-2xl text-xs font-bold bg-blue-50 text-blue-600 border border-blue-200">
+                              Active
+                            </span>
+                          )}
+                        </td>
+
+                        {/* --- 7. ACTIONS COLUMN --- */}
+                        <td className="px-3 py-3">
+                          {/* A. REFUND ACTIONS (Priority) */}
+                          {o.status === "refund_pending" && (
                             <div className="flex items-center gap-2">
-                              {/* Quantity Input for Partial Sell */}
-                              <input 
-                                type="number" 
-                                min="1" 
-                                max={o.quantity}
-                                placeholder={o.quantity}
-                                value={sellQuantities[o.id] || ""}
-                                onChange={(e) => handleQuantityChange(o.id, e.target.value)}
-                                className="w-16 px-2 py-1 border border-gray-300 rounded text-center text-sm focus:outline-none focus:border-green-500"
-                              />
-                              
                               <button
-                                className="flex items-center gap-1 bg-green-600 hover:bg-green-800 text-white px-2.5 py-1 rounded-lg text-xs font-semibold transition shadow active:scale-95"
-                                onClick={() => handleApproveResale(u.id, o.id, true, o.quantity)}
-                                title="Approve Sold"
+                                className="flex items-center gap-1 bg-green-600 hover:bg-green-800 text-white px-2.5 py-1 rounded-lg text-xs font-semibold transition shadow"
+                                onClick={() => handleApproveRefund(u.id, o.id, true)}
+                                title="Approve Refund"
                               >
-                                <FaCheck />
+                                <FaCheck /> Refund
                               </button>
-                              
                               <button
-                                className="flex items-center gap-1 bg-red-500 hover:bg-red-700 text-white px-2.5 py-1 rounded-lg text-xs font-semibold transition shadow active:scale-95"
-                                onClick={() => handleApproveResale(u.id, o.id, false, o.quantity)}
-                                title="Deny Resale"
+                                className="flex items-center gap-1 bg-red-500 hover:bg-red-700 text-white px-2.5 py-1 rounded-lg text-xs font-semibold transition shadow"
+                                onClick={() => handleApproveRefund(u.id, o.id, false)}
+                                title="Deny Refund"
                               >
-                                <FaTimes />
+                                <FaTimes /> Deny
                               </button>
                             </div>
                           )}
 
-                          {/* Only show  actions if NOT already sold */}
-                          {o._status === "pending" && o.resale_status !== "sold" && (
+                          {/* B. RESALE ACTIONS (Only if NOT refunding) */}
+                          {o.resale_status === "pending" && o.status !== "refund_pending" && (
                             <div className="flex items-center gap-2">
+                              <input 
+                                type="number" min="1" max={o.quantity} placeholder={o.quantity}
+                                value={sellQuantities[o.id] || ""}
+                                onChange={(e) => handleQuantityChange(o.id, e.target.value)}
+                                className="w-14 px-1 py-1 border border-gray-300 rounded text-center text-xs"
+                              />
                               <button
-                                className="flex items-center gap-1 bg-green-600 hover:bg-green-800 text-white px-2.5 py-1 rounded-lg text-xs font-semibold transition shadow active:scale-95"
-                                onClick={() => handleApprove(u.id, o.id, true)}
+                                className="bg-green-600 text-white p-1.5 rounded-md hover:bg-green-700 transition"
+                                onClick={() => handleApproveResale(u.id, o.id, true, o.quantity)}
                               >
-                                <FaCheck /> Approve 
+                                <FaCheck size={12}/>
                               </button>
                               <button
-                                className="flex items-center gap-1 bg-red-500 hover:bg-red-700 text-white px-2.5 py-1 rounded-lg text-xs font-semibold transition shadow active:scale-95"
-                                onClick={() => handleApprove(u.id, o.id, false)}
+                                className="bg-red-500 text-white p-1.5 rounded-md hover:bg-red-600 transition"
+                                onClick={() => handleApproveResale(u.id, o.id, false, o.quantity)}
                               >
-                                <FaTimes /> Deny
+                                <FaTimes size={12}/>
                               </button>
                             </div>
                           )}
