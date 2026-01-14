@@ -85,9 +85,9 @@ export default function AdminOrderPage() {
     }
   }; // <--- THIS WAS MISSING IN YOUR SNIPPET
 
-  const handleApproveRefund = async (userId, orderId, approve) => {
+  const handleApprove = async (userId, orderId, approve) => {
     try {
-      await fetch(`${API_URL}/orders/refund-approve`, {
+      await fetch(`${API_URL}/orders/-approve`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ order_id: orderId, approve }),
@@ -96,7 +96,7 @@ export default function AdminOrderPage() {
       // Refetch is consistent.
       await fetchOrders();
     } catch (err) {
-      console.error("Failed to approve refund:", err);
+      console.error("Failed to approve :", err);
     }
   };
 
@@ -127,7 +127,7 @@ export default function AdminOrderPage() {
                   <th className="py-3 px-3 text-left font-bold">Qty</th>
                   <th className="py-3 px-3 text-left font-bold">Total</th>
                   <th className="py-3 px-3 text-left font-bold">Resale Status</th>
-                  <th className="py-3 px-3 text-left font-bold">Refund Status</th>
+                  <th className="py-3 px-3 text-left font-bold"> Status</th>
                   <th className="py-3 px-3 text-left font-bold rounded-tr-2xl">Actions</th>
                 </tr>
               </thead>
@@ -159,18 +159,18 @@ export default function AdminOrderPage() {
                         </td>
                         <td className="px-3 py-3">
                           <span className={`px-2 py-1 rounded-2xl text-xs font-bold shadow
-                            ${o.refund_status === "refunded"
+                            ${o._status === "ed"
                               ? "bg-green-100 text-green-700 border border-green-300"
-                              : o.refund_status === "pending"
+                              : o._status === "pending"
                               ? "bg-yellow-100 text-yellow-700 border border-yellow-300"
                               : "bg-gray-200 text-gray-700 border border-gray-300"}
                           `}>
-                            {o.refund_status}
+                            {o._status}
                           </span>
                         </td>
                         <td className="px-3 py-3">
-                          {/* Only show resale actions if NO refund in progress or completed */}
-                          {o.resale_status === "pending" && o.refund_status !== "pending" && o.refund_status !== "refunded" && (
+                          {/* Only show resale actions if NO  in progress or completed */}
+                          {o.resale_status === "pending" && o._status !== "pending" && o._status !== "ed" && (
                             <div className="flex items-center gap-2">
                               {/* Quantity Input for Partial Sell */}
                               <input 
@@ -201,18 +201,18 @@ export default function AdminOrderPage() {
                             </div>
                           )}
 
-                          {/* Only show refund actions if NOT already sold */}
-                          {o.refund_status === "pending" && o.resale_status !== "sold" && (
+                          {/* Only show  actions if NOT already sold */}
+                          {o._status === "pending" && o.resale_status !== "sold" && (
                             <div className="flex items-center gap-2">
                               <button
                                 className="flex items-center gap-1 bg-green-600 hover:bg-green-800 text-white px-2.5 py-1 rounded-lg text-xs font-semibold transition shadow active:scale-95"
-                                onClick={() => handleApproveRefund(u.id, o.id, true)}
+                                onClick={() => handleApprove(u.id, o.id, true)}
                               >
-                                <FaCheck /> Approve Refund
+                                <FaCheck /> Approve 
                               </button>
                               <button
                                 className="flex items-center gap-1 bg-red-500 hover:bg-red-700 text-white px-2.5 py-1 rounded-lg text-xs font-semibold transition shadow active:scale-95"
-                                onClick={() => handleApproveRefund(u.id, o.id, false)}
+                                onClick={() => handleApprove(u.id, o.id, false)}
                               >
                                 <FaTimes /> Deny
                               </button>
