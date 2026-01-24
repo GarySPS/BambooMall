@@ -1,8 +1,5 @@
-//src>pages>ProfilePage.js
-
-import React, { useEffect, useState } from "react";
+import React, { useState } from "react";
 import { useUser } from "../contexts/UserContext";
-import { fetchProducts } from "../utils/api";
 import { supabase } from "../utils/supabase";
 import { useNavigate } from "react-router-dom";
 import {
@@ -21,8 +18,7 @@ import {
   FaWallet, 
   FaEdit,
   FaShieldAlt,
-  FaCheckCircle,
-  FaTimesCircle
+  FaCheckCircle
 } from "react-icons/fa";
 
 // ---- VIP Tier Calculation ----
@@ -109,107 +105,14 @@ function CustomFileInput({ id, onChange, accept, disabled, label = "Choose File"
   );
 }
 
-// ---- KYC Form ----
-function KYCForm({ user, kycSelfie, setKycSelfie, kycId, setKycId, refreshUser }) {
-  const [submitting, setSubmitting] = useState(false);
-  const [done, setDone] = useState(false);
-
-  async function uploadKycFile(file) {
-    const formData = new FormData();
-    formData.append("file", file);
-    const res = await fetch("/api/upload/kyc", { method: "POST", body: formData });
-    if (!res.ok) throw new Error("Upload failed");
-    const data = await res.json();
-    return data.url;
-  }
-
-  async function handleKycSubmit(e) {
-    e.preventDefault();
-    if (!kycSelfie || !kycId) return;
-    setSubmitting(true);
-    try {
-      const selfieUrl = await uploadKycFile(kycSelfie);
-      const idUrl = await uploadKycFile(kycId);
-      // Submit Selfie
-      await fetch("/api/kyc/submit", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ short_id: user.short_id, name: "Selfie", doc_type: "selfie", doc_url: selfieUrl }),
-      });
-      // Submit ID
-      await fetch("/api/kyc/submit", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ short_id: user.short_id, name: "ID Card", doc_type: "id_card", doc_url: idUrl }),
-      });
-      setDone(true);
-      if (refreshUser) refreshUser();
-    } catch {
-      alert("Upload failed. Please try again.");
-    } finally {
-      setSubmitting(false);
-    }
-  }
-
-  if (user.kyc_status !== "approved" && !done) {
-    return (
-      <form className="flex flex-col gap-3 pt-2 items-center w-full max-w-sm" onSubmit={handleKycSubmit}>
-        <div className="w-full space-y-3">
-          <div className="space-y-1">
-             <span className="text-xs font-bold text-gray-400 uppercase tracking-wider ml-1">Upload Selfie</span>
-             <CustomFileInput
-              id="kyc-selfie-upload"
-              onChange={e => setKycSelfie(e.target.files[0])}
-              accept="image/*"
-              disabled={submitting}
-              label={kycSelfie ? kycSelfie.name : "Select Selfie"}
-            />
-          </div>
-          <div className="space-y-1">
-             <span className="text-xs font-bold text-gray-400 uppercase tracking-wider ml-1">Upload ID Card</span>
-             <CustomFileInput
-              id="kyc-id-upload"
-              onChange={e => setKycId(e.target.files[0])}
-              accept="image/*"
-              disabled={submitting}
-              label={kycId ? kycId.name : "Select ID Card"}
-            />
-          </div>
-        </div>
-        <button
-          type="submit"
-          disabled={!kycSelfie || !kycId || submitting}
-          className={`mt-4 rounded-xl px-6 py-3 w-full text-white font-bold bg-gradient-to-r from-green-500 to-emerald-600 shadow-lg shadow-green-200 hover:scale-[1.02] active:scale-95 transition-all ${
-            (!kycSelfie || !kycId || submitting) ? "opacity-50 cursor-not-allowed grayscale" : ""
-          }`}
-        >
-          {submitting ? "Processing..." : "Submit Verification"}
-        </button>
-      </form>
-    );
-  }
-
-  return (
-    <div className="flex flex-col items-center w-full max-w-xs animate-pulse">
-      {user.kyc_status === "pending" || done ? (
-        <div className="flex items-center gap-2 text-xs text-amber-600 mt-2 text-center font-bold uppercase tracking-wider bg-amber-50 px-4 py-2 rounded-full border border-amber-100">
-          <span className="w-2 h-2 rounded-full bg-amber-400 animate-ping"/> Verification In Review
-        </div>
-      ) : null}
-    </div>
-  );
-}
-
 // ---- MAIN PROFILE PAGE ----
 export default function ProfilePage() {
   const { user, wallet, refreshUser, logout } = useUser();
-  const [products, setProducts] = useState([]);
-  const [loadingProducts, setLoadingProducts] = useState(true);
-
+  
   // Toggles
-  const [showKYC, setShowKYC] = useState(true);
   const [showAvatar, setShowAvatar] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
+  const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
 
   // Edit Profile
   const [profileAvatar, setProfileAvatar] = useState(null);
@@ -219,24 +122,11 @@ export default function ProfilePage() {
   const [newPass, setNewPass] = useState("");
   const [confirmPass, setConfirmPass] = useState("");
 
-  const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
-
   const navigate = useNavigate();
 
   // Balance logic
-const totalBalance = wallet?.balance || 0; 
-const currentVipTier = getVipTier(totalBalance);
-
-  useEffect(() => {
-    if (!user?.user_id) return setLoadingProducts(false);
-    setLoadingProducts(true);
-    fetchProducts(user.user_id)
-      .then((data) => {
-        setProducts(data);
-        setLoadingProducts(false);
-      })
-      .catch(() => setLoadingProducts(false));
-  }, [user]);
+  const totalBalance = wallet?.balance || 0; 
+  const currentVipTier = getVipTier(totalBalance);
 
   if (!user) {
     return (
@@ -325,28 +215,23 @@ const currentVipTier = getVipTier(totalBalance);
         {/* Chart Card */}
         <div className="bg-white rounded-3xl shadow-lg border border-gray-100 p-6">
            <div className="flex items-center justify-between mb-6 px-2">
-              <div>
-                  <h4 className="text-lg font-extrabold text-gray-800">Asset Growth</h4>
-                  <p className="text-xs text-gray-400 font-medium">Last 14 Days Performance</p>
-              </div>
-              {/* Dynamic Growth Percentage */}
-              <div className={`px-3 py-1 rounded-lg text-xs font-bold border ${totalBalance > 0 ? 'bg-green-50 text-green-600 border-green-100' : 'bg-gray-50 text-gray-400 border-gray-100'}`}>
-                  {totalBalance > 0 ? '+12.5%' : '0.0%'}
-              </div>
+             <div>
+                 <h4 className="text-lg font-extrabold text-gray-800">Asset Growth</h4>
+                 <p className="text-xs text-gray-400 font-medium">Last 14 Days Performance</p>
+             </div>
+             {/* Dynamic Growth Percentage */}
+             <div className={`px-3 py-1 rounded-lg text-xs font-bold border ${totalBalance > 0 ? 'bg-green-50 text-green-600 border-green-100' : 'bg-gray-50 text-gray-400 border-gray-100'}`}>
+                 {totalBalance > 0 ? '+12.5%' : '0.0%'}
+             </div>
            </div>
            <div className="w-full h-[200px]">
               <ResponsiveContainer width="100%" height="100%">
                 <AreaChart
-                  // DYNAMIC DATA GENERATION
-                  // 1. Creates 14 data points
-                  // 2. If balance is 0, all points are 0
-                  // 3. If balance > 0, simulates a growth curve ending at your exact current balance
                   data={Array.from({ length: 14 }).map((_, i) => {
                     const isToday = i === 13;
                     let val = 0;
                     
                     if (totalBalance > 0) {
-                        // Linear simulation: Start at 80% of balance, grow to 100%
                         const growthFactor = 0.8 + (i / 13) * 0.2; 
                         val = isToday ? totalBalance : Math.floor(totalBalance * growthFactor);
                     }
@@ -386,7 +271,7 @@ const currentVipTier = getVipTier(totalBalance);
            </div>
         </div>
 
-        {/* KYC Verification Card - UPDATED */}
+        {/* KYC Verification Card */}
         <div className="bg-white rounded-3xl shadow-lg border border-gray-100 p-8 text-center">
              <div className="w-16 h-16 rounded-2xl bg-blue-50 text-blue-500 mx-auto flex items-center justify-center mb-4 text-3xl shadow-sm">
                 <FaShieldAlt />
@@ -396,7 +281,6 @@ const currentVipTier = getVipTier(totalBalance);
                Complete your verification to unlock higher withdrawal limits and VIP benefits.
              </p>
              
-             {/* Navigation Button */}
              <button 
                onClick={() => navigate('/kyc-verification')}
                className="w-full py-4 rounded-xl bg-blue-600 text-white font-bold shadow-lg shadow-blue-200 hover:bg-blue-700 transition-all flex items-center justify-center gap-2 active:scale-95"
@@ -420,35 +304,35 @@ const currentVipTier = getVipTier(totalBalance);
                </button>
                {showAvatar && (
                  <form
-                    className="flex flex-col gap-3 mt-4 animate-fade-in"
-                    onSubmit={async (e) => {
-                      e.preventDefault();
-                      if (!profileAvatar) return;
-                      const fileExt = profileAvatar.name.split('.').pop();
-                      const filePath = `${user.user_id}_${Date.now()}.${fileExt}`;
-                      let { error: uploadError } = await supabase.storage.from('avatars').upload(filePath, profileAvatar, { upsert: true });
-                      if (uploadError) { alert("Upload failed!"); return; }
-                      const { data } = supabase.storage.from('avatars').getPublicUrl(filePath);
-                      await fetch(`/api/user/update-avatar`, {
-                        method: "POST",
-                        headers: { "Content-Type": "application/json" },
-                        body: JSON.stringify({ user_id: user.user_id, avatar: data.publicUrl }),
-                      });
-                      setProfileAvatar(null);
-                      alert("Updated!");
-                      refreshUser();
-                    }}
-                  >
-                    <CustomFileInput
-                      id="profile-avatar-upload"
-                      onChange={e => setProfileAvatar(e.target.files[0])}
-                      accept="image/*"
-                      label={profileAvatar ? profileAvatar.name : "Select Image"}
-                    />
-                    <button type="submit" disabled={!profileAvatar} className="w-full py-2 rounded-lg bg-gray-900 text-white font-bold text-sm hover:bg-black disabled:opacity-50 transition-colors">
-                      Update Photo
-                    </button>
-                  </form>
+                   className="flex flex-col gap-3 mt-4 animate-fade-in"
+                   onSubmit={async (e) => {
+                     e.preventDefault();
+                     if (!profileAvatar) return;
+                     const fileExt = profileAvatar.name.split('.').pop();
+                     const filePath = `${user.user_id}_${Date.now()}.${fileExt}`;
+                     let { error: uploadError } = await supabase.storage.from('avatars').upload(filePath, profileAvatar, { upsert: true });
+                     if (uploadError) { alert("Upload failed!"); return; }
+                     const { data } = supabase.storage.from('avatars').getPublicUrl(filePath);
+                     await fetch(`/api/user/update-avatar`, {
+                       method: "POST",
+                       headers: { "Content-Type": "application/json" },
+                       body: JSON.stringify({ user_id: user.user_id, avatar: data.publicUrl }),
+                     });
+                     setProfileAvatar(null);
+                     alert("Updated!");
+                     refreshUser();
+                   }}
+                 >
+                   <CustomFileInput
+                     id="profile-avatar-upload"
+                     onChange={e => setProfileAvatar(e.target.files[0])}
+                     accept="image/*"
+                     label={profileAvatar ? profileAvatar.name : "Select Image"}
+                   />
+                   <button type="submit" disabled={!profileAvatar} className="w-full py-2 rounded-lg bg-gray-900 text-white font-bold text-sm hover:bg-black disabled:opacity-50 transition-colors">
+                     Update Photo
+                   </button>
+                 </form>
                )}
             </div>
 
@@ -465,35 +349,33 @@ const currentVipTier = getVipTier(totalBalance);
                </button>
                {showPassword && (
                  <form
-                    className="flex flex-col gap-3 mt-4 animate-fade-in"
-                    onSubmit={async (e) => {
-                      e.preventDefault();
-                      if (!oldPass || !newPass || !confirmPass) { alert("Required"); return; }
-                      if (newPass !== confirmPass) { alert("Mismatch"); return; }
-                      const res = await fetch("/api/user/change-password", {
-                        method: "POST",
-                        headers: { "Content-Type": "application/json" },
-                        body: JSON.stringify({ user_id: user.id, old_password: oldPass, new_password: newPass }),
-                      });
-                      const data = await res.json();
-                      if (res.ok && data.message === "Password changed") {
-                        alert("Success!"); setOldPass(""); setNewPass(""); setConfirmPass("");
-                      } else { alert(data.error || "Failed"); }
-                    }}
-                  >
-                    <input type="password" placeholder="Current" className="w-full bg-gray-50 border border-gray-200 rounded-lg px-3 py-2 text-sm text-gray-800 focus:border-orange-400 outline-none" value={oldPass} onChange={e => setOldPass(e.target.value)} />
-                    <input type="password" placeholder="New" className="w-full bg-gray-50 border border-gray-200 rounded-lg px-3 py-2 text-sm text-gray-800 focus:border-orange-400 outline-none" value={newPass} onChange={e => setNewPass(e.target.value)} />
-                    <input type="password" placeholder="Confirm" className="w-full bg-gray-50 border border-gray-200 rounded-lg px-3 py-2 text-sm text-gray-800 focus:border-orange-400 outline-none" value={confirmPass} onChange={e => setConfirmPass(e.target.value)} />
-                    <button type="submit" className="w-full py-2 rounded-lg bg-orange-500 text-white font-bold text-sm hover:bg-orange-600 transition-colors">
-                      Change Password
-                    </button>
-                  </form>
+                   className="flex flex-col gap-3 mt-4 animate-fade-in"
+                   onSubmit={async (e) => {
+                     e.preventDefault();
+                     if (!oldPass || !newPass || !confirmPass) { alert("Required"); return; }
+                     if (newPass !== confirmPass) { alert("Mismatch"); return; }
+                     const res = await fetch("/api/user/change-password", {
+                       method: "POST",
+                       headers: { "Content-Type": "application/json" },
+                       body: JSON.stringify({ user_id: user.id, old_password: oldPass, new_password: newPass }),
+                     });
+                     const data = await res.json();
+                     if (res.ok && data.message === "Password changed") {
+                       alert("Success!"); setOldPass(""); setNewPass(""); setConfirmPass("");
+                     } else { alert(data.error || "Failed"); }
+                   }}
+                 >
+                   <input type="password" placeholder="Current" className="w-full bg-gray-50 border border-gray-200 rounded-lg px-3 py-2 text-sm text-gray-800 focus:border-orange-400 outline-none" value={oldPass} onChange={e => setOldPass(e.target.value)} />
+                   <input type="password" placeholder="New" className="w-full bg-gray-50 border border-gray-200 rounded-lg px-3 py-2 text-sm text-gray-800 focus:border-orange-400 outline-none" value={newPass} onChange={e => setNewPass(e.target.value)} />
+                   <input type="password" placeholder="Confirm" className="w-full bg-gray-50 border border-gray-200 rounded-lg px-3 py-2 text-sm text-gray-800 focus:border-orange-400 outline-none" value={confirmPass} onChange={e => setConfirmPass(e.target.value)} />
+                   <button type="submit" className="w-full py-2 rounded-lg bg-orange-500 text-white font-bold text-sm hover:bg-orange-600 transition-colors">
+                     Change Password
+                   </button>
+                 </form>
                )}
             </div>
         </div>
 
-        {/* ---- REPLACEMENT START ---- */}
-        
         {/* Logout Button Trigger */}
         <button
           onClick={() => setShowLogoutConfirm(true)}
@@ -549,8 +431,6 @@ const currentVipTier = getVipTier(totalBalance);
             </div>
           </div>
         )}
-        
-        {/* ---- REPLACEMENT END ---- */}
 
       </div>
     </div>

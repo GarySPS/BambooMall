@@ -46,9 +46,11 @@ function fillSimulatedFields(product) {
       if (product.gallery?.trim?.().length > 0) galleryArr = [product.gallery.trim()];
     }
   }
+  
+  // FIX: Fixed Regex to remove unnecessary escape characters
   galleryArr = (galleryArr || []).map(x =>
     typeof x === "string"
-      ? x.replace(/[\[\]\"]/g, "").trim()
+      ? x.replace(/[[\]"]/g, "").trim()
       : x
   ).filter(url =>
     typeof url === "string" &&
@@ -63,14 +65,13 @@ function fillSimulatedFields(product) {
   }
 
   let colorsArr = [];
-if (Array.isArray(product.colors)) colorsArr = product.colors;
-else if (typeof product.colors === "string") {
-  try { colorsArr = JSON.parse(cleanJsonStr(product.colors)); } catch { colorsArr = []; }
-}
-if ((!colorsArr || !colorsArr.length) && typeof product.color === "string") {
-  try { colorsArr = JSON.parse(cleanJsonStr(product.color)); } catch { colorsArr = []; }
-}
-
+  if (Array.isArray(product.colors)) colorsArr = product.colors;
+  else if (typeof product.colors === "string") {
+    try { colorsArr = JSON.parse(cleanJsonStr(product.colors)); } catch { colorsArr = []; }
+  }
+  if ((!colorsArr || !colorsArr.length) && typeof product.color === "string") {
+    try { colorsArr = JSON.parse(cleanJsonStr(product.color)); } catch { colorsArr = []; }
+  }
 
   let keyAttributesArr = [];
   if (Array.isArray(product.keyAttributes)) keyAttributesArr = product.keyAttributes;
@@ -109,29 +110,29 @@ export default function ProductDetailPage() {
   const vipDiscount = getVipDiscount(wallet);
 
   function getResaleCalc(product, quantity) {
-  const tiers =
-    Array.isArray(product.priceTiers) ? product.priceTiers :
-    typeof product.priceTiers === "string" ? JSON.parse(cleanJsonStr(product.priceTiers)) :
-    typeof product.price_tiers === "string" ? JSON.parse(cleanJsonStr(product.price_tiers)) :
-    Array.isArray(product.price_tiers) ? product.price_tiers :
-    [];
+    const tiers =
+      Array.isArray(product.priceTiers) ? product.priceTiers :
+      typeof product.priceTiers === "string" ? JSON.parse(cleanJsonStr(product.priceTiers)) :
+      typeof product.price_tiers === "string" ? JSON.parse(cleanJsonStr(product.price_tiers)) :
+      Array.isArray(product.price_tiers) ? product.price_tiers :
+      [];
 
-  // If tiers empty, fallback to product.price
-  let tier = tiers.slice().reverse().find((t) => quantity >= t.min);
-  if (!tier && typeof product.price === "number") {
-    tier = { min: 1, price: product.price };
+    // If tiers empty, fallback to product.price
+    let tier = tiers.slice().reverse().find((t) => quantity >= t.min);
+    if (!tier && typeof product.price === "number") {
+      tier = { min: 1, price: product.price };
+    }
+    if (!tier) tier = { min: 1, price: 1 }; // fallback
+
+    const baseDiscount = product.discount || 0;
+    const vip = getVipDiscount(wallet) || 0;
+    const totalDiscount = baseDiscount + vip;
+    const total = tier.price * quantity;
+    const discounted = total * (1 - totalDiscount / 100);
+    const resale = (typeof product.price === "number" ? product.price : tier.price) * quantity;
+    const profit = resale - discounted;
+    return { tier, total, discounted, resale, profit, totalDiscount };
   }
-  if (!tier) tier = { min: 1, price: 1 }; // fallback
-
-  const baseDiscount = product.discount || 0;
-  const vip = getVipDiscount(wallet) || 0;
-  const totalDiscount = baseDiscount + vip;
-  const total = tier.price * quantity;
-  const discounted = total * (1 - totalDiscount / 100);
-  const resale = (typeof product.price === "number" ? product.price : tier.price) * quantity;
-  const profit = resale - discounted;
-  return { tier, total, discounted, resale, profit, totalDiscount };
-}
 
 
   const orderPreview = product ? getResaleCalc(product, Number(quantity)) : null;
@@ -425,4 +426,3 @@ export default function ProductDetailPage() {
     </div>
   );
 }
-

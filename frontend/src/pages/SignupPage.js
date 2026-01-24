@@ -6,13 +6,10 @@ import { useUser } from "../contexts/UserContext";
 import { API_BASE_URL } from "../config";
 // Added icons to match Login style + Eye toggles
 import { 
-  FaShieldAlt, 
-  FaGlobeAsia, 
   FaCheckCircle, 
   FaLock, 
   FaUser, 
   FaEnvelope, 
-  FaShoppingBag, 
   FaArrowRight,
   FaEye,
   FaEyeSlash

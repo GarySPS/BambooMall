@@ -2,7 +2,8 @@
 
 import React, { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
-import { FaPlus, FaSearch, FaFilter, FaBolt, FaSpinner, FaLock, FaUserShield } from "react-icons/fa"; 
+// FIX: Removed 'FaLock' to solve build error
+import { FaPlus, FaSearch, FaFilter, FaBolt, FaSpinner, FaUserShield } from "react-icons/fa"; 
 import { fetchProducts } from "../utils/api";
 import { getProductImage } from "../utils/image";
 import { useUser } from "../contexts/UserContext"; 
@@ -14,8 +15,6 @@ export default function ProductsPage() {
   const [error, setError] = useState(null);
   const [searchTerm, setSearchTerm] = useState("");
 
-  // --- FIX: Check kyc_status === 'approved' instead of kyc_verified ---
-  // Your DB uses 'kyc_status' with values like 'pending', 'approved', etc.
   const isVerified = user && user.kyc_status === 'approved'; 
 
   useEffect(() => {
@@ -85,7 +84,6 @@ export default function ProductsPage() {
                     Register & Verify Now
                 </Link>
                 
-                {/* Optional: Add a refresh button to help users update their status immediately */}
                 <button 
                   onClick={() => window.location.reload()}
                   className="mt-4 text-xs text-gray-500 underline hover:text-green-600 bg-transparent border-none cursor-pointer"
@@ -115,7 +113,7 @@ export default function ProductsPage() {
                 onChange={(e) => setSearchTerm(e.target.value)}
               />
               <button className="absolute right-2 top-1/2 -translate-y-1/2 p-2 bg-white rounded-xl shadow-sm text-gray-500 hover:text-green-700 transition-colors">
-                 <FaFilter size={12} />
+                  <FaFilter size={12} />
               </button>
             </div>
           </div>
