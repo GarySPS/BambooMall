@@ -5,7 +5,7 @@ import { useUser } from "../contexts/UserContext";
 import { useNavigate } from "react-router-dom";
 import { API_BASE_URL } from "../config";
 // Added FaEnvelope, FaEye, FaEyeSlash, FaShoppingBag for the new design
-import { FaShieldAlt, FaGlobeAsia, FaCheckCircle, FaLock, FaEnvelope, FaEye, FaEyeSlash, FaShoppingBag, FaArrowRight } from "react-icons/fa";
+import { FaShieldAlt, FaGlobeAsia, FaCheckCircle, FaLock, FaEnvelope, FaEye, FaEyeSlash, FaArrowRight } from "react-icons/fa";
 
 // --- COMPONENT: ANIMATED NETWORK BACKGROUND (Unchanged) ---
 const NetworkCanvas = () => {

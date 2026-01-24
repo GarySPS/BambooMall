@@ -4,14 +4,12 @@ import React, { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { API_BASE_URL } from "../config";
 import { 
-  FaShieldAlt, 
   FaLock, 
   FaEnvelope, 
   FaArrowRight, 
   FaCheckCircle, 
   FaEye, 
-  FaEyeSlash,
-  FaKey 
+  FaEyeSlash
 } from "react-icons/fa";
 
 // --- ANIMATED NETWORK BACKGROUND ---

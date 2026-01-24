@@ -3,7 +3,6 @@
 import React, { useState, useEffect } from "react";
 import { useUser } from "../contexts/UserContext";
 import AnimatedVipBadge from "../components/AnimatedVipBadge";
-import { useNavigate } from "react-router-dom";
 import { API_BASE_URL } from "../config";
 import { fetchResaleHistory } from "../utils/api";
 import { 
@@ -14,9 +13,10 @@ import {
   FaCopy, 
   FaCheck, 
   FaTimes, 
-  FaMoneyBillWave,
   FaUniversity
 } from "react-icons/fa";
+
+// FIX: Removed 'FaMoneyBillWave' and 'useNavigate' to solve build errors
 
 // --- VIP Logic ---
 function getVipLevel(balance) {
@@ -112,7 +112,8 @@ export default function BalancePage() {
   const [withdrawAmount, setWithdrawAmount] = useState("");
   const [withdrawAddress, setWithdrawAddress] = useState("");
   const [submitState, setSubmitState] = useState("idle"); 
-  const navigate = useNavigate();
+  
+  // FIX: Removed unused 'navigate' hook
 
   useEffect(() => {
     if (user?.id) {
@@ -127,7 +128,8 @@ export default function BalancePage() {
         .then(data => setResaleHistory(Array.isArray(data.orders) ? data.orders : []))
         .catch(() => setResaleHistory([]));
     }
-  }, [user?.id]);
+    // FIX: Added missing dependency 'updateWallet'
+  }, [user?.id, updateWallet]);
 
   // Auto-close deposit modal after success
   useEffect(() => {
@@ -197,8 +199,8 @@ export default function BalancePage() {
   };
 
   // --- Payment UI logic
-const balance = Number(wallet?.balance || 0);
-const vipLevel = getVipLevel(balance);
+  const balance = Number(wallet?.balance || 0);
+  const vipLevel = getVipLevel(balance);
 
   const PAYMENT_MAP = {
     "USDC(TRC)": USDC_INFO,

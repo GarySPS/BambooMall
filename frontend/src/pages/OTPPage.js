@@ -4,7 +4,7 @@ import React, { useState, useEffect, useRef } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { useUser } from "../contexts/UserContext";
 import { API_BASE_URL } from "../config";
-import { FaShieldAlt, FaShoppingBag, FaArrowRight, FaLock } from "react-icons/fa";
+import { FaArrowRight } from "react-icons/fa";
 
 // --- ANIMATED NETWORK BACKGROUND ---
 const NetworkCanvas = () => {

@@ -1,11 +1,11 @@
-//src>pages>KYCVerificationPage.js
+//src>pgaes>KYCVerificationPage.js
 
-import React, { useState, useEffect } from 'react'; // Added useEffect
+import React, { useState, useEffect } from 'react'; 
 import { useUser } from "../contexts/UserContext"; 
 import { toast } from "react-toastify"; 
 import { 
   ShieldCheck, Camera, User, IdCard, CheckCircle2, 
-  ChevronRight, ArrowLeft, Lock, Info, FileText, Smartphone, Clock // Added Clock icon
+  ChevronRight, ArrowLeft, Lock, Info, FileText, Smartphone, Clock 
 } from 'lucide-react';
 
 // --- Sub-components (Kept the same) ---
@@ -64,8 +64,6 @@ const UploadZone = ({ label, description, onFileSelect, file, icon: Icon }) => (
 export default function KYCVerificationPage() {
   const { user, refreshUser } = useUser();
   
-  // 1. ADD THIS CONSTANT TO USE YOUR ENV VARIABLE
-  // This ensures we use the full backend URL in production
   const API_BASE = process.env.REACT_APP_API_BASE_URL; 
 
   const [step, setStep] = useState(1);
@@ -85,10 +83,10 @@ export default function KYCVerificationPage() {
   // 1. Initial Load
   useEffect(() => {
     refreshUser();
-  }, []);
+    // FIX: Added 'refreshUser' to dependency array
+  }, [refreshUser]);
 
-  // 2. NEW: Auto-refresh every 5 seconds if status is 'pending'
-  // This automatically switches the screen to "Verified" when Admin approves
+  // 2. Auto-refresh every 5 seconds if status is 'pending'
   useEffect(() => {
     let interval;
     if (user?.kyc_status === 'pending') {
@@ -102,20 +100,14 @@ export default function KYCVerificationPage() {
   const nextStep = () => setStep(prev => prev + 1);
   const prevStep = () => setStep(prev => prev - 1);
 
-  // 2. UPDATE THIS FUNCTION (FIXED FOR RENDER 404s)
   const uploadFile = async (file) => {
     const data = new FormData();
     data.append("file", file);
 
-    // 1. CLEAN UP THE URL
-    // Remove trailing slash if present, and remove '/api' if it's already there to prevent duplicates
     let cleanBase = API_BASE.replace(/\/$/, "").replace(/\/api$/, "");
-    
-    // 2. BUILD THE CORRECT URL
-    // We manually add '/api/upload/kyc' to ensure it's always right
     const url = `${cleanBase}/api/upload/kyc`;
 
-    console.log("UPLOADING TO:", url); // Check console to see the fixed URL
+    console.log("UPLOADING TO:", url); 
 
     const res = await fetch(url, { 
       method: "POST", 
@@ -132,7 +124,6 @@ export default function KYCVerificationPage() {
     return json.url;
   };
 
-  // 3. UPDATE THIS FUNCTION
   const handleSubmit = async () => {
     if(!user) {
         toast.error("User session not found. Please login again.");
@@ -152,7 +143,6 @@ export default function KYCVerificationPage() {
 
       setStatusMessage("Finalizing Application...");
       
-      // FIXED: Use API_BASE here as well
       const res = await fetch(`${API_BASE}/kyc/submit-application`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -186,7 +176,6 @@ export default function KYCVerificationPage() {
     }
   };
 
-  // --- NEW: BLOCKING SCREEN IF PENDING ---
   if (user?.kyc_status === 'pending' && !isSuccess) {
     return (
       <div className="min-h-screen bg-white flex flex-col items-center justify-center p-6 text-center animate-in fade-in zoom-in duration-500">
@@ -196,7 +185,6 @@ export default function KYCVerificationPage() {
         <h1 className="text-3xl font-black text-gray-900 tracking-tight mb-2">In Review</h1>
         <p className="text-gray-500 max-w-xs mx-auto leading-relaxed">
           Your documents are currently being reviewed by our team. You cannot submit a new application until this one is processed.
-          {/* New Auto-Check Text */}
           <span className="text-xs font-bold text-blue-500 mt-3 block animate-pulse">
             Checking status automatically...
           </span>
@@ -211,7 +199,6 @@ export default function KYCVerificationPage() {
     );
   }
 
-  // --- NEW: BLOCKING SCREEN IF APPROVED ---
   if (user?.kyc_status === 'approved') {
     return (
       <div className="min-h-screen bg-white flex flex-col items-center justify-center p-6 text-center animate-in fade-in zoom-in duration-500">
@@ -252,7 +239,6 @@ export default function KYCVerificationPage() {
     );
   }
 
-  // ... (The rest of your JSX form code is below, unchanged)
   return (
     <div className="min-h-screen bg-[#F8FAFC] text-slate-900 font-sans antialiased pb-12">
       <header className="bg-white border-b border-gray-100 sticky top-0 z-50">

@@ -1,14 +1,10 @@
+//src>components>AdminLayout.js
+
 import React, { useState } from "react";
 import { NavLink, Outlet } from "react-router-dom";
 import { FaBars, FaTimes, FaUserShield, FaUsers, FaShieldAlt, FaMoneyCheckAlt, FaExchangeAlt, FaClipboardList, FaSignOutAlt } from "react-icons/fa";
 
-// Premium theme color variables
-const colors = {
-  primary: "#17604e",
-  accent: "#ffd700",
-  bg: "#f5f6fa",
-  white: "#fff",
-};
+// FIX: Removed unused 'colors' object to solve build error
 
 const navLinks = [
   { to: "/admin/users", label: "Users", icon: <FaUsers className="mr-2" /> },
