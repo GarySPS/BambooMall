@@ -234,8 +234,11 @@ router.post('/resend-otp', async (req, res) => {
 
 // -------- Login --------
 router.post('/login', async (req, res) => {
+  console.log("🔥 LOG: Hitting the AUTH Login Route"); // Spy Log 1
   const supabase = req.supabase;
   const { email, password } = req.body;
+
+  console.log("1. Input:", { email, password }); // Spy Log 2
 
   const { data: user, error } = await supabase
     .from('users')
@@ -244,9 +247,14 @@ router.post('/login', async (req, res) => {
     .eq('password', password)
     .single();
 
+  // Spy Log 3: See exactly what Supabase returns
+  if (error) console.error("2. Supabase Error:", error); 
+  if (!user) console.error("2. User Not Found or Password Wrong");
+
   if (error || !user) return res.status(401).json({ error: 'Invalid credentials' });
   if (!user.verified) return res.status(401).json({ error: 'Account not verified.' });
 
+  console.log("3. Login Success for:", user.username);
   res.json({ user });
 });
 
