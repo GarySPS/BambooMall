@@ -109,7 +109,7 @@ export default function OTPPage() {
     setLoading(true);
 
     try {
-      const res = await fetch(`${API_BASE_URL}/users/verify-otp`, {
+      const res = await fetch(`${API_BASE_URL}/auth/verify-otp`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email, otp_code: otp }),
@@ -135,7 +135,7 @@ export default function OTPPage() {
     if (resendCooldown > 0) return;
     setError("");
     try {
-      const res = await fetch(`${API_BASE_URL}/users/resend-otp`, {
+      const res = await fetch(`${API_BASE_URL}/auth/resend-otp`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email }),
