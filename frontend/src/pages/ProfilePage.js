@@ -1,3 +1,5 @@
+//src>pages
+
 import React, { useState } from "react";
 import { useUser } from "../contexts/UserContext";
 import { supabase } from "../utils/supabase";
