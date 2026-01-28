@@ -1,150 +1,160 @@
-//src>components>AdminLayout.js
+// src/components/AdminLayout.js
 
 import React, { useState } from "react";
-import { NavLink, Outlet } from "react-router-dom";
-import { FaBars, FaTimes, FaUserShield, FaUsers, FaShieldAlt, FaMoneyCheckAlt, FaExchangeAlt, FaClipboardList, FaSignOutAlt } from "react-icons/fa";
+import { NavLink, Outlet, useLocation } from "react-router-dom";
+import { 
+  FaBars, 
+  FaTimes, 
+  FaUserShield, 
+  FaUsers, 
+  FaShieldAlt, 
+  FaMoneyCheckAlt, 
+  FaExchangeAlt, 
+  FaClipboardList, 
+  FaSignOutAlt,
+  FaChartPie 
+} from "react-icons/fa";
 
-// FIX: Removed unused 'colors' object to solve build error
-
+// Navigation Configuration
 const navLinks = [
-  { to: "/admin/users", label: "Users", icon: <FaUsers className="mr-2" /> },
-  { to: "/admin/kyc", label: "KYC", icon: <FaShieldAlt className="mr-2" /> },
-  { to: "/admin/deposit", label: "Deposit", icon: <FaMoneyCheckAlt className="mr-2" /> },
-  { to: "/admin/withdraw", label: "Withdraw", icon: <FaExchangeAlt className="mr-2" /> },
-  { to: "/admin/orders", label: "Orders", icon: <FaClipboardList className="mr-2" /> },
+  { to: "/admin/overview", label: "Overview", icon: <FaChartPie className="text-lg" /> },
+  { to: "/admin/users", label: "Users", icon: <FaUsers className="text-lg" /> },
+  { to: "/admin/kyc", label: "KYC", icon: <FaShieldAlt className="text-lg" /> },
+  { to: "/admin/deposit", label: "Deposits", icon: <FaMoneyCheckAlt className="text-lg" /> },
+  { to: "/admin/withdraw", label: "Withdrawals", icon: <FaExchangeAlt className="text-lg" /> },
+  { to: "/admin/orders", label: "Orders", icon: <FaClipboardList className="text-lg" /> },
 ];
 
 export default function AdminLayout() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const location = useLocation();
 
-  return (
-    <div className="min-h-screen flex bg-[#f5f6fa] font-inter">
-      {/* Hamburger for mobile */}
-      <button
-        className="md:hidden fixed top-4 left-4 z-30 bg-[#17604e] text-white p-3 rounded-full shadow-lg transition hover:scale-105 active:scale-95"
-        onClick={() => setSidebarOpen(true)}
-        aria-label="Open sidebar"
-      >
-        <FaBars size={22} />
-      </button>
+  // Helper to determine if link is active
+  const isLinkActive = (path) => location.pathname === path;
 
-      {/* Sidebar for desktop */}
-      <aside className="hidden md:flex w-64 bg-white/80 backdrop-blur-xl shadow-2xl p-7 flex-col gap-4 rounded-tr-3xl rounded-br-3xl z-20 border-r border-green-100">
-        {/* Logo & admin */}
-        <div className="flex flex-col items-start gap-3 mb-10">
-          <div className="flex items-center gap-3">
-            <span className="rounded-full bg-[#17604e]/10 p-2 shadow">
-              <FaUserShield className="text-[#17604e]" size={26} />
+  const SidebarContent = () => (
+    <>
+      {/* Logo Area */}
+      <div className="flex flex-col items-start gap-3 mb-8 px-2">
+        <div className="flex items-center gap-3">
+          <div className="rounded-xl bg-indigo-50 p-2.5 shadow-sm border border-indigo-100">
+            <FaUserShield className="text-[#17604e]" size={24} />
+          </div>
+          <div className="flex flex-col">
+            <span className="text-xl font-extrabold text-[#17604e] tracking-tight leading-none">
+              BambooMall
             </span>
-            <span className="text-2xl font-extrabold text-[#17604e] tracking-tight select-none">
-              BambooMall Admin
+            <span className="text-[10px] font-bold text-slate-400 tracking-widest uppercase mt-1">
+              Admin Panel
             </span>
           </div>
-          <span className="text-xs font-semibold text-green-900/60 pl-1 tracking-widest">
-            PREMIUM PANEL
-          </span>
         </div>
-        {/* Navigation */}
-        <nav className="flex flex-col gap-1">
-          {navLinks.map((link) => (
+      </div>
+
+      {/* Navigation Items */}
+      <nav className="flex flex-col gap-1.5 flex-1">
+        {navLinks.map((link) => {
+          const active = isLinkActive(link.to);
+          return (
             <NavLink
               key={link.to}
               to={link.to}
-              className={({ isActive }) =>
-                "flex items-center gap-2 rounded-xl px-4 py-2 font-semibold text-base transition group " +
-                (isActive
-                  ? "bg-[#17604e] text-white shadow-lg scale-105"
-                  : "hover:bg-[#e8f5ef] text-green-900 hover:text-[#17604e] active:bg-[#f1efe3]") +
-                " focus:outline-none"
-              }
+              onClick={() => setSidebarOpen(false)} // Close on mobile click
+              className={`
+                flex items-center gap-3 rounded-xl px-4 py-3 font-semibold text-sm transition-all duration-200
+                ${active 
+                  ? "bg-[#17604e] text-white shadow-md shadow-green-900/10 translate-x-1" 
+                  : "text-slate-600 hover:bg-slate-50 hover:text-[#17604e]"
+                }
+              `}
             >
-              {link.icon}
+              <span className={`opacity-80 ${active ? "text-white" : ""}`}>{link.icon}</span>
               <span>{link.label}</span>
+              {active && <div className="ml-auto w-1.5 h-1.5 rounded-full bg-white/50" />}
             </NavLink>
-          ))}
-        </nav>
-        {/* Exit */}
+          );
+        })}
+      </nav>
+
+      {/* Footer / Exit */}
+      <div className="pt-4 mt-auto border-t border-slate-100">
         <a
           href="/"
-          className="mt-auto flex items-center justify-center gap-2 bg-red-100 hover:bg-red-300 text-red-700 hover:text-white px-4 py-2 rounded-xl font-bold transition shadow active:scale-95 animate-bounce-slow"
-          style={{ marginTop: "auto" }}
+          className="flex items-center justify-center gap-2 bg-red-50 hover:bg-red-100 text-red-600 hover:text-red-700 px-4 py-2.5 rounded-xl font-bold transition-all text-sm group"
         >
-          <FaSignOutAlt />
-          Exit Admin
+          <FaSignOutAlt className="group-hover:-translate-x-1 transition-transform" />
+          Exit Dashboard
         </a>
+      </div>
+    </>
+  );
+
+  return (
+    <div className="min-h-screen flex flex-col md:flex-row bg-[#f8fafc] font-inter">
+      
+      {/* --- MOBILE TOP BAR (New) --- */}
+      {/* This prevents content from being hidden behind a floating button */}
+      <div className="md:hidden bg-white/80 backdrop-blur-md border-b border-slate-200 sticky top-0 z-30 px-4 py-3 flex items-center justify-between shadow-sm">
+        <div className="flex items-center gap-3">
+          <button
+            onClick={() => setSidebarOpen(true)}
+            className="p-2 -ml-2 text-slate-600 hover:bg-slate-100 rounded-lg transition"
+          >
+            <FaBars size={20} />
+          </button>
+          <span className="font-bold text-[#17604e] tracking-tight">Admin Panel</span>
+        </div>
+        <div className="w-8 h-8 rounded-full bg-[#17604e] flex items-center justify-center text-white text-xs font-bold shadow-sm">
+          A
+        </div>
+      </div>
+
+      {/* --- DESKTOP SIDEBAR --- */}
+      <aside className="hidden md:flex w-72 bg-white border-r border-slate-200 shadow-xl shadow-slate-200/50 flex-col p-6 z-20 h-screen sticky top-0">
+        <SidebarContent />
       </aside>
 
-      {/* Mobile Drawer Sidebar */}
+      {/* --- MOBILE DRAWER --- */}
       {sidebarOpen && (
-        <>
+        <div className="md:hidden relative z-50">
           {/* Backdrop */}
-          <div
-            className="fixed inset-0 z-40 bg-black/40 backdrop-blur-[2px] transition-opacity duration-200"
+          <div 
+            className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm transition-opacity"
             onClick={() => setSidebarOpen(false)}
-          ></div>
-          <aside className="fixed top-0 left-0 z-50 h-full w-[84vw] max-w-xs bg-white/95 shadow-2xl p-7 flex flex-col gap-4 rounded-tr-3xl rounded-br-3xl border-r border-green-100 animate-slidein">
-            {/* Header */}
-            <div className="flex items-center justify-between mb-8">
-              <div className="flex items-center gap-2">
-                <span className="rounded-full bg-[#17604e]/10 p-2 shadow">
-                  <FaUserShield className="text-[#17604e]" size={24} />
-                </span>
-                <span className="text-xl font-extrabold text-[#17604e] tracking-tight">Admin</span>
-              </div>
-              <button
-                className="text-[#17604e] bg-green-100 hover:bg-green-200 rounded-full p-1"
-                onClick={() => setSidebarOpen(false)}
-                aria-label="Close sidebar"
-              >
-                <FaTimes size={22} />
-              </button>
-            </div>
-            {/* Navigation */}
-            <nav className="flex flex-col gap-2">
-              {navLinks.map((link) => (
-                <NavLink
-                  key={link.to}
-                  to={link.to}
-                  className={({ isActive }) =>
-                    "flex items-center gap-2 rounded-xl px-4 py-3 font-semibold text-base transition group " +
-                    (isActive
-                      ? "bg-[#17604e] text-white shadow"
-                      : "hover:bg-[#e8f5ef] text-green-900 hover:text-[#17604e] active:bg-[#f1efe3]") +
-                    " focus:outline-none"
-                  }
-                  onClick={() => setSidebarOpen(false)} // Close drawer on nav
+          />
+          
+          {/* Drawer Panel */}
+          <aside className="fixed top-0 left-0 h-full w-[85vw] max-w-xs bg-white p-6 flex flex-col shadow-2xl animate-slide-in">
+             <div className="absolute top-4 right-4">
+                <button 
+                  onClick={() => setSidebarOpen(false)}
+                  className="p-2 text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded-full transition"
                 >
-                  {link.icon}
-                  <span>{link.label}</span>
-                </NavLink>
-              ))}
-            </nav>
-            {/* Exit */}
-            <a
-              href="/"
-              className="mt-auto flex items-center justify-center gap-2 bg-red-100 hover:bg-red-300 text-red-700 hover:text-white px-4 py-2 rounded-xl font-bold transition shadow active:scale-95"
-              onClick={() => setSidebarOpen(false)}
-            >
-              <FaSignOutAlt />
-              Exit Admin
-            </a>
+                  <FaTimes size={20} />
+                </button>
+             </div>
+             <SidebarContent />
           </aside>
-        </>
+        </div>
       )}
 
-      {/* Main Content */}
-      <main className="flex-1 min-w-0 p-3 md:p-8">
-        <Outlet />
+      {/* --- MAIN CONTENT AREA --- */}
+      <main className="flex-1 min-w-0">
+        {/* The Outlet renders the current page (Users, Deposits, etc.) */}
+        <div className="h-full">
+           <Outlet />
+        </div>
       </main>
 
-      {/* Animations for mobile sidebar */}
+      {/* Inline Animation Styles for Mobile Drawer */}
       <style>{`
-        @keyframes slidein {
-          0% { transform: translateX(-120%); }
-          100% { transform: translateX(0); }
+        @keyframes slideIn {
+          from { transform: translateX(-100%); }
+          to { transform: translateX(0); }
         }
-        .animate-slidein { animation: slidein 0.22s cubic-bezier(0.77,0,0.18,1) both; }
-        .animate-bounce-slow { animation: bounce 1.4s infinite; }
+        .animate-slide-in {
+          animation: slideIn 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+        }
       `}</style>
     </div>
   );

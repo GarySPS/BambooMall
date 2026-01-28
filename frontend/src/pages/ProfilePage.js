@@ -1,9 +1,10 @@
-//src>pages
+//src>pages>ProfilePage.js
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useUser } from "../contexts/UserContext";
 import { supabase } from "../utils/supabase";
 import { useNavigate } from "react-router-dom";
+import { API_BASE_URL } from "../config"; // IMPORT ADDED
 import {
   ResponsiveContainer,
   AreaChart,
@@ -109,7 +110,8 @@ function CustomFileInput({ id, onChange, accept, disabled, label = "Choose File"
 
 // ---- MAIN PROFILE PAGE ----
 export default function ProfilePage() {
-  const { user, wallet, refreshUser, logout } = useUser();
+  // FIX: Added 'updateWallet' to destructuring
+  const { user, wallet, refreshUser, logout, updateWallet } = useUser();
   
   // Toggles
   const [showAvatar, setShowAvatar] = useState(false);
@@ -125,6 +127,27 @@ export default function ProfilePage() {
   const [confirmPass, setConfirmPass] = useState("");
 
   const navigate = useNavigate();
+
+  // --- FIX: Add useEffect to fetch wallet on mount ---
+  useEffect(() => {
+    async function fetchWalletData() {
+      if (user?.id) {
+        try {
+          const res = await fetch(`${API_BASE_URL}/wallet/${user.id}`);
+          if (res.ok) {
+            const data = await res.json();
+            if (data.wallet && updateWallet) {
+              updateWallet(data.wallet);
+            }
+          }
+        } catch (error) {
+          console.error("Failed to fetch wallet on profile:", error);
+        }
+      }
+    }
+    fetchWalletData();
+  }, [user?.id, updateWallet]);
+  // --------------------------------------------------
 
   // Balance logic
   const totalBalance = wallet?.balance || 0; 
@@ -158,9 +181,9 @@ export default function ProfilePage() {
            <div className="relative z-10 flex flex-col items-center">
               <div className="relative mb-2">
                  <img
-                    src={user.avatar || "/images/profile-demo.jpg"}
-                    alt="Profile"
-                    className="w-32 h-32 rounded-full border-[6px] border-white shadow-xl object-cover"
+                   src={user.avatar || "/images/profile-demo.jpg"}
+                   alt="Profile"
+                   className="w-32 h-32 rounded-full border-[6px] border-white shadow-xl object-cover"
                  />
                  <div className="absolute bottom-1 right-1 bg-green-500 w-5 h-5 rounded-full border-4 border-white"></div>
               </div>
@@ -194,7 +217,8 @@ export default function ProfilePage() {
             </div>
             
             <span className={`text-5xl font-black text-gray-900 mb-8 ${displayFont} tracking-tight`}>
-              ${totalBalance.toLocaleString() || "0.00"}
+              {/* Force 2 decimals for cleaner look */}
+              ${totalBalance.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
             </span>
             
             <div className="grid grid-cols-2 gap-4 w-full max-w-sm">

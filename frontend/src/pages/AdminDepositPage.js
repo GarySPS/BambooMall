@@ -1,274 +1,289 @@
-import React, { useEffect, useState } from "react";
-import { FaMoneyCheckAlt, FaCheck, FaTimes, FaRegEye } from "react-icons/fa";
+// src/pages/AdminDepositPage.js
+
+import React, { useEffect, useState, useMemo } from "react";
+import { 
+  FaMoneyCheckAlt, 
+  FaCheck, 
+  FaTimes, 
+  FaRegEye, 
+  FaSearch, 
+  FaBoxOpen 
+} from "react-icons/fa";
 import { API_BASE_URL } from "../config";
 
 const API_URL = `${API_BASE_URL}/admin`;
 
 export default function AdminDepositPage() {
   const [users, setUsers] = useState([]);
-  const [modal, setModal] = useState(null);
   const [loading, setLoading] = useState(true);
+  
+  // UI States
+  const [modal, setModal] = useState(null); // For screenshot viewing
+  const [searchTerm, setSearchTerm] = useState("");
+  const [statusFilter, setStatusFilter] = useState("pending"); // pending, approved, rejected
 
+  // --- DATA FETCHING ---
   useEffect(() => {
-    async function fetchDeposits() {
+    async function fetchData() {
       setLoading(true);
-      const res = await fetch(`${API_URL}/users`);
-      let data = await res.json();
-      if (!Array.isArray(data)) data = [];
-      setUsers(data);
-      setLoading(false);
+      try {
+        const res = await fetch(`${API_URL}/users`);
+        let data = await res.json();
+        if (!Array.isArray(data)) data = [];
+        setUsers(data);
+      } catch (error) {
+        console.error("Failed to fetch users:", error);
+      } finally {
+        setLoading(false);
+      }
     }
-    fetchDeposits();
+    fetchData();
   }, []);
 
-  const handleApproveDeposit = async (userId, txId, approve) => {
-    await fetch(`${API_URL}/tx-approve`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ tx_id: txId, approve }),
+  // --- HANDLERS ---
+  const handleApproveTransaction = async (userId, txId, approve) => {
+    try {
+      await fetch(`${API_URL}/tx-approve`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ tx_id: txId, approve }),
+      });
+
+      // Optimistic Update: Update the local state immediately
+      setUsers((prev) =>
+        prev.map((u) => {
+          // Find if this user has the transaction
+          if (u.wallet_transactions) {
+            return {
+              ...u,
+              wallet_transactions: u.wallet_transactions.map((tx) =>
+                tx.id === txId
+                  ? { ...tx, status: approve ? "approved" : "rejected" }
+                  : tx
+              ),
+            };
+          }
+          return u;
+        })
+      );
+    } catch (err) {
+      console.error("Transaction update failed:", err);
+      alert("Failed to update transaction.");
+    }
+  };
+
+  // --- DATA PROCESSING (The "History" Fix) ---
+  // 1. Flatten all users' transactions into a single list
+  const allTransactions = useMemo(() => {
+    return users.flatMap((user) => {
+      // We look for 'wallet_transactions' array based on your SQL table
+      // If your API still returns 'deposit', you might need to adjust this check.
+      const txs = user.wallet_transactions || []; 
+      return txs.map((tx) => ({
+        ...tx,
+        userId: user.id,
+        username: user.username,
+      }));
     });
-    setUsers((prev) =>
-      prev.map((u) =>
-        u.id === userId
-          ? { ...u, deposit: { ...u.deposit, status: approve ? "approved" : "rejected" } }
-          : u
-      )
+  }, [users]);
+
+  // 2. Filter Logic
+  const filteredTransactions = useMemo(() => {
+    return allTransactions.filter((tx) => {
+      // Filter by Type (Only show deposits, assuming 'deposit' type exists in DB)
+      // If you want to show ALL wallet txs, remove this line.
+      if (tx.type !== "deposit") return false;
+
+      // Filter by Status Tab
+      if (statusFilter !== "all" && tx.status !== statusFilter) return false;
+
+      // Filter by Search
+      const searchLower = searchTerm.toLowerCase();
+      return (
+        tx.username.toLowerCase().includes(searchLower) ||
+        (tx.id && tx.id.toString().toLowerCase().includes(searchLower))
+      );
+    });
+  }, [allTransactions, statusFilter, searchTerm]);
+
+  // --- RENDER HELPERS ---
+  const StatusBadge = ({ status }) => {
+    const styles = {
+      approved: "bg-emerald-100 text-emerald-700 border-emerald-200",
+      pending: "bg-amber-50 text-amber-700 border-amber-200",
+      rejected: "bg-rose-100 text-rose-700 border-rose-200",
+    };
+    const style = styles[status] || "bg-gray-100 text-gray-500 border-gray-200";
+    
+    return (
+      <span className={`px-2.5 py-1 rounded-full text-xs font-bold border ${style} capitalize`}>
+        {status}
+      </span>
     );
   };
 
-  // Filter deposits by status
-  const pendingUsers = users.filter(u => u.deposit && u.deposit.status === "pending");
-  const approvedUsers = users.filter(u => u.deposit && u.deposit.status === "approved");
-  const rejectedUsers = users.filter(u => u.deposit && u.deposit.status === "rejected");
-
-  // Table header for re-use
-  const tableHeader = (
-    <tr className="bg-[#17604e]/90 text-white">
-      <th className="py-3 px-4 rounded-tl-2xl text-left font-bold">User</th>
-      <th className="py-3 px-4 text-left font-bold">Amount</th>
-      <th className="py-3 px-4 text-left font-bold">Method</th>
-      <th className="py-3 px-4 text-left font-bold">Status</th>
-      <th className="py-3 px-4 text-left font-bold">Screenshot</th>
-      <th className="py-3 px-4 rounded-tr-2xl text-left font-bold">Action</th>
-    </tr>
-  );
-
   return (
-    <div className="min-h-screen bg-gradient-to-br from-[#F2E5C0] to-[#e6f3ee] font-inter">
-      <div className="max-w-3xl mx-auto py-10">
-        <div className="flex items-center gap-3 mb-8">
-          <span className="rounded-full bg-[#ffd700]/20 p-2 shadow">
-            <FaMoneyCheckAlt className="text-[#17604e]" size={24} />
-          </span>
-          <h2 className="text-2xl md:text-3xl font-extrabold text-[#17604e] tracking-tight">
-            Deposit Approvals & History
-          </h2>
-        </div>
+    <div className="p-4 md:p-8 min-h-screen font-inter bg-slate-50">
+      <div className="max-w-7xl mx-auto space-y-6">
 
-        {/* ---------- PENDING DEPOSITS ---------- */}
-        <div className="mb-10">
-          <h3 className="text-lg font-bold text-[#17604e] mb-2">Pending Deposits</h3>
-          <div className="overflow-x-auto rounded-2xl shadow-xl bg-white/70 backdrop-blur border border-white/60">
-            <table className="min-w-full text-sm divide-y divide-[#e3e9ef]">
-              <thead>{tableHeader}</thead>
-              <tbody>
-                {loading ? (
-                  <tr>
-                    <td colSpan={6} className="text-center py-10 text-green-700 font-semibold">
-                      <span className="animate-spin rounded-full h-6 w-6 border-b-2 border-green-600 inline-block mr-3"></span>
-                      Loading deposits…
-                    </td>
-                  </tr>
-                ) : pendingUsers.length === 0 ? (
-                  <tr>
-                    <td colSpan={6} className="text-center py-8 text-gray-400">
-                      No pending deposits
-                    </td>
-                  </tr>
-                ) : (
-                  pendingUsers.map(u => (
-                    <tr key={u.id} className="border-b last:border-0 hover:bg-[#f5f6fa] transition">
-                      <td className="py-3 px-4 font-bold">{u.username}</td>
-                      <td className="py-3 px-4 font-mono">${u.deposit.amount}</td>
-                      <td className="py-3 px-4">{u.deposit.method}</td>
-                      <td className="py-3 px-4">
-                        <span className="px-2 py-1 rounded-2xl bg-yellow-100 text-yellow-800 border border-yellow-300 font-semibold text-xs shadow">
-                          Pending
-                        </span>
-                      </td>
-                      <td className="py-3 px-4">
-                        {u.deposit.screenshot_url && (
-                          <button
-                            className="flex items-center gap-1 bg-[#e8f5ef] hover:bg-[#d1f7ec] px-2 py-1 rounded-lg shadow transition"
-                            onClick={() => setModal({ img: u.deposit.screenshot_url, username: u.username })}
-                          >
-                            <FaRegEye className="text-[#17604e]" />
-                            <span className="text-xs font-semibold text-[#17604e]">View</span>
-                          </button>
-                        )}
-                      </td>
-                      <td className="py-3 px-4">
-                        <button
-                          className="flex items-center gap-1 bg-green-600 hover:bg-green-800 text-white px-3 py-1 rounded-lg font-semibold text-xs mr-2 shadow active:scale-95 transition"
-                          onClick={() => handleApproveDeposit(u.id, u.deposit.tx_id, true)}
-                        >
-                          <FaCheck /> Approve
-                        </button>
-                        <button
-                          className="flex items-center gap-1 bg-red-500 hover:bg-red-700 text-white px-3 py-1 rounded-lg font-semibold text-xs shadow active:scale-95 transition"
-                          onClick={() => handleApproveDeposit(u.id, u.deposit.tx_id, false)}
-                        >
-                          <FaTimes /> Deny
-                        </button>
-                      </td>
-                    </tr>
-                  ))
-                )}
-              </tbody>
-            </table>
+        {/* HEADER */}
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+          <div className="flex items-center gap-3">
+            <span className="rounded-lg bg-emerald-100 p-2 text-emerald-700">
+               <FaMoneyCheckAlt size={24} />
+            </span>
+            <div>
+              <h2 className="text-2xl font-bold text-slate-800 tracking-tight">Deposit Management</h2>
+              <p className="text-sm text-slate-500">Approve top-ups and view history</p>
+            </div>
           </div>
         </div>
 
-        {/* ---------- APPROVED HISTORY ---------- */}
-        <div className="mb-10">
-          <h3 className="text-lg font-bold text-green-700 mb-2">Approved Deposits</h3>
-          <div className="overflow-x-auto rounded-2xl shadow bg-white/70 backdrop-blur border border-white/60">
-            <table className="min-w-full text-sm divide-y divide-[#e3e9ef]">
-              <thead>
-                <tr className="bg-green-700 text-white">
-                  <th className="py-3 px-4 rounded-tl-2xl text-left font-bold">User</th>
-                  <th className="py-3 px-4 text-left font-bold">Amount</th>
-                  <th className="py-3 px-4 text-left font-bold">Method</th>
-                  <th className="py-3 px-4 text-left font-bold">Status</th>
-                  <th className="py-3 px-4 text-left font-bold">Screenshot</th>
-                  <th className="py-3 px-4 rounded-tr-2xl text-left font-bold">Date</th>
-                </tr>
-              </thead>
-              <tbody>
-                {loading ? (
-                  <tr>
-                    <td colSpan={6} className="text-center py-8 text-green-700 font-semibold">
-                      <span className="animate-spin rounded-full h-6 w-6 border-b-2 border-green-600 inline-block mr-3"></span>
-                      Loading...
-                    </td>
-                  </tr>
-                ) : approvedUsers.length === 0 ? (
-                  <tr>
-                    <td colSpan={6} className="text-center py-8 text-gray-400">
-                      No approved deposits
-                    </td>
-                  </tr>
-                ) : (
-                  approvedUsers.map(u => (
-                    <tr key={u.id} className="border-b last:border-0 hover:bg-[#f7fff7] transition">
-                      <td className="py-3 px-4 font-bold">{u.username}</td>
-                      <td className="py-3 px-4 font-mono">${u.deposit.amount}</td>
-                      <td className="py-3 px-4">{u.deposit.method}</td>
-                      <td className="py-3 px-4">
-                        <span className="px-2 py-1 rounded-2xl bg-green-100 text-green-800 border border-green-300 font-semibold text-xs shadow">
-                          Approved
-                        </span>
-                      </td>
-                      <td className="py-3 px-4">
-                        {u.deposit.screenshot_url && (
-                          <button
-                            className="flex items-center gap-1 bg-[#e8f5ef] hover:bg-[#d1f7ec] px-2 py-1 rounded-lg shadow transition"
-                            onClick={() => setModal({ img: u.deposit.screenshot_url, username: u.username })}
-                          >
-                            <FaRegEye className="text-[#17604e]" />
-                            <span className="text-xs font-semibold text-[#17604e]">View</span>
-                          </button>
-                        )}
-                      </td>
-                      <td className="py-3 px-4 font-mono text-xs text-gray-600">
-                        {u.deposit.updated_at
-                          ? new Date(u.deposit.updated_at).toLocaleString()
-                          : "-"}
-                      </td>
-                    </tr>
-                  ))
-                )}
-              </tbody>
-            </table>
-          </div>
-        </div>
-
-        {/* ---------- REJECTED HISTORY ---------- */}
-        <div>
-          <h3 className="text-lg font-bold text-red-700 mb-2">Rejected Deposits</h3>
-          <div className="overflow-x-auto rounded-2xl shadow bg-white/60 backdrop-blur border border-white/60">
-            <table className="min-w-full text-sm divide-y divide-[#e3e9ef]">
-              <thead>
-                <tr className="bg-red-600 text-white">
-                  <th className="py-3 px-4 rounded-tl-2xl text-left font-bold">User</th>
-                  <th className="py-3 px-4 text-left font-bold">Amount</th>
-                  <th className="py-3 px-4 text-left font-bold">Method</th>
-                  <th className="py-3 px-4 text-left font-bold">Status</th>
-                  <th className="py-3 px-4 text-left font-bold">Screenshot</th>
-                  <th className="py-3 px-4 rounded-tr-2xl text-left font-bold">Date</th>
-                </tr>
-              </thead>
-              <tbody>
-                {loading ? (
-                  <tr>
-                    <td colSpan={6} className="text-center py-8 text-red-600 font-semibold">
-                      <span className="animate-spin rounded-full h-6 w-6 border-b-2 border-red-600 inline-block mr-3"></span>
-                      Loading...
-                    </td>
-                  </tr>
-                ) : rejectedUsers.length === 0 ? (
-                  <tr>
-                    <td colSpan={6} className="text-center py-8 text-gray-400">
-                      No rejected deposits
-                    </td>
-                  </tr>
-                ) : (
-                  rejectedUsers.map(u => (
-                    <tr key={u.id} className="border-b last:border-0 hover:bg-[#fff7f7] transition">
-                      <td className="py-3 px-4 font-bold">{u.username}</td>
-                      <td className="py-3 px-4 font-mono">${u.deposit.amount}</td>
-                      <td className="py-3 px-4">{u.deposit.method}</td>
-                      <td className="py-3 px-4">
-                        <span className="px-2 py-1 rounded-2xl bg-red-100 text-red-700 border border-red-300 font-semibold text-xs shadow">
-                          Rejected
-                        </span>
-                      </td>
-                      <td className="py-3 px-4">
-                        {u.deposit.screenshot_url && (
-                          <button
-                            className="flex items-center gap-1 bg-[#fce8e8] hover:bg-[#ffe1e1] px-2 py-1 rounded-lg shadow transition"
-                            onClick={() => setModal({ img: u.deposit.screenshot_url, username: u.username })}
-                          >
-                            <FaRegEye className="text-[#c71c22]" />
-                            <span className="text-xs font-semibold text-[#c71c22]">View</span>
-                          </button>
-                        )}
-                      </td>
-                      <td className="py-3 px-4 font-mono text-xs text-gray-600">
-                        {u.deposit.updated_at
-                          ? new Date(u.deposit.updated_at).toLocaleString()
-                          : "-"}
-                      </td>
-                    </tr>
-                  ))
-                )}
-              </tbody>
-            </table>
-          </div>
-        </div>
-
-        {/* Modal for viewing screenshots */}
-        {modal && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 transition"
-            onClick={() => setModal(null)}>
-            <div className="bg-white p-6 rounded-2xl shadow-2xl flex flex-col items-center"
-              onClick={e => e.stopPropagation()}>
-              <div className="mb-2 font-semibold text-green-800">{modal.username}'s Deposit Screenshot</div>
-              <img src={modal.img} alt="Deposit Screenshot" className="max-w-xs max-h-[70vh] rounded-xl border shadow" />
-              <button className="mt-3 px-6 py-2 bg-green-700 hover:bg-green-900 text-white rounded-xl font-semibold shadow active:scale-95"
-                onClick={() => setModal(null)}>
-                Close
+        {/* TOOLBAR */}
+        <div className="bg-white p-4 rounded-xl shadow-sm border border-slate-200 flex flex-col lg:flex-row gap-4 justify-between items-center">
+          {/* Tabs */}
+          <div className="flex bg-slate-100/80 p-1 rounded-lg w-full lg:w-auto">
+            {["pending", "approved", "rejected"].map((tab) => (
+              <button
+                key={tab}
+                onClick={() => setStatusFilter(tab)}
+                className={`px-6 py-1.5 rounded-md text-sm font-semibold transition-all capitalize ${
+                  statusFilter === tab
+                    ? "bg-white text-emerald-700 shadow-sm ring-1 ring-slate-200"
+                    : "text-slate-500 hover:text-slate-700"
+                }`}
+              >
+                {tab}
               </button>
+            ))}
+          </div>
+
+          {/* Search */}
+          <div className="relative w-full lg:w-72">
+            <FaSearch className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+            <input
+              type="text"
+              placeholder="Search username..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="w-full pl-9 pr-4 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition"
+            />
+          </div>
+        </div>
+
+        {/* TABLE */}
+        <div className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
+          {loading ? (
+            <div className="flex flex-col items-center justify-center py-20">
+              <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-emerald-600"></div>
+              <p className="mt-4 text-slate-500 font-medium">Loading transactions...</p>
+            </div>
+          ) : (
+            <div className="overflow-x-auto">
+              <table className="min-w-full divide-y divide-slate-100">
+                <thead className="bg-slate-50/50">
+                  <tr>
+                    <th className="py-3 px-4 text-left text-xs font-bold text-slate-500 uppercase tracking-wider">User</th>
+                    <th className="py-3 px-4 text-left text-xs font-bold text-slate-500 uppercase tracking-wider">Amount</th>
+                    <th className="py-3 px-4 text-left text-xs font-bold text-slate-500 uppercase tracking-wider">Method</th>
+                    <th className="py-3 px-4 text-left text-xs font-bold text-slate-500 uppercase tracking-wider">Date</th>
+                    <th className="py-3 px-4 text-left text-xs font-bold text-slate-500 uppercase tracking-wider">Status</th>
+                    <th className="py-3 px-4 text-left text-xs font-bold text-slate-500 uppercase tracking-wider">Screenshot</th>
+                    <th className="py-3 px-4 text-left text-xs font-bold text-slate-500 uppercase tracking-wider">Action</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-100">
+                  {filteredTransactions.length === 0 ? (
+                    <tr>
+                      <td colSpan="7" className="py-16 text-center">
+                        <div className="flex flex-col items-center justify-center text-slate-400">
+                          <FaBoxOpen size={48} className="mb-3 opacity-20" />
+                          <p className="text-lg font-medium text-slate-600">No {statusFilter} deposits found</p>
+                        </div>
+                      </td>
+                    </tr>
+                  ) : (
+                    filteredTransactions.map((tx) => (
+                      <tr key={tx.id} className="hover:bg-slate-50 transition-colors">
+                        <td className="py-3 px-4 text-sm font-medium text-slate-700">{tx.username}</td>
+                        <td className="py-3 px-4 text-sm font-mono font-bold text-slate-800">${tx.amount}</td>
+                        <td className="py-3 px-4 text-sm text-slate-600">{tx.address || "Manual"}</td>
+                        <td className="py-3 px-4 text-xs text-slate-500">
+                          {tx.created_at ? new Date(tx.created_at).toLocaleString() : "-"}
+                        </td>
+                        <td className="py-3 px-4">
+                           <StatusBadge status={tx.status} />
+                        </td>
+                        <td className="py-3 px-4">
+                          {tx.screenshot_url ? (
+                            <button
+                              onClick={() => setModal({ img: tx.screenshot_url, username: tx.username })}
+                              className="flex items-center gap-1.5 px-2 py-1 rounded bg-slate-100 text-slate-600 hover:bg-slate-200 transition text-xs font-medium"
+                            >
+                              <FaRegEye /> View
+                            </button>
+                          ) : (
+                            <span className="text-xs text-slate-400 italic">None</span>
+                          )}
+                        </td>
+                        <td className="py-3 px-4">
+                          {tx.status === "pending" ? (
+                            <div className="flex items-center gap-2">
+                              <button
+                                onClick={() => handleApproveTransaction(tx.userId, tx.id, true)}
+                                className="p-1.5 rounded bg-emerald-600 text-white hover:bg-emerald-700 transition shadow-sm"
+                                title="Approve"
+                              >
+                                <FaCheck size={12} />
+                              </button>
+                              <button
+                                onClick={() => handleApproveTransaction(tx.userId, tx.id, false)}
+                                className="p-1.5 rounded bg-white border border-slate-200 text-slate-400 hover:bg-rose-50 hover:text-rose-600 hover:border-rose-200 transition"
+                                title="Reject"
+                              >
+                                <FaTimes size={12} />
+                              </button>
+                            </div>
+                          ) : (
+                            <span className="text-xs text-slate-400 font-medium">Completed</span>
+                          )}
+                        </td>
+                      </tr>
+                    ))
+                  )}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </div>
+
+        {/* IMAGE MODAL */}
+        {modal && (
+          <div 
+            className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/80 backdrop-blur-sm transition-opacity"
+            onClick={() => setModal(null)}
+          >
+            <div 
+              className="bg-white p-4 rounded-2xl shadow-2xl flex flex-col items-center max-w-lg w-full mx-4"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div className="flex justify-between w-full mb-4 border-b border-slate-100 pb-2">
+                <span className="font-semibold text-slate-700">{modal.username}'s Proof</span>
+                <button onClick={() => setModal(null)} className="text-slate-400 hover:text-slate-600">
+                  <FaTimes />
+                </button>
+              </div>
+              <div className="bg-slate-100 rounded-lg p-2 w-full flex justify-center mb-4">
+                 <img src={modal.img} alt="Proof" className="max-h-[60vh] object-contain rounded-md" />
+              </div>
+              <div className="flex gap-2 w-full">
+                <button 
+                  className="flex-1 py-2.5 bg-slate-800 hover:bg-slate-900 text-white rounded-xl font-semibold transition"
+                  onClick={() => setModal(null)}
+                >
+                  Close
+                </button>
+              </div>
             </div>
           </div>
         )}
