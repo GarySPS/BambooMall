@@ -14,7 +14,6 @@ function getVipBonus(balance) {
   return 0;
 }
 
-// (Optionally, if you support price tiers: add tier selection here)
 async function getProductDiscount(supabase, product_id) {
   const { data: product } = await supabase
     .from('products')
@@ -30,12 +29,11 @@ async function getProductDiscount(supabase, product_id) {
 // 1. SPECIFIC GET ROUTES (MUST BE FIRST!)
 // ==========================================
 
-// GET History (Moved to TOP so 'history' is not treated as an ID)
+// GET History
 router.get('/history/:user_id', async (req, res) => {
   const supabase = req.supabase;
   const user_id = req.params.user_id;
   
-  // Fetch orders with status 'sold' or 'refunded' (or '_pending' if you use that for refunds)
   const { data, error } = await supabase
     .from('orders')
     .select(`
@@ -48,7 +46,6 @@ router.get('/history/:user_id', async (req, res) => {
       )
     `)
     .eq('user_id', user_id)
-    // Adjust these statuses if your DB uses different names
     .in('status', ['sold', 'refunded', 'refund_pending']) 
     .order('created_at', { ascending: false });
 
@@ -101,7 +98,6 @@ router.get('/user/:user_id', async (req, res) => {
       )
     `)
     .eq('user_id', user_id)
-    // Updated statuses to include what you likely use
     .in('status', ['selling', '_pending', 'refund_pending', 'sold']) 
     .order('created_at', { ascending: false });
 
@@ -142,21 +138,26 @@ router.get('/user/:user_id', async (req, res) => {
 // 2. ADMIN ACTIONS
 // ==========================================
 
-// Approve Resale Order (The fixed, safe version)
+// Approve Resale Order
 router.post('/admin/orders/resale-approve', async (req, res) => {
   const supabase = req.supabase;
   const { order_id, sell_quantity, approve } = req.body;
+
+  console.log("🔹 Admin Resale Request (orders.js):", { order_id, sell_quantity, approve });
 
   // 1. If Admin DENIES the sale
   if (approve === false) {
     const { data: order, error } = await supabase
       .from('orders')
-      .update({ status: 'selling' })
+      .update({ status: 'selling' }) 
       .eq('id', order_id)
       .select()
       .single();
       
-    if (error) return res.status(400).json({ error: error.message });
+    if (error) {
+      console.error("❌ Deny Update Error:", error);
+      return res.status(400).json({ error: error.message });
+    }
     return res.json({ message: "Resale denied.", order });
   }
 
@@ -167,7 +168,10 @@ router.post('/admin/orders/resale-approve', async (req, res) => {
     .eq('id', order_id)
     .single();
 
-  if (fetchError || !order) return res.status(404).json({ message: "Order not found" });
+  if (fetchError || !order) {
+    console.error("❌ Order Fetch Error:", fetchError);
+    return res.status(404).json({ message: "Order not found" });
+  }
 
   // 3. Validation
   const currentQty = parseInt(order.quantity, 10);
@@ -175,7 +179,7 @@ router.post('/admin/orders/resale-approve', async (req, res) => {
   const qtyToSell = (!isNaN(inputQty) && inputQty > 0) ? inputQty : currentQty;
 
   if (qtyToSell > currentQty) {
-    return res.status(400).json({ message: "Cannot sell more than you have!" });
+    return res.status(400).json({ message: `Cannot sell ${qtyToSell}. Only ${currentQty} available.` });
   }
 
   // 4. Fetch product price
@@ -187,15 +191,20 @@ router.post('/admin/orders/resale-approve', async (req, res) => {
 
   if (productError || !product) return res.status(404).json({ message: "Product not found" });
 
-  // 5. Calculate Financials
+  // 5. Calculate Financials (WITH ROUNDING FIX)
   const originalCost = parseFloat(order.amount);
   const marketPrice = parseFloat(product.price);
 
   let soldCost = (originalCost / currentQty) * qtyToSell;
-  soldCost = Math.round(soldCost * 100) / 100;
+  soldCost = Math.round(soldCost * 100) / 100; // Round to 2 decimals
 
-  const resaleRevenue = marketPrice * qtyToSell;
-  const profit = resaleRevenue - soldCost;
+  let resaleRevenue = marketPrice * qtyToSell;
+  resaleRevenue = Math.round(resaleRevenue * 100) / 100; // Round to 2 decimals
+
+  let profit = resaleRevenue - soldCost;
+  profit = Math.round(profit * 100) / 100; // Round to 2 decimals
+
+  console.log(`💰 Financials: Cost: ${soldCost}, Rev: ${resaleRevenue}, Profit: ${profit}`);
 
   // 6. Execute Split or Full Sell
   if (qtyToSell === currentQty) {
@@ -210,7 +219,10 @@ router.post('/admin/orders/resale-approve', async (req, res) => {
       })
       .eq('id', order_id);
 
-    if (updateError) return res.status(400).json({ message: "Update failed", error: updateError.message });
+    if (updateError) {
+      console.error("❌ Full Sell Update Error:", updateError);
+      return res.status(400).json({ message: "Update failed", error: updateError.message });
+    }
 
   } else {
     // --- SCENARIO B: PARTIAL SELL (SPLIT) ---
@@ -218,7 +230,7 @@ router.post('/admin/orders/resale-approve', async (req, res) => {
     let remainingCost = originalCost - soldCost;
     remainingCost = Math.round(remainingCost * 100) / 100; 
 
-    // INSERT NEW RECORD FIRST (Safety)
+    // Insert New "Sold" Record
     const { error: insertNewError } = await supabase
       .from('orders')
       .insert([{
@@ -237,11 +249,11 @@ router.post('/admin/orders/resale-approve', async (req, res) => {
       }]);
 
     if (insertNewError) {
-      console.error("Insert failed:", insertNewError);
+      console.error("❌ Partial Insert Error:", insertNewError);
       return res.status(400).json({ message: "Failed to create sold record.", error: insertNewError.message });
     }
 
-    // UPDATE OLD ORDER
+    // Update Original Order (Remaining)
     const { error: updateOldError } = await supabase
       .from('orders')
       .update({ 
@@ -252,6 +264,7 @@ router.post('/admin/orders/resale-approve', async (req, res) => {
       .eq('id', order_id);
 
     if (updateOldError) {
+      console.error("❌ Partial Update Error:", updateOldError);
       return res.status(400).json({ message: "Failed to update remaining stock", error: updateOldError.message });
     }
   }
@@ -260,9 +273,11 @@ router.post('/admin/orders/resale-approve', async (req, res) => {
   const { data: wallet } = await supabase.from('wallets').select('*').eq('user_id', order.user_id).single();
   if (wallet) {
     const currentBalance = parseFloat(wallet.balance || 0);
+    const newBalance = Math.round((currentBalance + resaleRevenue) * 100) / 100;
+    
     await supabase
       .from('wallets')
-      .update({ balance: currentBalance + resaleRevenue }) 
+      .update({ balance: newBalance }) 
       .eq('id', wallet.id);
   }
 
@@ -349,7 +364,7 @@ router.post('/', async (req, res) => {
   res.json({ message: "Order placed", order, pay_amount, full_price, total_discount, profit });
 });
 
-// Request Refund (Renamed from '/' to '/refund' to avoid conflict)
+// Request Refund
 router.post('/refund', async (req, res) => {
   const supabase = req.supabase;
   const { order_id } = req.body;
@@ -367,7 +382,7 @@ router.post('/refund', async (req, res) => {
 // 4. GENERIC/WILDCARD ROUTES (MUST BE LAST!)
 // ==========================================
 
-// Get a single order by ID (Catches anything that looks like an ID)
+// Get a single order by ID
 router.get('/:id', async (req, res) => {
   const supabase = req.supabase;
   const { id } = req.params;
