@@ -4,13 +4,12 @@ import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useUser } from "../contexts/UserContext";
 import { fetchResaleHistory } from "../utils/api"; 
-import { API_BASE_URL } from "../config"; // Added to fetch wallet history
+import { API_BASE_URL } from "../config"; 
 import { 
   FaArrowLeft, 
   FaSearch, 
   FaShoppingBag, 
-  FaWallet, 
-  FaExchangeAlt,
+  FaExchangeAlt, // Kept this one
   FaArrowDown,
   FaArrowUp 
 } from "react-icons/fa";
@@ -18,11 +17,10 @@ import {
 // Helper to fetch wallet transactions
 async function fetchWalletHistory(user_id) {
   try {
-    // Assumes you have/will create this endpoint to query the 'wallet_transactions' table
     const res = await fetch(`${API_BASE_URL}/wallet/history/${user_id}`);
     if (!res.ok) return [];
     const data = await res.json();
-    return data.transactions || []; // Adjust based on your actual API response structure
+    return data.transactions || []; 
   } catch (error) {
     console.error("Failed to fetch wallet history", error);
     return [];
@@ -32,7 +30,7 @@ async function fetchWalletHistory(user_id) {
 export default function HistoryPage() {
   const navigate = useNavigate();
   const { user } = useUser();
-  const [activeTab, setActiveTab] = useState("all"); // 'all', 'orders', 'wallet'
+  const [activeTab, setActiveTab] = useState("all"); 
   const [orders, setOrders] = useState([]);
   const [walletTx, setWalletTx] = useState([]); 
   const [loading, setLoading] = useState(true);
@@ -43,9 +41,7 @@ export default function HistoryPage() {
       setLoading(true);
       
       Promise.all([
-        // 1. Fetch Orders
         fetchResaleHistory(user.id).catch(() => ({ orders: [] })),
-        // 2. Fetch Wallet History
         fetchWalletHistory(user.id).catch(() => [])
       ]).then(([orderData, walletData]) => {
         setOrders(Array.isArray(orderData.orders) ? orderData.orders : []);
@@ -62,7 +58,6 @@ export default function HistoryPage() {
     ...walletTx.map(w => ({ 
       ...w, 
       type: 'wallet', 
-      // Capitalize type for display (e.g. 'deposit' -> 'Deposit')
       displayType: w.type ? w.type.charAt(0).toUpperCase() + w.type.slice(1) : 'Transaction' 
     }))
   ].sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
@@ -72,7 +67,7 @@ export default function HistoryPage() {
     if (activeTab === "wallet" && item.type !== 'wallet') return false;
     
     const term = searchTerm.toLowerCase();
-    const title = item.title || item.displayType; // Use displayType if title is missing
+    const title = item.title || item.displayType;
     
     return (
       (title && title.toLowerCase().includes(term)) ||
@@ -130,8 +125,7 @@ export default function HistoryPage() {
            </div>
         ) : (
           filteredItems.map((item, idx) => {
-            const isDeposit = item.type === 'wallet' && item.originalType === 'deposit';
-            // Determine Title
+            // FIX: Removed unused 'isDeposit' variable
             const title = item.title || item.displayType;
             
             return (
@@ -174,7 +168,6 @@ export default function HistoryPage() {
                         ${Number(item.amount).toFixed(2)}
                      </span>
                      
-                     {/* Show Profit for Orders */}
                      {item.type === 'order' && (
                        <span className="text-emerald-400 font-bold text-xs">
                          Profit: +${Number(item.earn ?? item.profit ?? 0).toFixed(2)}
