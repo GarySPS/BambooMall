@@ -101,8 +101,9 @@ router.post('/withdraw', async (req, res) => {
   res.json({ withdraw: data });
 });
 
-// -------- Get User Wallet Transaction History --------
-router.get('/transactions/:user_id', async (req, res) => {
+// -------- Get User Wallet Transaction History (RENAMED) --------
+// FIX: Renamed from '/transactions/:user_id' to '/history/:user_id' to match Frontend
+router.get('/history/:user_id', async (req, res) => {
   const supabase = req.supabase;
   const user_id = req.params.user_id;
   const { data, error } = await supabase
