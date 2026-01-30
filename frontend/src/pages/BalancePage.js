@@ -297,9 +297,11 @@ export default function BalancePage() {
           </button>
         </div>
 
-        {/* Resale History Section - UPDATED */}
+        {/* Resale History Section - FIXED SCROLL */}
         <div className="flex-1 bg-white/95 backdrop-blur-xl border border-white/20 shadow-xl rounded-3xl p-5 overflow-hidden flex flex-col max-h-[500px]">
-          <div className="flex items-center justify-between mb-4">
+          
+          {/* 1. Header (Always Visible) */}
+          <div className="flex items-center justify-between mb-4 flex-shrink-0">
             <h3 className="text-xl font-bold text-gray-800 flex items-center gap-2">
               <FaHistory className="text-gray-400" />
               Recent Activity
@@ -307,16 +309,17 @@ export default function BalancePage() {
             <span className="text-xs font-bold text-gray-400 bg-gray-100 px-2 py-1 rounded-lg">Last 10</span>
           </div>
           
-          <div className="flex-1 overflow-y-auto pr-1 scrollbar-hide">
-            {resaleHistory.length === 0 ? (
-              <div className="flex-1 flex flex-col items-center justify-center text-gray-400 py-10 opacity-70 h-full">
-                <FaHistory className="text-4xl mb-2 text-gray-300" />
-                <p>No transactions yet</p>
-              </div>
-            ) : (
-              <>
+          {/* 2. Content Area */}
+          {resaleHistory.length === 0 ? (
+            <div className="flex-1 flex flex-col items-center justify-center text-gray-400 py-10 opacity-70 h-full">
+              <FaHistory className="text-4xl mb-2 text-gray-300" />
+              <p>No transactions yet</p>
+            </div>
+          ) : (
+            <>
+              {/* 3. The List (Scrolls independently) */}
+              <div className="flex-1 overflow-y-auto pr-1 scrollbar-hide min-h-0">
                 <ul className="space-y-3 pb-2">
-                  {/* SLICE to 10 items for performance */}
                   {resaleHistory.slice(0, 10).map((order) => (
                     <li
                       key={order.id}
@@ -358,22 +361,22 @@ export default function BalancePage() {
                     </li>
                   ))}
                 </ul>
+              </div>
 
-                {/* View Full History Button */}
-                <div className="pt-4 pb-2 flex flex-col items-center gap-2">
-                  <p className="text-xs text-gray-400 font-medium">
-                    Showing last 10 activities
-                  </p>
-                  <button 
-                    onClick={() => navigate('/history')}
-                    className="px-6 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 text-sm font-bold rounded-full transition-colors flex items-center gap-2"
-                  >
-                    <FaHistory /> View Full History
-                  </button>
-                </div>
-              </>
-            )}
-          </div>
+              {/* 4. Footer Button (Fixed at bottom - No more scrolling to find it) */}
+              <div className="pt-3 mt-2 border-t border-gray-100 flex flex-col items-center gap-2 flex-shrink-0 bg-white/50 backdrop-blur-sm">
+                <p className="text-[10px] text-gray-400 font-medium">
+                  Showing last 10 activities
+                </p>
+                <button 
+                  onClick={() => navigate('/history')}
+                  className="w-full py-2.5 bg-gray-100 hover:bg-gray-200 text-gray-700 text-sm font-bold rounded-xl transition-colors flex items-center justify-center gap-2"
+                >
+                  <FaHistory /> View Full History
+                </button>
+              </div>
+            </>
+          )}
         </div>
       </div>
 
