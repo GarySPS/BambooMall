@@ -13,8 +13,10 @@ import {
   FaCopy, 
   FaCheck, 
   FaTimes, 
-  FaUniversity
+  FaUniversity,
+  FaChevronRight
 } from "react-icons/fa";
+import { useNavigate } from "react-router-dom";
 
 // FIX: Removed 'FaMoneyBillWave' and 'useNavigate' to solve build errors
 
@@ -102,6 +104,7 @@ async function submitWithdrawToBackend({ user_id, amount, address, note }) {
 
 // --- Main Page ---
 export default function BalancePage() {
+  const navigate = useNavigate();
   const { wallet, updateWallet, user } = useUser();
   const [resaleHistory, setResaleHistory] = useState([]);
   const [modalType, setModalType] = useState(null); 
@@ -275,65 +278,102 @@ export default function BalancePage() {
           </div>
         </div>
 
-        {/* Resale History Section */}
-        <div className="flex-1 bg-white/95 backdrop-blur-xl border border-white/20 shadow-xl rounded-3xl p-5 overflow-hidden flex flex-col">
-          <h3 className="text-xl font-bold text-gray-800 mb-4 flex items-center gap-2">
-            <FaHistory className="text-gray-400" />
-            History
-          </h3>
-          
-          {resaleHistory.length === 0 ? (
-            <div className="flex-1 flex flex-col items-center justify-center text-gray-400 py-10 opacity-70">
-              <FaHistory className="text-4xl mb-2 text-gray-300" />
-              <p>No transactions yet</p>
+        {/* --- NEW TRANSACTION HISTORY BUTTON --- */}
+        <div className="mb-6">
+          <button
+            onClick={() => navigate('/history')}
+            className="w-full bg-zinc-800/80 backdrop-blur-md border border-white/10 p-4 rounded-2xl shadow-lg flex items-center justify-between group hover:bg-zinc-800 transition-all active:scale-[0.98]"
+          >
+            <div className="flex items-center gap-4">
+              <div className="w-10 h-10 rounded-full bg-zinc-700 flex items-center justify-center text-white shadow-inner">
+                 <FaHistory />
+              </div>
+              <div className="text-left">
+                <div className="text-white font-bold text-sm">Transaction History</div>
+                <div className="text-zinc-400 text-xs">View all deposits, withdrawals & orders</div>
+              </div>
             </div>
-          ) : (
-            <ul className="space-y-3 pb-4">
-              {resaleHistory.map((order) => (
-                <li
-                  key={order.id}
-                  className="bg-gray-50 hover:bg-white rounded-xl border border-gray-100 p-3 shadow-sm flex items-center gap-3 transition-all duration-200 hover:shadow-md hover:-translate-y-0.5"
-                >
-                  {/* Icon / Image */}
-                  <div className="w-14 h-14 flex-shrink-0 rounded-lg bg-white border border-gray-200 overflow-hidden flex items-center justify-center">
-                    {order.image ? (
-                      <img src={order.image} alt="" className="w-full h-full object-cover" />
-                    ) : (
-                      <span className="text-2xl">🛒</span>
-                    )}
-                  </div>
+            <FaChevronRight className="text-zinc-500 group-hover:text-white group-hover:translate-x-1 transition-all" />
+          </button>
+        </div>
 
-                  {/* Info */}
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center justify-between mb-0.5">
-                      <span className="font-bold text-gray-800 truncate text-sm">{order.title}</span>
-                      <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded uppercase tracking-wider ${
-                        order.status === 'sold' ? 'bg-green-100 text-green-700' :
-                        order.status === 'refund_pending' ? 'bg-red-100 text-red-600' :
-                        'bg-yellow-100 text-yellow-700'
-                      }`}>
-                        {order.status === 'refund_pending' ? 'Pending' : order.status}
-                      </span>
-                    </div>
-                    
-                    <div className="text-xs text-gray-400 mb-1">
-                      {order.created_at ? new Date(order.created_at).toLocaleDateString() : "Unknown Date"}
-                    </div>
+        {/* Resale History Section - UPDATED */}
+        <div className="flex-1 bg-white/95 backdrop-blur-xl border border-white/20 shadow-xl rounded-3xl p-5 overflow-hidden flex flex-col max-h-[500px]">
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="text-xl font-bold text-gray-800 flex items-center gap-2">
+              <FaHistory className="text-gray-400" />
+              Recent Activity
+            </h3>
+            <span className="text-xs font-bold text-gray-400 bg-gray-100 px-2 py-1 rounded-lg">Last 10</span>
+          </div>
+          
+          <div className="flex-1 overflow-y-auto pr-1 scrollbar-hide">
+            {resaleHistory.length === 0 ? (
+              <div className="flex-1 flex flex-col items-center justify-center text-gray-400 py-10 opacity-70 h-full">
+                <FaHistory className="text-4xl mb-2 text-gray-300" />
+                <p>No transactions yet</p>
+              </div>
+            ) : (
+              <>
+                <ul className="space-y-3 pb-2">
+                  {/* SLICE to 10 items for performance */}
+                  {resaleHistory.slice(0, 10).map((order) => (
+                    <li
+                      key={order.id}
+                      className="bg-gray-50 hover:bg-white rounded-xl border border-gray-100 p-3 shadow-sm flex items-center gap-3 transition-all duration-200"
+                    >
+                      {/* Icon */}
+                      <div className="w-12 h-12 flex-shrink-0 rounded-lg bg-white border border-gray-200 overflow-hidden flex items-center justify-center">
+                        {order.image ? (
+                          <img src={order.image} alt="" className="w-full h-full object-cover" />
+                        ) : (
+                          <span className="text-xl">🛒</span>
+                        )}
+                      </div>
 
-                    <div className="flex items-center justify-between text-sm">
-                        {/* UPDATED: Format Amount to 2 decimals */}
-                        <span className="font-medium text-gray-600">${Number(order.amount).toFixed(2)}</span>
+                      {/* Info */}
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center justify-between mb-0.5">
+                          <span className="font-bold text-gray-800 truncate text-xs">{order.title}</span>
+                          <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded uppercase tracking-wider ${
+                            order.status === 'sold' ? 'bg-green-100 text-green-700' :
+                            order.status === 'refund_pending' ? 'bg-red-100 text-red-600' :
+                            'bg-yellow-100 text-yellow-700'
+                          }`}>
+                            {order.status === 'refund_pending' ? 'Pending' : order.status}
+                          </span>
+                        </div>
                         
-                        <span className={`font-bold ${order.status === 'sold' ? 'text-emerald-600' : 'text-gray-400'}`}>
-                          {/* UPDATED: Format Profit to 2 decimals */}
-                          {order.status === "sold" ? `+ $${Number(order.earn ?? order.profit ?? 0).toFixed(2)}` : "..."}
-                        </span>
-                    </div>
-                  </div>
-                </li>
-              ))}
-            </ul>
-          )}
+                        <div className="text-[10px] text-gray-400 mb-1">
+                          {order.created_at ? new Date(order.created_at).toLocaleDateString() : "Unknown Date"}
+                        </div>
+
+                        <div className="flex items-center justify-between text-sm">
+                          <span className="font-medium text-gray-600">${Number(order.amount).toFixed(2)}</span>
+                          <span className={`font-bold text-xs ${order.status === 'sold' ? 'text-emerald-600' : 'text-gray-400'}`}>
+                            {order.status === "sold" ? `+ $${Number(order.earn ?? order.profit ?? 0).toFixed(2)}` : "..."}
+                          </span>
+                        </div>
+                      </div>
+                    </li>
+                  ))}
+                </ul>
+
+                {/* View Full History Button */}
+                <div className="pt-4 pb-2 flex flex-col items-center gap-2">
+                  <p className="text-xs text-gray-400 font-medium">
+                    Showing last 10 activities
+                  </p>
+                  <button 
+                    onClick={() => navigate('/history')}
+                    className="px-6 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 text-sm font-bold rounded-full transition-colors flex items-center gap-2"
+                  >
+                    <FaHistory /> View Full History
+                  </button>
+                </div>
+              </>
+            )}
+          </div>
         </div>
       </div>
 

@@ -38,6 +38,13 @@ export default function MembershipPage() {
 
   const userBalance = useMemo(() => {
     if (!wallet) return 0;
+    
+    // FIX: Use the single 'balance' field from your database
+    if (wallet.balance !== undefined) {
+      return Number(wallet.balance);
+    }
+
+    // Legacy fallback (only if balance is missing)
     return (
       Number(wallet.usdc || 0) + 
       Number(wallet.alipay || 0) +

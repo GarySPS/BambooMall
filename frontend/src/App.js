@@ -1,6 +1,6 @@
 // src/App.js
 
-import React, { useEffect, Suspense, lazy } from "react"; // Added Suspense & lazy
+import React, { useEffect, Suspense, lazy } from "react"; 
 import { BrowserRouter as Router, Routes, Route, useLocation } from "react-router-dom";
 import Navbar from "./components/Navbar";
 import Footer from "./components/Footer";
@@ -8,15 +8,15 @@ import { UserProvider } from "./contexts/UserContext";
 import { ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 
-// --- 1. KEEP CRITICAL PAGES STANDARD (Load these instantly) ---
+// --- 1. KEEP CRITICAL PAGES STANDARD ---
 import HomePage from "./pages/HomePage";
 import ProductsPage from "./pages/ProductsPage";
 import ProductDetailPage from "./pages/ProductDetailPage";
 
-// --- 2. LAZY LOAD EVERYTHING ELSE (Load only when needed) ---
-// This reduces the initial file size significantly
+// --- 2. LAZY LOAD EVERYTHING ELSE ---
 const CartPage = lazy(() => import("./pages/CartPage"));
 const BalancePage = lazy(() => import("./pages/BalancePage"));
+const HistoryPage = lazy(() => import("./pages/HistoryPage")); // <--- ADD THIS LINE
 const KYCVerificationPage = lazy(() => import("./pages/KYCVerificationPage"));
 const ProfilePage = lazy(() => import("./pages/ProfilePage"));
 const MembershipPage = lazy(() => import("./pages/MembershipPage"));
@@ -36,7 +36,7 @@ const TermsPage = lazy(() => import("./pages/LegalPages").then(module => ({ defa
 const PrivacyPage = lazy(() => import("./pages/LegalPages").then(module => ({ default: module.PrivacyPage })));
 const CookiePage = lazy(() => import("./pages/LegalPages").then(module => ({ default: module.CookiePage })));
 
-// Admin Pages (HEAVY - Definitely lazy load these)
+// Admin Pages
 const AdminLayout = lazy(() => import("./components/AdminLayout"));
 const AdminUserPage = lazy(() => import("./pages/AdminUserPage"));
 const AdminKYCPage = lazy(() => import("./pages/AdminKYCPage"));
@@ -67,7 +67,6 @@ function AppContent() {
     minHeight: "100vh",
     display: "flex",
     flexDirection: "column",
-    // Keep your background logic here...
     backgroundImage: !isAuthPage ? "url('/profilebg.jpg')" : "none",
     backgroundColor: !isAuthPage ? "transparent" : "#fff",
     backgroundSize: "cover",
@@ -82,7 +81,6 @@ function AppContent() {
       {!isAuthPage && !isAdmin && <Navbar />}
       
       <div className="flex-grow z-10 relative">
-        {/* Wrap Routes in Suspense to show loader while chunks download */}
         <Suspense fallback={<PageLoader />}>
           <Routes>
             {/* --- ADMIN ROUTES --- */}
@@ -118,6 +116,7 @@ function AppContent() {
             <Route element={<PrivateRoute />}>
               <Route path="/cart" element={<CartPage />} />
               <Route path="/balance" element={<BalancePage />} />
+              <Route path="/history" element={<HistoryPage />} /> {/* <--- ADD THIS ROUTE */}
               <Route path="/profile" element={<ProfilePage />} />
               <Route path="/kyc-verification" element={<KYCVerificationPage />} />
               <Route path="/membership" element={<MembershipPage />} />
