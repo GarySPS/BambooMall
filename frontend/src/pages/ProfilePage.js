@@ -31,7 +31,8 @@ function EntityBadge({ tier }) {
 }
 
 export default function ProfilePage() {
-  const { user, wallet, updateWallet } = useUser();
+  // REMOVED 'wallet' from destructuring to fix build error
+  const { user, updateWallet } = useUser();
   const navigate = useNavigate();
   const [apiKey, setApiKey] = useState("sk_live_************************");
   const [licenseFile, setLicenseFile] = useState(null);

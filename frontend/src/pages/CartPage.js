@@ -21,14 +21,12 @@ export default function CartPage() {
   const [orders, setOrders] = useState([]);
   const [loading, setLoading] = useState(true);
 
-  // Load "Active Allocations"
   useEffect(() => {
     if (!user?.id) return;
     
     setLoading(true);
     fetchCartOrders(user.id)
       .then((data) => {
-        // Filter: Show active or sold items (exclude cancelled)
         const active = data.filter(o => o.status !== 'cancelled'); 
         setOrders(active);
         setLoading(false);
@@ -53,8 +51,9 @@ export default function CartPage() {
               <FaBoxOpen className="text-blue-900" />
               Active Allocations
             </h1>
+            {/* FIXED: Replaced the // which causes build errors with a safe separator */}
             <p className="text-xs text-slate-500 font-mono mt-1">
-              ACCOUNT: {user?.username?.toUpperCase() || "AGENT"} // PORTFOLIO STATUS: <span className="text-emerald-600 font-bold">LIVE</span>
+              ACCOUNT: {user?.username?.toUpperCase() || "AGENT"} <span className="text-slate-300 mx-2">|</span> PORTFOLIO STATUS: <span className="text-emerald-600 font-bold">LIVE</span>
             </p>
          </div>
          <div className="mt-4 md:mt-0 px-4 py-2 bg-blue-50 border border-blue-200 rounded flex items-start gap-2 max-w-md">
@@ -92,22 +91,15 @@ export default function CartPage() {
                </thead>
                <tbody className="divide-y divide-slate-100">
                   {orders.map((order) => {
-                     // --- REAL MATH FIX ---
                      const qty = Number(order.qty || order.quantity || 0);
-                     const cost = Number(order.amount); // What they paid
-                     
-                     // Use the REAL product price for Market Value
-                     // If product data is missing, fallback to cost * 1.5 safely
+                     const cost = Number(order.amount);
                      const unitPrice = Number(order.product?.price || 0);
                      const marketValue = unitPrice > 0 ? (unitPrice * qty) : (cost * 1.5);
-
                      const isSold = order.status === 'sold';
                      const shortId = order.id.toString().substring(0, 8).toUpperCase();
 
                      return (
                         <tr key={order.id} className="hover:bg-slate-50 transition-colors group">
-                           
-                           {/* Asset Image */}
                            <td className="px-6 py-4">
                               <div className="w-10 h-10 bg-slate-100 rounded border border-slate-200 overflow-hidden relative">
                                  <img 
@@ -117,13 +109,9 @@ export default function CartPage() {
                                  />
                               </div>
                            </td>
-
-                           {/* Batch ID */}
                            <td className="px-6 py-4 font-mono text-blue-600 font-bold text-xs">
                               CN-SZ-{shortId}
                            </td>
-
-                           {/* Description */}
                            <td className="px-6 py-4 font-bold text-slate-700">
                               <div className="flex items-center gap-2">
                                  {order.product?.title || "Allocated Inventory Lot"}
@@ -135,23 +123,15 @@ export default function CartPage() {
                                  {new Date(order.created_at).toLocaleDateString()} • {new Date(order.created_at).toLocaleTimeString()}
                               </div>
                            </td>
-
-                           {/* Volume */}
                            <td className="px-6 py-4 text-center font-mono text-slate-600">
                               {qty} Units
                            </td>
-
-                           {/* Cost Basis (What User Paid) */}
                            <td className="px-6 py-4 text-right font-mono font-bold text-slate-900">
                               ${cost.toFixed(2)}
                            </td>
-
-                           {/* Market Value (Real List Price) */}
                            <td className="px-6 py-4 text-right font-mono font-bold text-blue-600">
                               ${marketValue.toFixed(2)}
                            </td>
-
-                           {/* Status Badge */}
                            <td className="px-6 py-4 text-right">
                               {isSold ? (
                                  <span className="bg-emerald-100 text-emerald-700 px-2 py-1 rounded text-[10px] font-bold uppercase tracking-wide flex items-center justify-end gap-1 ml-auto w-fit">
@@ -171,7 +151,6 @@ export default function CartPage() {
          </div>
       )}
 
-      {/* Footer Disclaimer */}
       <div className="bg-slate-50 p-4 border border-slate-200 rounded text-[10px] text-slate-400 flex items-start gap-2">
          <FaFileContract className="text-slate-500 mt-0.5" />
          <div>

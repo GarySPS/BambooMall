@@ -5,7 +5,6 @@ import { useUser } from "../contexts/UserContext";
 import { 
   FaShieldAlt, 
   FaBuilding, 
-  FaGlobe, 
   FaCheckCircle, 
   FaLock, 
   FaChartLine 
@@ -60,7 +59,6 @@ export default function MembershipPage() {
   ];
 
   // Logic to find current active tier
-  // We reverse to find the highest matching tier first
   const currentTier = TIERS.slice().sort((a,b) => a.minBalance - b.minBalance).reverse().find(t => currentBalance >= t.minBalance) || { 
     name: "Unverified Account", 
     bonus: "0%",

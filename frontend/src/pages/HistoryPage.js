@@ -4,11 +4,11 @@ import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useUser } from "../contexts/UserContext";
 import { fetchResaleHistory, fetchWalletHistory } from "../utils/api"; 
-import { getProductImage } from "../utils/image"; // IMPORTED IMAGE UTILITY
+import { getProductImage } from "../utils/image"; 
 import { 
   FaArrowLeft, 
   FaSearch, 
-  FaBoxOpen, 
+  // FaBoxOpen, <--- REMOVED (Unused)
   FaExchangeAlt,
   FaArrowDown,
   FaArrowUp,
@@ -119,9 +119,6 @@ export default function HistoryPage() {
               const title = item.product?.title || item.title || item.note || item.displayType;
               
               // Determine Financial Direction
-              // Order = Negative (Spending) unless it's sold profit (but usually we show cost here)
-              // Deposit = Positive
-              // Withdraw = Negative
               const isPositive = item.type === 'wallet' && item.displayType === 'Inbound Wire';
               const isOrder = item.type === 'order';
               const isProfit = item.status === 'sold' && item.earn > 0;

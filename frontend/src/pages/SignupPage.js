@@ -4,7 +4,8 @@ import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useUser } from "../contexts/UserContext";
 import { API_BASE_URL } from "../config";
-import { FaBuilding, FaGlobe, FaFileContract, FaArrowRight, FaLock, FaEnvelope } from "react-icons/fa";
+// REMOVED FaArrowRight (Unused)
+import { FaBuilding, FaGlobe, FaFileContract, FaLock, FaEnvelope } from "react-icons/fa";
 
 export default function SignupPage() {
   const [username, setUsername] = useState(""); // Maps to Business Name

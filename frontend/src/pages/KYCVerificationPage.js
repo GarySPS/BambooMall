@@ -256,8 +256,9 @@ export default function KYCVerificationPage() {
                 </div>
               </div>
 
+              {/* FIXED: Replaced static text with 'statusMessage' to use the variable */}
               <button onClick={handleSubmit} disabled={!formData.selfie || isSubmitting} className="w-full py-4 bg-emerald-600 text-white font-bold rounded text-xs uppercase tracking-widest hover:bg-emerald-700 disabled:opacity-50 shadow-lg">
-                {isSubmitting ? "Transmitting Secure Data..." : "Submit for Security Clearance"}
+                {isSubmitting ? (statusMessage || "Processing Secure Data...") : "Submit for Security Clearance"}
               </button>
             </div>
           )}

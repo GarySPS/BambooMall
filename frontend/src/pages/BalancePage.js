@@ -8,7 +8,7 @@ import {
   FaArrowDown, 
   FaArrowUp, 
   FaHistory, 
-  FaCopy, 
+  // FaCopy, <--- REMOVED (Unused)
   FaCheck, 
   FaTimes, 
   FaUniversity,
@@ -398,12 +398,12 @@ export default function BalancePage() {
                  <form onSubmit={handleWithdrawSubmit} className="space-y-4">
                     
                     {/* Visual Warning */}
-<div className="bg-amber-50 p-3 rounded border border-amber-200 flex gap-3 items-start">
-    <FaShieldAlt className="text-amber-600 mt-1 shrink-0" />
-    <div className="text-xs text-amber-800">
-        <strong>Compliance Notice:</strong> Withdrawals &gt;$10,000 require manual AML review (T+1 Clearance). Ensure receiving wallet supports USDC-TRC20.
-    </div>
-</div>
+                    <div className="bg-amber-50 p-3 rounded border border-amber-200 flex gap-3 items-start">
+                        <FaShieldAlt className="text-amber-600 mt-1 shrink-0" />
+                        <div className="text-xs text-amber-800">
+                            <strong>Compliance Notice:</strong> Withdrawals &gt;$10,000 require manual AML review (T+1 Clearance). Ensure receiving wallet supports USDC-TRC20.
+                        </div>
+                    </div>
 
                     <div>
                        <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Destination Address (TRC20)</label>
