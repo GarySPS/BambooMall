@@ -512,7 +512,43 @@ router.post('/', async (req, res) => {
 });
 
 // ==========================================
-// 4. GENERIC/WILDCARD ROUTES
+// 4. USER REFUND REQUEST (Insert Here!)
+// ==========================================
+router.post('/refund', async (req, res) => {
+  const supabase = req.supabase;
+  const { order_id } = req.body;
+
+  console.log("🔹 Refund Request for Order:", order_id);
+
+  if (!order_id) return res.status(400).json({ error: "Missing Order ID" });
+
+  // 1. Verify Order Exists & Belongs to User
+  const { data: order, error: fetchError } = await supabase
+    .from('orders')
+    .select('*')
+    .eq('id', order_id)
+    .single();
+
+  if (fetchError || !order) return res.status(404).json({ error: "Order not found" });
+
+  // 2. Update Status to 'refund_pending'
+  const { data, error } = await supabase
+    .from('orders')
+    .update({ status: 'refund_pending' })
+    .eq('id', order_id)
+    .select()
+    .single();
+
+  if (error) {
+    console.error("Refund Update Error:", error);
+    return res.status(400).json({ error: error.message });
+  }
+
+  res.json({ message: 'Refund requested successfully', order: data });
+});
+
+// ==========================================
+// 5. GENERIC/WILDCARD ROUTES (Keep Last)
 // ==========================================
 
 // Get a single order by ID
