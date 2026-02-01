@@ -174,8 +174,8 @@ export default function BalancePage() {
               Treasury Management
             </h1>
             <p className="text-xs text-slate-500 font-mono mt-1">
-              ENTITY: {user?.username?.toUpperCase() || "AGENT"} // TIER: <span className="text-emerald-600 font-bold">{tier.toUpperCase()}</span>
-            </p>
+  ENTITY: {user?.username?.toUpperCase() || "AGENT"} <span className="mx-2 text-slate-300">|</span> TIER: <span className="text-emerald-600 font-bold">{tier.toUpperCase()}</span>
+</p>
          </div>
       </div>
 
