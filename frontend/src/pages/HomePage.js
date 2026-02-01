@@ -1,333 +1,268 @@
 // src/pages/HomePage.js
 
-import React, { useEffect, useState } from 'react';
-import { Link } from 'react-router-dom';
-import { FaStar, FaBolt, FaCheckCircle, FaCrown, FaTiktok, FaPlus } from 'react-icons/fa';
-import { fetchProducts } from '../utils/api';
-import { getProductImage } from '../utils/image';
-import { useUser } from '../contexts/UserContext'; // 1. Import User Context
+import React, { useState, useEffect } from "react";
+import { Link } from "react-router-dom";
+import { useUser } from "../contexts/UserContext";
+import { API_BASE_URL } from "../config"; // Import Config
+import { 
+  FaChartLine, 
+  FaBoxOpen, 
+  FaFileInvoiceDollar, 
+  FaExclamationTriangle,
+  FaArrowUp,
+  FaGlobe,
+  FaShip,
+  FaWarehouse,
+  FaSync
+} from "react-icons/fa";
 
-// --- 1. Factory Data ---
-const factories = [
-  {
-    name: "Sunon Furniture Co., Ltd.",
-    image: "/sunon.jpg",
-    address: "No. 16, Jincheng Rd, Hangzhou, Zhejiang, China",
-    info: "Leading office furniture manufacturer with 20+ years global export experience.",
-  },
-  {
-    name: "KUKA Home",
-    image: "/kuka.png",
-    address: "No. 299, Huxi Rd, Haining, Zhejiang, China",
-    info: "World-class upholstered furniture and sofas, OEM/ODM for global brands.",
-  },
-  {
-    name: "Haier Smart Electronics",
-    image: "/haier.png",
-    address: "Haier Industrial Park, Qingdao, Shandong, China",
-    info: "Top-rated smart appliances & IoT solutions factory.",
-  },
-  {
-    name: "Gree Electric Appliances Inc.",
-    image: "/gree.jpg",
-    address: "No. 6, Xin'an Road, Zhuhai, Guangdong, China",
-    info: "China’s largest air conditioner and smart electronics exporter.",
-  },
-  {
-    name: "Midea Group",
-    image: "/aa.png",
-    address: "Midea Headquarters, Foshan, Guangdong, China",
-    info: "Global leader in smart home appliances and robotics.",
-  },
-  {
-    name: "Galanz Appliances",
-    image: "/galanz.jpg",
-    address: "Galanz Industrial Park, Foshan, Guangdong, China",
-    info: "Microwaves, refrigerators, and home appliances innovator.",
-  },
-  {
-    name: "TCL Technology",
-    image: "/bb.png",
-    address: "No. 22, Heung Yip Road, Huizhou, Guangdong, China",
-    info: "Renowned factory for electronics, TVs, and panels.",
-  },
-  {
-    name: "Opple Lighting",
-    image: "/opple.png",
-    address: "No. 1888, North Zhongshan Rd, Shanghai, China",
-    info: "China’s #1 smart lighting and LED factory.",
-  },
-  {
-    name: "Zhejiang Xilinmen Furniture",
-    image: "/xilinmen.png",
-    address: "Shaoxing, Zhejiang, China",
-    info: "OEM/ODM mattress and bedding manufacturer.",
-  },
-];
+// --- UTILS: Fake Data Generator for "Live Feed" ---
+const generateFakeTx = () => {
+  const buyers = ["Logistics Au...", "NZ Import Gr...", "Shenzhen Exp...", "Global Resale...", "Tokyo Trading..."];
+  const statuses = ["CLEARED", "PENDING", "PROCESSING"];
+  const amounts = ["$142,000", "$89,500", "$12,400", "$420,000", "$55,200"];
+  
+  return {
+    id: "TX-" + Math.floor(Math.random() * 9000 + 1000),
+    buyer: buyers[Math.floor(Math.random() * buyers.length)],
+    amount: amounts[Math.floor(Math.random() * amounts.length)],
+    status: statuses[Math.floor(Math.random() * statuses.length)],
+    timestamp: new Date().toLocaleTimeString()
+  };
+};
 
 export default function HomePage() {
-  const { user } = useUser(); // 2. Get user state
-  const [homeProducts, setHomeProducts] = useState([]);
-  const [loading, setLoading] = useState(true);
+  const { user } = useUser();
+  const [balance, setBalance] = useState(0);
+  const [creditLimit, setCreditLimit] = useState(0); // New State
+  const [tier, setTier] = useState("Standard");      // New State
+  const [ticker, setTicker] = useState([
+    { id: "TX-9902", buyer: "Logistics Au...", amount: "$142,000", status: "CLEARED" },
+    { id: "TX-9903", buyer: "NZ Import Gr...", amount: "$89,500", status: "PENDING" },
+    { id: "TX-9904", buyer: "Shenzhen Exp...", amount: "$420,000", status: "CLEARED" },
+  ]);
 
-  // --- FIX: Check kyc_status === 'approved' instead of kyc_verified ---
-  const isVerified = user && user.kyc_status === 'approved';
-
+  // 1. DATA STREAM: Fetch "Real" Financials from Backend
   useEffect(() => {
-    fetchProducts()
-      .then((data) => {
-        setHomeProducts(data.slice(0, 4));
-        setLoading(false);
-      })
-      .catch(() => setLoading(false));
+    const fetchFinancials = async () => {
+      if (!user?.short_id) return;
+      try {
+        // We use the endpoint we created in 'users.js'
+        const res = await fetch(`${API_BASE_URL}/users/profile?short_id=${user.short_id}`);
+        const data = await res.json();
+        
+        if (data.wallet) {
+           setBalance(data.wallet.balance || 0);
+           setCreditLimit(data.wallet.credit_limit || 0); // This should show $50,000
+           setTier(data.wallet.tier || "Standard");
+        }
+      } catch (err) {
+        console.error("Financial Data Stream Interrupted");
+      }
+    };
+
+    fetchFinancials();
+  }, [user]);
+
+  // 2. LIVE FEED SIMULATION: Add new fake transaction every 4 seconds
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setTicker(prev => [generateFakeTx(), ...prev.slice(0, 4)]); // Keep last 5
+    }, 4000);
+    return () => clearInterval(interval);
   }, []);
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-green-50 to-white flex flex-col">
-
-      {/* Hero Banner */}
-      <section className="py-20 text-center bg-green-700 text-white relative overflow-hidden">
-        <div
-          className="absolute inset-0 opacity-10 bg-cover bg-center pointer-events-none"
-          style={{ backgroundImage: "url('/hero-bg.png')" }}
-        />
-        <div className="relative z-10">
-          <h1 className="text-5xl md:text-6xl font-extrabold mb-4 drop-shadow-lg font-[Montserrat]">
-            BambooMall
-          </h1>
-          <p className="max-w-2xl mx-auto text-xl md:text-2xl mb-8 animate-fade-in font-[Inter]">
-            Real Factory Goods. <span className="font-bold text-yellow-300">Exclusive Discounts</span>. <span className="text-yellow-100">Profitable Resale.</span>
-          </p>
-          <Link
-            to={user ? "/products" : "/login"}  // <--- CHANGED THIS LINE
-            className="mt-4 inline-block bg-white text-green-700 font-bold px-8 py-3 rounded-full shadow-xl hover:bg-yellow-100 hover:text-green-900 transition text-lg"
-          >
-            Start Reselling
-          </Link>
+    <div className="space-y-6 animate-fade-in font-sans">
+      
+      {/* 1. HEADER: Welcome & Status */}
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-center border-b border-slate-200 pb-6">
+        <div>
+           <h1 className="text-2xl font-bold text-slate-800 tracking-tight">
+             Procurement Terminal <span className="text-slate-400 font-light">/ Dashboard</span>
+           </h1>
+           <div className="flex items-center gap-3 mt-1 text-xs font-mono text-slate-500">
+             <span>SESSION ID: {user?.short_id ? `AGT-${user.short_id}` : "GUEST"}</span>
+             <span className="text-slate-300">|</span>
+             <span>REGION: CN-SOUTH-1</span>
+             <span className="text-slate-300">|</span>
+             <span className="flex items-center gap-1">
+                <FaSync className="animate-spin text-slate-300" size={8} />
+                LIVE
+             </span>
+           </div>
         </div>
-      </section>
-
-      {/* Key Selling Points */}
-      <section className="max-w-6xl mx-auto py-16 grid grid-cols-1 md:grid-cols-3 gap-8 text-center px-4">
-        <div className="bg-white rounded-2xl shadow-xl p-7 flex flex-col items-center border border-green-100 transition-transform hover:-translate-y-2 duration-300">
-        <FaBolt className="text-3xl text-green-700 mb-2" />
-          <h3 className="font-bold text-xl text-green-700 mb-2">Direct-from-Factory Pricing</h3>
-          <p className="text-green-600 mb-4">
-            Secure exclusive pricing on brand-new products direct from the source. No hidden fees.
-          </p>
-          <Link className="text-green-700 font-semibold hover:underline" to="/about-us">
-            How We Source →
-          </Link>
+        <div className="mt-4 md:mt-0 flex items-center gap-3">
+           <div className="px-3 py-1 bg-emerald-50 border border-emerald-200 rounded text-xs font-bold text-emerald-700 flex items-center gap-2">
+              <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+              GATEWAY OPERATIONAL
+           </div>
         </div>
-        <div className="bg-white rounded-2xl shadow-xl p-7 flex flex-col items-center border border-green-100 transition-transform hover:-translate-y-2 duration-300">
-        <FaBolt className="text-3xl text-green-700 mb-2" />
-          <h3 className="font-bold text-xl text-green-700 mb-2">VIP Profit Boosts</h3>
-          <p className="text-green-600 mb-4">
-            Grow your wallet, unlock new VIP tiers, and enjoy instant bonus discounts. See your status live!
-          </p>
-          <Link className="text-green-700 font-semibold hover:underline" to="/membership">
-            Explore VIP Benefits →
-          </Link>
-        </div>
-        <div className="bg-white rounded-2xl shadow-xl p-7 flex flex-col items-center border border-green-100 transition-transform hover:-translate-y-2 duration-300">
-        <FaBolt className="text-3xl text-green-700 mb-2" />
-          <h3 className="font-bold text-xl text-green-700 mb-2">Fastest Resale System</h3>
-          <p className="text-green-600 mb-4">
-            Simulate instant resale profits, withdraw any time, and track your earnings with zero risk.
-          </p>
-          <Link className="text-green-700 font-semibold hover:underline" to="/faq">
-            How It Works →
-          </Link>
-        </div>
-      </section>
+      </div>
 
-{/* Promo Video: Full-width container with profilebg background */}
-<section
-  className="w-full py-16 flex justify-center items-center"
-  style={{
-    backgroundImage: "url('/profilebg.jpg')",
-    backgroundSize: "cover",
-    backgroundPosition: "center",
-    backgroundRepeat: "no-repeat",
-  }}
->
-  <div className="w-full max-w-2xl flex flex-col items-center px-4">
-    <div className="relative w-full mb-6">
-      <video
-  src="/bamboomall-tiktok-video.mp4"
-  poster="/profilebg.jpg" 
-  className="w-full rounded-xl shadow-lg"
-  autoPlay
-  loop
-  muted
-  playsInline
-  controls
-/>
-      <FaTiktok className="absolute top-2 left-2 text-2xl text-white bg-black/50 rounded-full p-1" />
-    </div>
-    <div className="text-center w-full">
-      <h3 className="text-2xl font-bold text-green-700 mb-2">See Our Real Factory Deals in Action!</h3>
-      <p className="text-green-600 mb-4">
-        Watch this video for a quick walkthrough of BambooMall and how VIP members profit more every day.
-      </p>
-      <Link to="/about-us" className="inline-block text-green-700 font-semibold hover:underline">
-        More About BambooMall →
-      </Link>
-    </div>
-  </div>
-</section>
-
-{/* Featured Products */}
-<section
-  className="relative py-16 overflow-hidden"
-  style={{
-    backgroundImage: "url('/hero-bg.png')",
-    backgroundSize: 'cover',
-    backgroundPosition: 'center',
-    backgroundRepeat: 'no-repeat',
-  }}
->
-  {/* Soft white overlay for readability */}
-  <div className="absolute inset-0 bg-white opacity-80 pointer-events-none"></div>
-  <div className="relative z-10">
-    <h2 className="text-center text-3xl font-bold text-green-700 mb-8">Top Factory Deals</h2>
-    <div className="max-w-4xl mx-auto grid grid-cols-2 md:grid-cols-4 gap-6 px-4">
-      {loading
-        ? [...Array(4)].map((_, i) => (
-            <div key={i} className="bg-white rounded-xl shadow p-6 flex flex-col items-center animate-pulse h-60" />
-          ))
-        : homeProducts.map((product) => (
-            <div
-              key={product.id}
-              className="relative bg-white rounded-xl shadow group flex flex-col items-stretch pb-3"
-            >
-              {Number(product.discount) > 0 && (
-                <span className="absolute top-2 left-2 bg-green-600 text-white text-xs px-2 py-0.5 rounded z-10 shadow">
-                  -{product.discount}%
-                </span>
-              )}
-              {/* 3. Logic: If verified, go to product details. If not, go to KYC page */}
-              <Link 
-                to={isVerified ? `/products/${product.id}` : "/kyc-verification"} 
-                className="flex-1 flex items-center justify-center px-1 pt-3"
-              >
-                <img
-                  src={getProductImage(product)}
-                  alt={product.title || "Product"}
-                  className="object-contain w-24 h-24 transition-transform group-hover:scale-105"
-                />
-              </Link>
-              <div className="flex flex-row items-center justify-between px-2 mt-2 mb-0.5">
-                <span className="font-extrabold text-green-700 text-lg">
-                  ${Number(product.price).toFixed(2)}
-                </span>
-                <button
-                  className="bg-green-100 hover:bg-green-600 hover:text-white text-green-700 rounded-full w-8 h-8 flex items-center justify-center shadow transition"
-                >
-                  <FaPlus size={16} />
-                </button>
+      {/* 2. KPIS: Financial Overview (Connected to Backend) */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        
+        {/* Card A: Liquidity */}
+        <div className="bg-white p-6 rounded shadow-sm border border-slate-200 hover:border-blue-300 transition-colors">
+           <div className="flex justify-between items-start mb-4">
+              <div className="p-2 bg-blue-50 text-blue-600 rounded">
+                 <FaFileInvoiceDollar size={20} />
               </div>
-              
-              {/* 4. Apply same logic to Title Link */}
-              <Link 
-                 to={isVerified ? `/products/${product.id}` : "/kyc-verification"} 
-                 className="block px-2 text-xs text-gray-800 font-semibold line-clamp-2 leading-tight mt-1 hover:underline"
-              >
-                {product.title}
-              </Link>
-              {product.size && (
-                <div className="px-2 text-[10px] text-gray-400">{product.size}</div>
-              )}
-            </div>
-          ))}
-    </div>
-    <div className="text-center mt-8">
-      <Link to="/products" className="inline-block bg-green-700 text-white px-6 py-2 rounded-full font-medium shadow hover:bg-green-800 transition">
-        See All Products →
-      </Link>
-    </div>
-  </div>
-</section>
-
-      {/* Quick Access Grid */}
-      <section className="max-w-6xl mx-auto py-12 px-4 grid grid-cols-2 md:grid-cols-4 gap-6">
-        <Link to="/products" className="flex flex-col items-center bg-white shadow-lg rounded-xl p-6 hover:bg-green-50 transition">
-          <FaStar className="text-2xl text-green-700 mb-2" />
-          <span className="font-semibold text-green-700">Products</span>
-        </Link>
-        <Link to="/membership" className="flex flex-col items-center bg-white shadow-lg rounded-xl p-6 hover:bg-green-50 transition">
-          <FaCrown className="text-2xl text-yellow-400 mb-2" />
-          <span className="font-semibold text-green-700">Membership</span>
-        </Link>
-        <Link to="/blog" className="flex flex-col items-center bg-white shadow-lg rounded-xl p-6 hover:bg-green-50 transition">
-          <FaBolt className="text-2xl text-green-700 mb-2" />
-          <span className="font-semibold text-green-700">Blog</span>
-        </Link>
-        <Link to="/faq" className="flex flex-col items-center bg-white shadow-lg rounded-xl p-6 hover:bg-green-50 transition">
-          <FaCheckCircle className="text-2xl text-green-700 mb-2" />
-          <span className="font-semibold text-green-700">FAQ</span>
-        </Link>
-      </section>
-
-      {/* --- CHINA FACTORIES SECTION WITH CONTAINER BACKGROUND --- */}
-      <section className="py-16 px-4 flex justify-center">
-        <div
-          className="relative max-w-6xl w-full rounded-3xl shadow-2xl overflow-hidden"
-          style={{
-            backgroundImage: "url('/hero-bg.png')",
-            backgroundSize: 'cover',
-            backgroundPosition: 'center',
-            minHeight: 500,
-          }}
-        >
-          {/* Soft white overlay for readability */}
-          <div className="absolute inset-0 bg-white/80 backdrop-blur-md z-0" />
-          <div className="relative z-10 px-4 py-8">
-            <h2 className="text-center text-3xl font-bold text-green-700 mb-2 drop-shadow">
-              Trusted Partner Factories Across China
-            </h2>
-            <p className="text-center text-green-600 text-base mb-8 font-medium">
-              Every partner is a verified, high-volume exporter serving top brands worldwide.
-            </p>
-            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-8">
-              {factories.map((f, i) => (
-                <div
-  key={i}
-  className="relative rounded-2xl bg-white shadow-lg flex flex-col items-center p-6 border border-green-100 h-full hover:shadow-2xl transition-shadow"
->
-                  <img
-                    src={f.image}
-                    alt={f.name}
-                    className="w-28 h-28 object-cover rounded-2xl mb-3 border border-green-100 shadow"
-                    style={{ background: '#f0fdf4' }}
-                    onError={e => { e.target.onerror = null; e.target.src='/factory-default.png'; }}
-                  />
-                  <div className="font-bold text-green-800 text-lg mb-1 text-center">{f.name}</div>
-                  <div className="text-green-600 text-xs mb-2 text-center">{f.address}</div>
-                  <p className="text-green-600 text-center text-sm">{f.info}</p>
-                </div>
-              ))}
-            </div>
-          </div>
+              <span className="text-xs font-bold text-slate-400 uppercase tracking-wide">Available Liquidity</span>
+           </div>
+           <div className="text-3xl font-bold text-slate-800 font-mono tracking-tight">
+              {balance.toLocaleString('en-US', { style: 'currency', currency: 'USD' })}
+           </div>
+           <div className="mt-2 text-xs text-slate-500 flex items-center gap-1">
+              <span className="text-emerald-500 font-bold flex items-center">
+                 <FaArrowUp size={10} /> +0.0%
+              </span>
+              <span>vs last settlement cycle</span>
+           </div>
         </div>
-      </section>
 
-      {/* Final CTA Banner */}
-      <section className="py-20 text-center bg-green-600 text-white">
-        <h2 className="text-4xl font-bold mb-4">Join BambooMall Today!</h2>
-        <p className="text-lg mb-6">Become a VIP reseller and unlock extra profits. Your membership and wallet badge upgrade instantly as you deposit!</p>
-        <Link
-          to="/signup"
-          className="inline-block bg-white text-green-700 font-bold px-8 py-3 rounded-full shadow hover:bg-yellow-100 hover:text-green-900 transition text-lg"
-        >
-          Sign Up & Start Reselling
-        </Link>
-      </section>
+        {/* Card B: Credit Line (Real Data) */}
+        <div className="bg-white p-6 rounded shadow-sm border border-slate-200 hover:border-indigo-300 transition-colors">
+           <div className="flex justify-between items-start mb-4">
+              <div className="p-2 bg-indigo-50 text-indigo-600 rounded">
+                 <FaChartLine size={20} />
+              </div>
+              <span className="text-xs font-bold text-slate-400 uppercase tracking-wide">Pre-Approved Credit</span>
+           </div>
+           <div className="text-3xl font-bold text-slate-800 font-mono tracking-tight">
+              {creditLimit.toLocaleString('en-US', { style: 'currency', currency: 'USD' })}
+           </div>
+           <div className="mt-2 text-xs text-slate-500">
+              <span className="bg-slate-100 px-2 py-0.5 rounded text-slate-600 font-mono uppercase font-bold">
+                 {tier}
+              </span>
+           </div>
+        </div>
 
-      {/* Footer */}
-      <footer className="text-center py-6 text-green-700/60 text-sm">
-        &copy; {new Date().getFullYear()} BambooMall. All rights reserved.
-      </footer>
+        {/* Card C: Pending Actions */}
+        <div className="bg-white p-6 rounded shadow-sm border border-amber-200 bg-amber-50/50">
+           <div className="flex justify-between items-start mb-4">
+              <div className="p-2 bg-amber-100 text-amber-600 rounded">
+                 <FaExclamationTriangle size={20} />
+              </div>
+              <span className="text-xs font-bold text-amber-600 uppercase tracking-wide">Compliance Alerts</span>
+           </div>
+           <div className="space-y-2">
+              <div className="text-sm font-medium text-slate-700">
+                 ⚠️ 2026 Export Tariff Update
+              </div>
+              <p className="text-xs text-slate-500 leading-relaxed">
+                 All fiat transfers (SWIFT) are now subject to a 15% pre-clearance holding period. Use Digital Settlement (USDC) for instant release.
+              </p>
+              <Link to="/compliance" className="text-xs font-bold text-blue-600 hover:underline block mt-2">
+                 Read Policy Update →
+              </Link>
+           </div>
+        </div>
+      </div>
+
+      {/* 3. MAIN CONTENT: The Manifest Feed & Ticker */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+         
+         {/* Left Column: Live Manifests */}
+         <div className="lg:col-span-2 bg-white rounded shadow-sm border border-slate-200 overflow-hidden">
+            <div className="p-4 border-b border-slate-200 flex justify-between items-center bg-slate-50">
+               <h3 className="font-bold text-slate-700 text-sm uppercase tracking-wide flex items-center gap-2">
+                  <FaWarehouse /> Incoming Warehouse Lots
+               </h3>
+               <Link to="/products" className="text-xs font-bold text-blue-600 hover:text-blue-800">
+                  View Full Manifest →
+               </Link>
+            </div>
+            
+            <table className="w-full text-left text-sm">
+               <thead className="bg-slate-50 text-slate-500 font-mono text-xs uppercase">
+                  <tr>
+                     <th className="px-4 py-3">Batch ID</th>
+                     <th className="px-4 py-3">Origin</th>
+                     <th className="px-4 py-3">Category</th>
+                     <th className="px-4 py-3">Grade</th>
+                     <th className="px-4 py-3 text-right">Status</th>
+                  </tr>
+               </thead>
+               <tbody className="divide-y divide-slate-100">
+                  <tr className="hover:bg-slate-50 transition-colors">
+                     <td className="px-4 py-3 font-mono text-blue-600 font-medium">CN-SZ-9920</td>
+                     <td className="px-4 py-3 text-slate-600">Shenzhen, CN</td>
+                     <td className="px-4 py-3">Consumer Electronics</td>
+                     <td className="px-4 py-3"><span className="bg-emerald-100 text-emerald-700 px-2 py-0.5 rounded text-[10px] font-bold">GRADE A</span></td>
+                     <td className="px-4 py-3 text-right text-xs font-bold text-emerald-600">LIVE</td>
+                  </tr>
+                  <tr className="hover:bg-slate-50 transition-colors">
+                     <td className="px-4 py-3 font-mono text-blue-600 font-medium">VN-HCM-4402</td>
+                     <td className="px-4 py-3 text-slate-600">Ho Chi Minh, VN</td>
+                     <td className="px-4 py-3">Branded Sportswear</td>
+                     <td className="px-4 py-3"><span className="bg-blue-100 text-blue-700 px-2 py-0.5 rounded text-[10px] font-bold">OVERSTOCK</span></td>
+                     <td className="px-4 py-3 text-right text-xs font-bold text-emerald-600">LIVE</td>
+                  </tr>
+                  <tr className="hover:bg-slate-50 transition-colors">
+                     <td className="px-4 py-3 font-mono text-blue-600 font-medium">CN-YIWU-8821</td>
+                     <td className="px-4 py-3 text-slate-600">Yiwu, CN</td>
+                     <td className="px-4 py-3">Home Appliances</td>
+                     <td className="px-4 py-3"><span className="bg-amber-100 text-amber-700 px-2 py-0.5 rounded text-[10px] font-bold">GRADE B</span></td>
+                     <td className="px-4 py-3 text-right text-xs font-bold text-slate-400">PROCESSING</td>
+                  </tr>
+               </tbody>
+            </table>
+         </div>
+
+         {/* Right Column: Live Settlement Feed (AUTO SCROLLING) */}
+         <div className="bg-white rounded shadow-sm border border-slate-200 flex flex-col h-[400px]">
+            <div className="p-4 border-b border-slate-200 bg-slate-50">
+               <h3 className="font-bold text-slate-700 text-sm uppercase tracking-wide flex items-center gap-2">
+                  <FaGlobe /> Global Settlement Feed
+               </h3>
+            </div>
+            <div className="flex-1 overflow-hidden relative">
+               <div className="absolute inset-0 overflow-y-auto p-2 space-y-2 no-scrollbar">
+                  {ticker.map((tx, i) => (
+                     <div key={tx.id + i} className="flex items-center justify-between p-3 bg-slate-50 rounded border border-slate-100 animate-slide-in-right">
+                        <div>
+                           <div className="text-xs font-bold text-slate-700">{tx.buyer}</div>
+                           <div className="text-[10px] text-slate-400 font-mono">{tx.id}</div>
+                        </div>
+                        <div className="text-right">
+                           <div className="text-xs font-mono font-bold text-slate-800">{tx.amount}</div>
+                           <div className={`text-[10px] font-bold ${tx.status === 'CLEARED' ? 'text-emerald-600' : 'text-amber-500'}`}>{tx.status}</div>
+                        </div>
+                     </div>
+                  ))}
+               </div>
+            </div>
+            <div className="p-3 border-t border-slate-200 bg-slate-50 text-[10px] text-slate-400 text-center flex justify-center items-center gap-2">
+               <span className="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-pulse"></span>
+               Real-time settlement data via BambooChain Nodes
+            </div>
+         </div>
+
+      </div>
+
+      {/* 4. FOOTER: Quick Actions */}
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 pt-4">
+         <Link to="/products" className="bg-blue-900 hover:bg-blue-800 text-white p-4 rounded text-center transition-all shadow-md hover:shadow-lg transform hover:-translate-y-0.5">
+            <FaBoxOpen className="mx-auto mb-2 text-xl" />
+            <span className="text-sm font-bold">Browse Manifests</span>
+         </Link>
+         <Link to="/balance" className="bg-slate-800 hover:bg-slate-700 text-white p-4 rounded text-center transition-all shadow-md hover:shadow-lg transform hover:-translate-y-0.5">
+            <FaFileInvoiceDollar className="mx-auto mb-2 text-xl" />
+            <span className="text-sm font-bold">Manage Funds</span>
+         </Link>
+         <Link to="/compliance" className="bg-white border border-slate-200 hover:bg-slate-50 text-slate-700 p-4 rounded text-center transition-colors">
+            <FaShip className="mx-auto mb-2 text-xl text-slate-400" />
+            <span className="text-sm font-bold">Shipping Policy</span>
+         </Link>
+         <Link to="/profile" className="bg-white border border-slate-200 hover:bg-slate-50 text-slate-700 p-4 rounded text-center transition-colors">
+            <FaChartLine className="mx-auto mb-2 text-xl text-slate-400" />
+            <span className="text-sm font-bold">Agent Profile</span>
+         </Link>
+      </div>
+
     </div>
   );
 }

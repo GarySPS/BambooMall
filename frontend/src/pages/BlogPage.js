@@ -1,3 +1,5 @@
+//src>pages>BlogPage.js
+
 import React from "react";
 import { CalendarDays, ArrowRightCircle } from "lucide-react";
 

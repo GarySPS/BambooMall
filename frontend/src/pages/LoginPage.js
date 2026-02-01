@@ -4,12 +4,10 @@ import React, { useState, useEffect, useRef } from "react";
 import { useUser } from "../contexts/UserContext";
 import { useNavigate } from "react-router-dom";
 import { API_BASE_URL } from "../config";
-// Added FaEnvelope, FaEye, FaEyeSlash, FaShoppingBag for the new design
-import { FaShieldAlt, FaGlobeAsia, FaCheckCircle, FaLock, FaEnvelope, FaEye, FaEyeSlash, FaArrowRight } from "react-icons/fa";
+import { FaShieldAlt, FaGlobe, FaLock, FaKey, FaBuilding, FaExclamationTriangle } from "react-icons/fa";
 
-// --- COMPONENT: ANIMATED NETWORK BACKGROUND (Unchanged) ---
+// --- COMPONENT: ANIMATED NETWORK BACKGROUND (Modified for "Data Logistics" look) ---
 const NetworkCanvas = () => {
-  // ... [Keep your existing NetworkCanvas code exactly as is] ...
   const canvasRef = useRef(null);
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -18,9 +16,9 @@ const NetworkCanvas = () => {
     let width, height;
     let particles = [];
     let animationFrameId; 
-    const particleCount = 35; 
-    const connectionDistance = 150;
-    const speed = 0.5;
+    const particleCount = 45; 
+    const connectionDistance = 120;
+    const speed = 0.3; // Slower, heavier feel
 
     const resize = () => {
       if (canvas.parentElement) {
@@ -35,7 +33,7 @@ const NetworkCanvas = () => {
         this.y = Math.random() * height;
         this.vx = (Math.random() - 0.5) * speed;
         this.vy = (Math.random() - 0.5) * speed;
-        this.size = Math.random() * 2 + 1;
+        this.size = Math.random() * 1.5 + 0.5; // Smaller, precise dots
       }
       update() {
         this.x += this.vx;
@@ -46,7 +44,7 @@ const NetworkCanvas = () => {
       draw() {
         ctx.beginPath();
         ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
-        ctx.fillStyle = "rgba(16, 185, 129, 0.6)"; 
+        ctx.fillStyle = "rgba(148, 163, 184, 0.5)"; // Slate-400
         ctx.fill();
       }
     }
@@ -70,10 +68,11 @@ const NetworkCanvas = () => {
           const dx = p.x - p2.x;
           const dy = p.y - p2.y;
           const distSq = dx * dx + dy * dy; 
-          if (distSq < 22500) {
+          if (distSq < 15000) {
             const distance = Math.sqrt(distSq);
             ctx.beginPath();
-            ctx.strokeStyle = `rgba(16, 185, 129, ${1 - distance / connectionDistance})`;
+            // Blue-gray lines for corporate feel
+            ctx.strokeStyle = `rgba(148, 163, 184, ${0.5 - distance / connectionDistance})`;
             ctx.moveTo(p.x, p.y);
             ctx.lineTo(p2.x, p2.y);
             ctx.stroke();
@@ -91,14 +90,13 @@ const NetworkCanvas = () => {
       cancelAnimationFrame(animationFrameId);
     };
   }, []);
-  return <canvas ref={canvasRef} className="absolute inset-0 w-full h-full z-0" />;
+  return <canvas ref={canvasRef} className="absolute inset-0 w-full h-full z-0 bg-slate-900" />;
 };
 
-// --- MAIN LOGIN PAGE COMPONENT (Updated) ---
+// --- MAIN LOGIN PAGE COMPONENT ---
 export default function LoginPage() {
   const [userOrEmail, setUserOrEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [showPassword, setShowPassword] = useState(false); // Added for the new UI
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
   
@@ -117,22 +115,15 @@ export default function LoginPage() {
     setError("");
     setLoading(true);
 
-    const cleanInput = userOrEmail.trim();
-
-    if (!cleanInput || !password) {
-      setLoading(false);
-      return;
-    }
-
     try {
       const res = await fetch(`${API_BASE_URL}/auth/login`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email: cleanInput, password }),
+        body: JSON.stringify({ email: userOrEmail, password }),
       });
       const data = await res.json();
       
-      if (!res.ok) throw new Error(data.error || "Login failed");
+      if (!res.ok) throw new Error(data.error || "Authentication Failed. Invalid Clearance.");
       
       login(data.user);
       
@@ -143,180 +134,130 @@ export default function LoginPage() {
   }
 
   return (
-    // Outer Wrapper: Uses Emerald-950 for Mobile background, White for Desktop
-    <div className="min-h-screen font-sans selection:bg-emerald-200 bg-emerald-950 lg:bg-white relative">
+    <div className="min-h-screen font-sans bg-slate-900 relative flex flex-col">
       
-      {/* --- MOBILE BACKGROUND LAYER (Hidden on Desktop) --- */}
-      <div className="lg:hidden fixed inset-0 z-0 w-full h-full">
-         <div className="absolute inset-0 bg-gradient-to-br from-emerald-900 via-emerald-800 to-black opacity-90" />
-         {/* Decorative shapes */}
-         <div className="absolute top-[-10%] right-[-10%] w-64 h-64 bg-emerald-500 rounded-full blur-[100px] opacity-20 animate-pulse" />
-         <div className="absolute bottom-[20%] left-[-10%] w-80 h-80 bg-teal-400 rounded-full blur-[120px] opacity-10" />
+      {/* --- COMPLIANCE HEADER (The Banker Hook) --- */}
+      <div className="bg-blue-950 text-slate-400 text-[10px] md:text-xs py-1 px-4 flex justify-between items-center border-b border-slate-800 z-50">
+        <span className="flex items-center gap-2">
+          <FaGlobe size={10} />
+          <span className="font-mono">CROSS-BORDER SETTLEMENT: SAFE REG. 2026-CN-SZ APPLIES</span>
+        </span>
+        <span className="flex items-center gap-2">
+          <FaLock size={10} />
+          <span className="font-mono tracking-wider">TLS 1.3 ENCRYPTED // PORTAL ID: SZ-99</span>
+        </span>
       </div>
 
-      <div className="relative z-10 flex flex-col min-h-screen lg:flex-row">
-        
-        {/* --- DESKTOP LEFT: ANIMATED CANVAS (Your original desktop view) --- */}
-        <div className="hidden lg:flex w-1/2 relative bg-slate-900 items-center justify-center overflow-hidden">
+      <div className="flex-1 flex relative">
+        {/* --- LEFT: LOGISTICS VISUALS --- */}
+        <div className="hidden lg:flex w-7/12 relative bg-slate-900 items-center justify-center overflow-hidden border-r border-slate-800">
           <NetworkCanvas />
-          <div className="relative z-10 p-12 text-white max-w-lg">
-            
-            <div className="flex items-center gap-4 mb-6">
-               <img 
-                 src="/logo192.png" 
-                 alt="BambooMall Logo" 
-                 className="w-16 h-16 object-contain drop-shadow-[0_0_15px_rgba(16,185,129,0.4)] hover:scale-105 transition-transform duration-300"
-               />
-               <h1 className="text-4xl font-extrabold tracking-tight">
-                 Bamboo<span className="text-emerald-500">Mall</span>
-               </h1>
+          <div className="relative z-10 p-12 max-w-xl">
+            <div className="flex items-center gap-4 mb-8">
+               <div className="w-12 h-12 bg-blue-900/30 border border-blue-500/50 flex items-center justify-center rounded">
+                  <FaBuilding className="text-blue-400 text-xl" />
+               </div>
+               <div>
+                 <h1 className="text-3xl font-bold text-slate-100 tracking-tight">Bamboo<span className="text-slate-400">Mall</span> <span className="text-xs align-top bg-slate-800 text-slate-400 px-1 py-0.5 rounded ml-1 font-mono">SCM</span></h1>
+                 <p className="text-slate-500 text-xs font-mono uppercase tracking-widest mt-1">Global Liquidation Network</p>
+               </div>
             </div>
 
-            <h2 className="text-3xl font-bold mb-6 leading-tight">
-              The World's Factory, <br/> 
-              <span className="text-emerald-400">Direct to Your Door.</span>
-            </h2>
-            <div className="space-y-4 text-slate-300 text-lg">
-              <div className="flex items-center gap-3"><FaCheckCircle className="text-emerald-500" /><span>Verified Direct Manufacturers</span></div>
-              <div className="flex items-center gap-3"><FaGlobeAsia className="text-emerald-500" /><span>Global Logistics Handling</span></div>
-              <div className="flex items-center gap-3"><FaShieldAlt className="text-emerald-500" /><span>Escrow Payment Protection</span></div>
-            </div>
-            <div className="mt-12 pt-8 border-t border-slate-700 text-sm text-slate-400">
-              <p>"BambooMall revolutionized how we source products. The margins are unbeatable."</p>
-              <p className="mt-2 font-bold text-slate-200">— Global Resellers Assoc.</p>
+            <div className="space-y-6 text-slate-400 text-sm font-mono">
+              <div className="flex items-start gap-4 p-4 bg-slate-800/50 border-l-2 border-blue-500">
+                <FaShieldAlt className="mt-1 text-blue-500" />
+                <div>
+                  <h3 className="text-slate-200 font-bold mb-1">Restricted Access</h3>
+                  <p>Authorized procurement agents only. All IP addresses are logged for settlement auditing.</p>
+                </div>
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div className="bg-slate-800/30 p-3 rounded border border-slate-700">
+                    <span className="block text-xs text-slate-500 mb-1">Active Manifests</span>
+                    <span className="text-xl text-slate-200 font-bold">14,209</span>
+                </div>
+                <div className="bg-slate-800/30 p-3 rounded border border-slate-700">
+                    <span className="block text-xs text-slate-500 mb-1">Clearance Rate</span>
+                    <span className="text-xl text-emerald-500 font-bold">99.4%</span>
+                </div>
+              </div>
             </div>
           </div>
-          <div className="absolute inset-0 bg-gradient-to-t from-slate-900 via-transparent to-slate-900/50 pointer-events-none" />
         </div>
 
-        {/* --- MOBILE TOP: BRANDING AREA (New Premium Look) --- */}
-        <div className="lg:hidden flex-shrink-0 flex flex-col justify-center items-center h-[35vh] p-8 text-center">
-             {/* UPDATE: Reduced padding (p-4 -> p-2) and increased image size */}
-             <div className="mb-6 p-2 bg-white/10 backdrop-blur-md rounded-2xl shadow-2xl ring-1 ring-white/20 transform transition-transform hover:scale-105 duration-500">
-               <img 
-                 src="/logo192.png" 
-                 alt="BambooMall Logo" 
-                 className="w-20 h-20 object-contain drop-shadow-lg" 
-               />
-             </div>
-             
-             <h1 className="text-4xl font-bold text-white tracking-tight mb-2 drop-shadow-lg">
-               Bamboo<span className="text-emerald-400">Mall</span>
-             </h1>
-             <p className="text-emerald-200 text-sm font-medium tracking-wide opacity-80 max-w-xs mx-auto">
-               Premium shopping, delivered to your door.
-             </p>
-        </div>
-
-        {/* --- RIGHT/BOTTOM: LOGIN FORM CARD (Unified) --- */}
-        {/* On mobile: Rounded top corners, slides up over background. On Desktop: Full height white side. */}
-        <div className="flex-1 flex flex-col bg-white rounded-t-[2.5rem] lg:rounded-none shadow-[0_-20px_40px_-15px_rgba(0,0,0,0.3)] lg:shadow-none overflow-hidden animate-slideUp lg:animate-none">
-          
-          <div className="flex-1 flex flex-col justify-center px-8 py-10 lg:px-16 lg:py-12 max-w-md mx-auto w-full">
+        {/* --- RIGHT: THE LOGIN TERMINAL --- */}
+        <div className="flex-1 flex flex-col justify-center items-center p-6 bg-slate-50 relative">
+          <div className="w-full max-w-sm">
             
-            <div className="mb-10 text-center lg:text-left">
-              <h2 className="text-2xl lg:text-3xl font-bold text-slate-900 mb-2">Welcome Back</h2>
-              <p className="text-slate-500 text-sm">Sign in to manage your orders and shipments.</p>
+            <div className="mb-8">
+              <h2 className="text-2xl font-bold text-slate-900 mb-2">Agent Authentication</h2>
+              <p className="text-slate-500 text-xs">Enter your Corporate ID to access the live manifest.</p>
             </div>
 
-            <form onSubmit={handleSubmit} className="space-y-6">
+            <form onSubmit={handleSubmit} className="space-y-5">
               
-              {/* Email Input */}
-              <div className="space-y-2 group">
-                <label className="text-xs font-semibold text-gray-400 uppercase tracking-wider ml-1">Email or Username</label>
-                <div className="relative transition-all duration-300 transform group-focus-within:scale-[1.01]">
-                  <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
-                    <FaEnvelope className="h-5 w-5 text-gray-400 group-focus-within:text-emerald-500 transition-colors" />
+              <div className="space-y-1">
+                <label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Corporate ID / Email</label>
+                <div className="relative">
+                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                    <FaBuilding className="h-4 w-4 text-slate-400" />
                   </div>
                   <input
                     type="text"
                     value={userOrEmail}
                     onChange={(e) => setUserOrEmail(e.target.value)}
                     required
-                    className="block w-full pl-12 pr-4 py-4 bg-gray-50 border border-gray-100 rounded-2xl text-gray-900 text-sm placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 focus:bg-white transition-all shadow-sm hover:bg-gray-100/50"
-                    placeholder="name@company.com"
+                    className="block w-full pl-10 pr-3 py-2 bg-white border border-slate-300 rounded text-slate-900 text-sm focus:outline-none focus:ring-1 focus:ring-blue-900 focus:border-blue-900 transition-all font-mono"
+                    placeholder="agent@corp.com"
                   />
                 </div>
               </div>
 
-              {/* Password Input */}
-              <div className="space-y-2 group">
-                <label className="text-xs font-semibold text-gray-400 uppercase tracking-wider ml-1">Password</label>
-                <div className="relative transition-all duration-300 transform group-focus-within:scale-[1.01]">
-                  <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
-                    <FaLock className="h-5 w-5 text-gray-400 group-focus-within:text-emerald-500 transition-colors" />
+              <div className="space-y-1">
+                <label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Access Key</label>
+                <div className="relative">
+                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                    <FaKey className="h-4 w-4 text-slate-400" />
                   </div>
                   <input
-                    type={showPassword ? 'text' : 'password'}
+                    type="password"
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
                     required
-                    className="block w-full pl-12 pr-12 py-4 bg-gray-50 border border-gray-100 rounded-2xl text-gray-900 text-sm placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 focus:bg-white transition-all shadow-sm hover:bg-gray-100/50"
+                    className="block w-full pl-10 pr-3 py-2 bg-white border border-slate-300 rounded text-slate-900 text-sm focus:outline-none focus:ring-1 focus:ring-blue-900 focus:border-blue-900 transition-all font-mono"
                     placeholder="••••••••"
                   />
-                  <button
-                    type="button"
-                    onClick={() => setShowPassword(!showPassword)}
-                    className="absolute inset-y-0 right-0 pr-4 flex items-center"
-                  >
-                    {showPassword ? (
-                      <FaEyeSlash className="h-5 w-5 text-gray-400 hover:text-gray-600 transition-colors cursor-pointer" />
-                    ) : (
-                      <FaEye className="h-5 w-5 text-gray-400 hover:text-gray-600 transition-colors cursor-pointer" />
-                    )}
-                  </button>
                 </div>
               </div>
 
-              <div className="flex items-center justify-between">
-                 <div className="flex items-center">
-                    <input
-                      id="remember-me"
-                      name="remember-me"
-                      type="checkbox"
-                      className="h-4 w-4 text-emerald-600 focus:ring-emerald-500 border-slate-300 rounded cursor-pointer"
-                    />
-                    <label htmlFor="remember-me" className="ml-2 block text-sm text-slate-600 cursor-pointer select-none">
-                      Remember me
-                    </label>
-                  </div>
-                  <div onClick={() => navigate("/forgot")} className="text-sm font-medium text-emerald-600 hover:text-emerald-700 transition-colors cursor-pointer">
-                    Forgot Password?
-                  </div>
-              </div>
-
               {error && (
-                <div className="text-red-600 text-sm bg-red-50 p-3 rounded-lg border border-red-100 text-center animate-pulse">
+                <div className="text-red-600 text-xs bg-red-50 p-2 rounded border border-red-200 flex items-center gap-2">
+                  <FaExclamationTriangle />
                   {error}
                 </div>
               )}
 
-              {/* Submit Button */}
               <button
                 type="submit"
                 disabled={loading}
-                className="w-full flex items-center justify-center py-4 px-6 border border-transparent rounded-2xl shadow-lg shadow-emerald-500/30 text-base font-bold text-white bg-emerald-600 hover:bg-emerald-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-emerald-500 transition-all duration-300 transform hover:translate-y-[-2px] disabled:opacity-70 disabled:cursor-not-allowed"
+                className="w-full flex items-center justify-center py-2.5 px-4 border border-transparent rounded shadow-sm text-sm font-bold text-white bg-blue-900 hover:bg-blue-800 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-900 transition-all"
               >
-                {loading ? (
-                  <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                  </svg>
-                ) : (
-                  <>
-                    Sign In
-                    <FaArrowRight className="ml-2 h-4 w-4" />
-                  </>
-                )}
+                {loading ? "Verifying Credentials..." : "Access Terminal"}
               </button>
             </form>
 
-            <div className="mt-8 text-center text-sm text-gray-500">
-              Don't have an account?{' '}
-              <span onClick={() => navigate("/signup")} className="font-semibold text-emerald-600 hover:text-emerald-500 transition-colors cursor-pointer">
-                Sign up
-              </span>
+            <div className="mt-8 pt-6 border-t border-slate-200 text-center">
+              <p className="text-xs text-slate-400 mb-2">New Procurement Partner?</p>
+              <button onClick={() => navigate("/signup")} className="text-blue-900 text-sm font-bold hover:underline">
+                Apply for Vendor Whitelist
+              </button>
             </div>
+          </div>
+
+          {/* ICP Footer for the Banker */}
+          <div className="absolute bottom-4 text-[10px] text-slate-400 text-center w-full px-6">
+            <p>BambooMall Supply Chain Management (Shenzhen) Co., Ltd.</p>
+            <p className="font-mono mt-1">ICP No. 2024-889X | Shenzhen Municipal Commerce Bureau Reg.</p>
           </div>
         </div>
       </div>

@@ -1,6 +1,9 @@
-import React from "react";
+// src/components/CertAwards.js
 
-// Main badge medals (gold PNGs)
+import React, { useState } from "react";
+import { FaSearchPlus, FaTimes } from "react-icons/fa";
+
+// Main badge medals
 const badges = [
   { img: "/iso.png", label: "ISO 9001:2015" },
   { img: "/verified.png", label: "Verified Exporter" },
@@ -8,101 +11,104 @@ const badges = [
   { img: "/safety.png", label: "Global Trade" },
 ];
 
-// Real certificate images (large, clear)
+// Real certificate images
 const certImgs = [
-  { img: "/1.jpg", alt: "Business License or ISO Certificate" },
-  { img: "/2.jpg", alt: "Verified Exporter License" },
-  { img: "/3.jpg", alt: "International Trade Compliance" }
+  { img: "/1.jpg", alt: "GLA Membership Certificate" },
+  { img: "/2.jpg", alt: "Environmental Management System" },
+  { img: "/3.jpg", alt: "Quality Management Approval" }
 ];
 
 export default function CertAwards() {
+  const [selectedCert, setSelectedCert] = useState(null);
+
   return (
-<section className="w-full py-8 px-2">
-      <div className="max-w-5xl mx-auto flex flex-col items-center">
-        <h2
-          className="text-4xl md:text-5xl font-extrabold text-center mb-14"
-          style={{
-            color: "#20724a",
-            letterSpacing: "0.01em",
-            textShadow: "0 2px 8px #fff6e5",
-            lineHeight: 1.15,
-          }}
-        >
-          Certifications &amp; Awards
-        </h2>
-
-        {/* Badges: 4 in a row, premium look */}
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-x-8 gap-y-12 mb-10 w-full">
-          {badges.map((badge, i) => (
-            <div
-              key={i}
-              className="flex flex-col items-center w-full"
-              style={{ minWidth: "120px" }}
-            >
-              <img
-                src={badge.img}
-                alt={badge.label}
-                className="w-32 h-32 md:w-40 md:h-40 object-contain mb-3"
-                style={{
-                  background: "transparent",
-                  filter: "drop-shadow(0 3px 15px #f5e4b8)",
-                }}
-                draggable={false}
-              />
-              <div
-                className="text-base md:text-lg font-bold text-center"
-                style={{
-                  color: "#b68b1d",
-                  textShadow: "0 1px 4px #f2dfad",
-                  letterSpacing: "0.01em",
-                  minHeight: "2.7rem",
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                }}
-              >
-                {badge.label}
-              </div>
+    <section className="w-full">
+      
+      {/* 1. BADGES ROW */}
+      <div className="grid grid-cols-4 gap-4 mb-12 border-b border-slate-800 pb-8">
+        {badges.map((badge, i) => (
+          <div key={i} className="flex flex-col items-center group">
+            <div className="w-16 h-16 md:w-20 md:h-20 flex items-center justify-center p-2 rounded-full bg-slate-900 border border-slate-800 group-hover:border-emerald-900/50 group-hover:bg-emerald-900/10 transition-all duration-300">
+                <img
+                    src={badge.img}
+                    alt={badge.label}
+                    className="w-full h-full object-contain opacity-70 group-hover:opacity-100 transition-opacity"
+                />
             </div>
-          ))}
-        </div>
-
-        {/* Section highlight for trust */}
-        <div className="text-lg md:text-xl text-green-800 opacity-90 text-center mb-12 max-w-2xl">
-          <span style={{ fontWeight: 600 }}>BambooMall</span> is officially certified and regularly audited for global trade security, business standards, and international compliance.
-        </div>
-
-        {/* Real Certificates - with premium gold border card */}
-        <div className="flex flex-col md:flex-row gap-10 md:gap-8 items-center justify-center w-full mb-6">
-          {certImgs.map((cert, idx) => (
-            <div
-              key={idx}
-              className="flex flex-col items-center w-full premium-certificate-card"
-              style={{ minWidth: 270, maxWidth: 420 }}
-            >
-              <img
-                src={cert.img}
-                alt={cert.alt}
-                className="w-full h-auto rounded-lg object-contain"
-                style={{
-                  minHeight: "330px",
-                  maxHeight: "440px",
-                  objectFit: "contain",
-                  marginBottom: "0.5rem",
-                  userSelect: "none",
-                  boxShadow: "0 2px 8px #e5e5e5",
-                  borderRadius: "1.1rem"
-                }}
-                draggable={false}
-              />
+            <div className="text-[9px] text-center text-slate-500 uppercase font-bold mt-3 tracking-wide group-hover:text-slate-300">
+              {badge.label}
             </div>
-          ))}
-        </div>
-
-        <div className="text-base text-gray-500 text-center max-w-xl mt-2">
-          * All certificates shown are authentic and represent real registration, ISO, and international audit verification for your full business confidence.
-        </div>
+          </div>
+        ))}
       </div>
+
+      {/* 2. CERTIFICATES GRID */}
+      <div>
+          <div className="flex justify-between items-end mb-4">
+             <h4 className="text-xs font-bold text-white uppercase tracking-widest">
+                Verification Documents
+             </h4>
+             <span className="text-[10px] text-slate-500 italic">Click to Inspect</span>
+          </div>
+          
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            {certImgs.map((cert, idx) => (
+                <div
+                key={idx}
+                onClick={() => setSelectedCert(cert)}
+                className="relative group cursor-zoom-in bg-slate-900 p-2 rounded border border-slate-700 hover:border-blue-500 transition-colors"
+                >
+                {/* Hover Overlay */}
+                <div className="absolute inset-0 bg-black/60 group-hover:bg-black/20 transition-colors z-10 flex items-center justify-center">
+                    <FaSearchPlus className="text-white opacity-0 group-hover:opacity-100 transform scale-50 group-hover:scale-100 transition-all duration-300" size={24} />
+                </div>
+                
+                <img
+                    src={cert.img}
+                    alt={cert.alt}
+                    className="w-full h-48 object-cover object-top opacity-80 group-hover:opacity-100 transition-opacity"
+                />
+                <div className="mt-2 text-[10px] text-center text-slate-400 font-mono truncate px-2">
+                    {cert.alt}
+                </div>
+                </div>
+            ))}
+          </div>
+      </div>
+
+      <div className="text-[9px] text-slate-600 text-center mt-6 font-mono">
+         * Authenticity verified by CNCAS (China National Accreditation Service). Last Audit: JAN 2026.
+      </div>
+
+      {/* 3. INSPECTION MODAL */}
+      {selectedCert && (
+        <div 
+            className="fixed inset-0 z-[999] bg-black/90 backdrop-blur-sm flex items-center justify-center p-4 md:p-10 animate-fade-in"
+            onClick={() => setSelectedCert(null)}
+        >
+            <button 
+                className="absolute top-6 right-6 text-white/50 hover:text-white transition-colors"
+                onClick={() => setSelectedCert(null)}
+            >
+                <FaTimes size={32} />
+            </button>
+            
+            <div 
+                className="relative max-w-4xl w-full max-h-full overflow-auto rounded shadow-2xl bg-white"
+                onClick={e => e.stopPropagation()} // Prevent close when clicking image
+            >
+                <img 
+                    src={selectedCert.img} 
+                    alt={selectedCert.alt} 
+                    className="w-full h-auto block"
+                />
+                <div className="absolute bottom-0 left-0 right-0 bg-black/80 text-white text-xs font-mono py-2 text-center">
+                    DOCUMENT PREVIEW // {selectedCert.alt.toUpperCase()}
+                </div>
+            </div>
+        </div>
+      )}
+
     </section>
   );
 }

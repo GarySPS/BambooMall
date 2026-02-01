@@ -1,43 +1,42 @@
-//src>pgaes>KYCVerificationPage.js
+// src/pages/KYCVerificationPage.js
 
 import React, { useState, useEffect } from 'react'; 
 import { useUser } from "../contexts/UserContext"; 
 import { toast } from "react-toastify"; 
+import { API_BASE_URL } from "../config";
 import { 
-  ShieldCheck, Camera, User, IdCard, CheckCircle2, 
-  ChevronRight, ArrowLeft, Lock, Info, FileText, Smartphone, Clock 
-} from 'lucide-react';
+  FaUserShield, 
+  FaCamera, 
+  FaIdCard, 
+  FaCheckCircle, 
+  FaArrowLeft, 
+  FaLock, 
+  FaInfoCircle, 
+  FaFileContract, 
+  FaClock
+} from 'react-icons/fa';
 
-// --- Sub-components (Kept the same) ---
+// --- Sub-components ---
 const StepIndicator = ({ currentStep }) => {
   const steps = [
-    { id: 1, label: 'Personal', icon: User },
-    { id: 2, label: 'Identity', icon: IdCard },
-    { id: 3, label: 'Selfie', icon: Camera },
+    { id: 1, label: 'Officer Details', icon: FaUserShield },
+    { id: 2, label: 'Govt. ID', icon: FaIdCard },
+    { id: 3, label: 'Biometric Scan', icon: FaCamera },
   ];
 
   return (
-    <div className="flex items-center justify-between w-full max-w-md mx-auto mb-12">
-      {steps.map((step, index) => (
-        <React.Fragment key={step.id}>
-          <div className="flex flex-col items-center relative">
-            <div className={`w-10 h-10 rounded-full flex items-center justify-center transition-all duration-500 z-10 ${
-              currentStep >= step.id ? 'bg-blue-600 text-white shadow-lg shadow-blue-200' : 'bg-gray-100 text-gray-400'
-            }`}>
-              <step.icon size={20} />
-            </div>
-            <span className={`text-[10px] font-bold uppercase tracking-widest mt-2 ${
-              currentStep >= step.id ? 'text-blue-600' : 'text-gray-400'
-            }`}>
-              {step.label}
-            </span>
+    <div className="flex items-center justify-between w-full max-w-md mx-auto mb-12 border-b border-slate-200 pb-4">
+      {steps.map((step) => (
+        <div key={step.id} className={`flex flex-col items-center relative ${currentStep >= step.id ? 'opacity-100' : 'opacity-40'}`}>
+          <div className={`w-8 h-8 flex items-center justify-center rounded-full mb-2 ${
+             currentStep >= step.id ? 'bg-blue-900 text-white' : 'bg-slate-200 text-slate-500'
+          }`}>
+             <step.icon size={12} />
           </div>
-          {index < steps.length - 1 && (
-            <div className="flex-1 h-[2px] mx-2 -mt-6 bg-gray-100 relative">
-              <div className="absolute h-full bg-blue-600 transition-all duration-700" style={{ width: currentStep > step.id ? '100%' : '0%' }} />
-            </div>
-          )}
-        </React.Fragment>
+          <span className="text-[10px] font-bold uppercase tracking-widest text-slate-600">
+            {step.label}
+          </span>
+        </div>
       ))}
     </div>
   );
@@ -46,53 +45,38 @@ const StepIndicator = ({ currentStep }) => {
 const UploadZone = ({ label, description, onFileSelect, file, icon: Icon }) => (
   <div className="group relative">
     <input type="file" accept="image/*" onChange={(e) => onFileSelect(e.target.files[0])} className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10" />
-    <div className={`border-2 border-dashed rounded-2xl p-6 transition-all flex flex-col items-center text-center ${
-      file ? 'border-green-500 bg-green-50' : 'border-gray-200 bg-gray-50 group-hover:border-blue-400 group-hover:bg-blue-50/30'
+    <div className={`border border-dashed rounded p-6 transition-all flex flex-col items-center text-center ${
+      file ? 'border-emerald-500 bg-emerald-50' : 'border-slate-300 bg-slate-50 group-hover:border-blue-400 group-hover:bg-white'
     }`}>
-      <div className={`w-12 h-12 rounded-full flex items-center justify-center mb-3 ${
-        file ? 'bg-green-100 text-green-600' : 'bg-white text-gray-400 shadow-sm'
+      <div className={`w-10 h-10 rounded flex items-center justify-center mb-3 ${
+        file ? 'bg-emerald-100 text-emerald-600' : 'bg-white text-slate-400 border border-slate-200'
       }`}>
-        {file ? <CheckCircle2 size={24} /> : <Icon size={24} />}
+        {file ? <FaCheckCircle size={20} /> : <Icon size={20} />}
       </div>
-      <p className="text-sm font-bold text-gray-900">{file ? file.name : label}</p>
-      <p className="text-xs text-gray-500 mt-1">{description}</p>
+      <p className="text-xs font-bold text-slate-800 uppercase">{file ? file.name : label}</p>
+      <p className="text-[10px] text-slate-500 mt-1">{description}</p>
     </div>
   </div>
 );
 
-
 export default function KYCVerificationPage() {
   const { user, refreshUser } = useUser();
-  
-  const API_BASE = process.env.REACT_APP_API_BASE_URL; 
-
   const [step, setStep] = useState(1);
   const [formData, setFormData] = useState({
-    fullName: '',
-    idNumber: '',
-    phone: '',
-    address: '',
-    idFront: null,
-    idBack: null,
-    selfie: null
+    fullName: '', idNumber: '', phone: '', address: '',
+    idFront: null, idBack: null, selfie: null
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isSuccess, setIsSuccess] = useState(false);
   const [statusMessage, setStatusMessage] = useState("");
 
-  // 1. Initial Load
-  useEffect(() => {
-    refreshUser();
-    // FIX: Added 'refreshUser' to dependency array
-  }, [refreshUser]);
+  useEffect(() => { refreshUser(); }, [refreshUser]);
 
-  // 2. Auto-refresh every 5 seconds if status is 'pending'
+  // Polling for status updates
   useEffect(() => {
     let interval;
     if (user?.kyc_status === 'pending') {
-      interval = setInterval(() => {
-        refreshUser(); 
-      }, 5000);
+      interval = setInterval(() => { refreshUser(); }, 5000);
     }
     return () => clearInterval(interval);
   }, [user?.kyc_status, refreshUser]);
@@ -103,47 +87,22 @@ export default function KYCVerificationPage() {
   const uploadFile = async (file) => {
     const data = new FormData();
     data.append("file", file);
-
-    let cleanBase = API_BASE.replace(/\/$/, "").replace(/\/api$/, "");
-    const url = `${cleanBase}/api/upload/kyc`;
-
-    console.log("UPLOADING TO:", url); 
-
-    const res = await fetch(url, { 
-      method: "POST", 
-      body: data 
-    });
-
-    if (!res.ok) {
-        const errorText = await res.text(); 
-        console.error("Server Error:", errorText);
-        throw new Error(errorText || "File upload failed");
-    }
-
+    const res = await fetch(`${API_BASE_URL}/upload/kyc`, { method: "POST", body: data });
+    if (!res.ok) throw new Error("Upload failed");
     const json = await res.json();
     return json.url;
   };
 
   const handleSubmit = async () => {
-    if(!user) {
-        toast.error("User session not found. Please login again.");
-        return;
-    }
     setIsSubmitting(true);
-    
     try {
-      setStatusMessage("Uploading Front ID...");
+      setStatusMessage("Encrypting & Uploading Documents...");
       const frontUrl = await uploadFile(formData.idFront);
-      
-      setStatusMessage("Uploading Back ID...");
       const backUrl = await uploadFile(formData.idBack);
-      
-      setStatusMessage("Uploading Selfie...");
       const selfieUrl = await uploadFile(formData.selfie);
 
-      setStatusMessage("Finalizing Application...");
-      
-      const res = await fetch(`${API_BASE}/kyc/submit-application`, {
+      setStatusMessage("Transmitting to Compliance Ledger...");
+      const res = await fetch(`${API_BASE_URL}/kyc/submit-application`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -158,237 +117,154 @@ export default function KYCVerificationPage() {
         })
       });
 
-      if (!res.ok) {
-        const errData = await res.json();
-        throw new Error(errData.error || "Submission failed");
-      }
-
+      if (!res.ok) throw new Error("Submission failed");
       await refreshUser();
       setIsSuccess(true);
-      toast.success("KYC Submitted Successfully!");
-      
+      toast.success("Security Clearance Request Submitted");
     } catch (error) {
-      console.error(error);
-      toast.error(error.message || "Error submitting KYC");
-      setStatusMessage("");
+      toast.error(error.message);
     } finally {
       setIsSubmitting(false);
     }
   };
 
+  // --- STATE: PENDING AUDIT ---
   if (user?.kyc_status === 'pending' && !isSuccess) {
     return (
-      <div className="min-h-screen bg-white flex flex-col items-center justify-center p-6 text-center animate-in fade-in zoom-in duration-500">
-        <div className="w-24 h-24 bg-amber-100 text-amber-600 rounded-full flex items-center justify-center mb-6 animate-pulse">
-          <Clock size={48} />
+      <div className="min-h-screen bg-slate-50 flex flex-col items-center justify-center p-6 text-center">
+        <div className="w-16 h-16 bg-amber-50 text-amber-500 rounded flex items-center justify-center mb-6 animate-pulse border border-amber-200">
+          <FaClock size={24} />
         </div>
-        <h1 className="text-3xl font-black text-gray-900 tracking-tight mb-2">In Review</h1>
-        <p className="text-gray-500 max-w-xs mx-auto leading-relaxed">
-          Your documents are currently being reviewed by our team. You cannot submit a new application until this one is processed.
-          <span className="text-xs font-bold text-blue-500 mt-3 block animate-pulse">
-            Checking status automatically...
-          </span>
+        <h1 className="text-xl font-bold text-slate-800 tracking-wide uppercase">Audit in Progress</h1>
+        <p className="text-slate-500 max-w-xs mx-auto text-xs mt-2 leading-relaxed font-mono">
+          Security clearance pending. Credentials are being verified against international watchlists.
         </p>
-        <button 
-          onClick={() => window.location.href = '/profile'} 
-          className="mt-10 px-8 py-4 bg-gray-900 text-white font-bold rounded-2xl shadow-xl hover:bg-black transition-all active:scale-95"
-        >
-          Back to Dashboard
-        </button>
       </div>
     );
   }
 
+  // --- STATE: APPROVED ---
   if (user?.kyc_status === 'approved') {
     return (
-      <div className="min-h-screen bg-white flex flex-col items-center justify-center p-6 text-center animate-in fade-in zoom-in duration-500">
-        <div className="w-24 h-24 bg-green-100 text-green-600 rounded-full flex items-center justify-center mb-6">
-          <CheckCircle2 size={48} />
+      <div className="min-h-screen bg-slate-50 flex flex-col items-center justify-center p-6 text-center">
+        <div className="w-16 h-16 bg-emerald-50 text-emerald-600 rounded flex items-center justify-center mb-6 border border-emerald-200">
+          <FaCheckCircle size={24} />
         </div>
-        <h1 className="text-3xl font-black text-gray-900 tracking-tight mb-2">Verified!</h1>
-        <p className="text-gray-500 max-w-xs mx-auto leading-relaxed">
-          Your identity has been verified. You have full access to all features.
+        <h1 className="text-xl font-bold text-slate-800 tracking-wide uppercase">Clearance Granted</h1>
+        <p className="text-slate-500 max-w-xs mx-auto text-xs mt-2 font-mono">
+          Level 2 Access Unlocked. You may now execute high-volume allocation requests.
         </p>
-        <button 
-          onClick={() => window.location.href = '/profile'} 
-          className="mt-10 px-8 py-4 bg-gray-900 text-white font-bold rounded-2xl shadow-xl hover:bg-black transition-all active:scale-95"
-        >
-          Back to Dashboard
+        <button onClick={() => window.location.href = '/profile'} className="mt-8 px-6 py-2 bg-blue-900 text-white font-bold rounded text-xs uppercase tracking-wide">
+          Return to Console
         </button>
       </div>
     );
   }
 
-  if (isSuccess) {
-    return (
-      <div className="min-h-screen bg-white flex flex-col items-center justify-center p-6 text-center animate-in fade-in zoom-in duration-500">
-        <div className="w-24 h-24 bg-green-100 text-green-600 rounded-full flex items-center justify-center mb-6">
-          <CheckCircle2 size={48} />
-        </div>
-        <h1 className="text-3xl font-black text-gray-900 tracking-tight mb-2">Verification Submitted</h1>
-        <p className="text-gray-500 max-w-xs mx-auto leading-relaxed">
-          Our security team is currently reviewing your documents.
-        </p>
-        <button 
-          onClick={() => window.location.href = '/profile'} 
-          className="mt-10 px-8 py-4 bg-gray-900 text-white font-bold rounded-2xl shadow-xl hover:bg-black transition-all active:scale-95"
-        >
-          Back to Dashboard
-        </button>
-      </div>
-    );
-  }
-
+  // --- STATE: MAIN FORM ---
   return (
-    <div className="min-h-screen bg-[#F8FAFC] text-slate-900 font-sans antialiased pb-12">
-      <header className="bg-white border-b border-gray-100 sticky top-0 z-50">
+    <div className="min-h-screen bg-slate-50 text-slate-900 font-sans pb-12">
+      <header className="bg-white border-b border-slate-200 sticky top-0 z-50">
         <div className="max-w-2xl mx-auto px-6 h-16 flex items-center justify-between">
-          <div className="flex items-center gap-2 cursor-pointer" onClick={() => window.location.href = '/profile'}>
-            <ArrowLeft size={20} className="text-gray-500" />
-            <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center text-white font-black italic">B</div>
-            <span className="font-black text-xl tracking-tighter uppercase">BambooMall</span>
-          </div>
-          <div className="flex items-center gap-2 text-xs font-bold text-gray-400 bg-gray-50 px-3 py-1.5 rounded-full">
-            <Lock size={12} className="text-blue-500" />
-            SECURE ENCRYPTION
+          <button className="flex items-center gap-2 text-slate-500 hover:text-slate-800 transition" onClick={() => window.location.href = '/profile'}>
+            <FaArrowLeft /> <span className="text-xs font-bold uppercase">Exit Verification</span>
+          </button>
+          <div className="flex items-center gap-2 text-[10px] font-bold text-emerald-600 bg-emerald-50 px-3 py-1 rounded">
+            <FaLock /> TLS ENCRYPTED CHANNEL
           </div>
         </div>
       </header>
 
-      <main className="max-w-2xl mx-auto px-6 pt-10">
+      <main className="max-w-xl mx-auto px-6 pt-10">
         <StepIndicator currentStep={step} />
 
-        <div className="bg-white rounded-[2.5rem] shadow-[0_30px_60px_-15px_rgba(0,0,0,0.05)] border border-gray-100 overflow-hidden">
+        <div className="bg-white rounded shadow-sm border border-slate-200 overflow-hidden">
           
-          {/* Step 1: Personal Info */}
+          {/* Step 1: Officer Info */}
           {step === 1 && (
-            <div className="p-8 md:p-12 animate-in slide-in-from-right-4 duration-300">
-              <div className="mb-8">
-                <h2 className="text-2xl font-black text-gray-900 tracking-tight">Account Information</h2>
-                <p className="text-gray-500 text-sm mt-1 font-medium">Please provide your legal details as shown on your ID.</p>
-              </div>
-
-              <div className="space-y-5">
-                <div className="space-y-1.5">
-                  <label className="text-[11px] font-black text-gray-400 uppercase tracking-widest ml-1">Full Legal Name</label>
-                  <input type="text" placeholder="e.g. Zhang Wei" className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-4 focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 outline-none transition-all" value={formData.fullName} onChange={(e) => setFormData({...formData, fullName: e.target.value})} />
+            <div className="p-8 animate-fade-in">
+              <h2 className="text-lg font-bold text-slate-800 uppercase tracking-wide mb-6 flex items-center gap-2">
+                 <FaUserShield className="text-blue-900"/> Officer Details
+              </h2>
+              <div className="space-y-4">
+                <div>
+                  <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Full Legal Name</label>
+                  <input type="text" className="w-full bg-slate-50 border border-slate-200 rounded p-3 text-sm focus:border-blue-900 outline-none" value={formData.fullName} onChange={(e) => setFormData({...formData, fullName: e.target.value})} />
                 </div>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-                  <div className="space-y-1.5">
-                    <label className="text-[11px] font-black text-gray-400 uppercase tracking-widest ml-1">ID / Passport Number</label>
-                    <input type="text" placeholder="Enter ID number" className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-4 focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 outline-none transition-all" value={formData.idNumber} onChange={(e) => setFormData({...formData, idNumber: e.target.value})} />
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">ID / Passport No.</label>
+                    <input type="text" className="w-full bg-slate-50 border border-slate-200 rounded p-3 text-sm focus:border-blue-900 outline-none" value={formData.idNumber} onChange={(e) => setFormData({...formData, idNumber: e.target.value})} />
                   </div>
-                  <div className="space-y-1.5">
-                    <label className="text-[11px] font-black text-gray-400 uppercase tracking-widest ml-1">Phone Number</label>
-                    <input type="tel" placeholder="+86 123..." className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-4 focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 outline-none transition-all" value={formData.phone} onChange={(e) => setFormData({...formData, phone: e.target.value})} />
+                  <div>
+                    <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Secure Phone</label>
+                    <input type="tel" className="w-full bg-slate-50 border border-slate-200 rounded p-3 text-sm focus:border-blue-900 outline-none" value={formData.phone} onChange={(e) => setFormData({...formData, phone: e.target.value})} />
                   </div>
                 </div>
-                <div className="space-y-1.5">
-                    <label className="text-[11px] font-black text-gray-400 uppercase tracking-widest ml-1">Registered Address</label>
-                    <textarea placeholder="Your residential address" rows={2} className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-4 focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 outline-none transition-all" value={formData.address} onChange={(e) => setFormData({...formData, address: e.target.value})} />
+                <div>
+                    <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Registered Address</label>
+                    <textarea rows={2} className="w-full bg-slate-50 border border-slate-200 rounded p-3 text-sm focus:border-blue-900 outline-none" value={formData.address} onChange={(e) => setFormData({...formData, address: e.target.value})} />
                 </div>
               </div>
-
-              <button onClick={nextStep} disabled={!formData.fullName || !formData.idNumber} className="w-full mt-10 py-5 bg-blue-600 text-white font-bold rounded-2xl flex items-center justify-center gap-2 hover:bg-blue-700 disabled:opacity-50 transition-all shadow-lg shadow-blue-100">
-                Continue to Identity <ChevronRight size={18} />
+              <button onClick={nextStep} disabled={!formData.fullName || !formData.idNumber} className="w-full mt-8 py-3 bg-blue-900 text-white font-bold rounded text-xs uppercase tracking-widest hover:bg-blue-800 disabled:opacity-50">
+                Proceed to Documentation
               </button>
             </div>
           )}
 
           {/* Step 2: ID Upload */}
           {step === 2 && (
-            <div className="p-8 md:p-12 animate-in slide-in-from-right-4 duration-300">
-              <button onClick={prevStep} className="mb-6 flex items-center gap-2 text-gray-400 font-bold text-sm hover:text-gray-900 transition-colors">
-                <ArrowLeft size={16} /> Back
-              </button>
-              <div className="mb-8">
-                <h2 className="text-2xl font-black text-gray-900 tracking-tight">Identity Verification</h2>
-                <p className="text-gray-500 text-sm mt-1 font-medium">Upload a clear photo of your government-issued ID.</p>
-              </div>
-              <div className="space-y-6">
-                <div className="bg-blue-50 border border-blue-100 rounded-2xl p-4 flex gap-3">
-                  <Info className="text-blue-600 shrink-0" size={20} />
-                  <div className="text-xs text-blue-700 leading-relaxed font-medium">
-                    Ensure all four corners are visible, text is readable, and there is no glare.
-                  </div>
+            <div className="p-8 animate-fade-in">
+              <button onClick={prevStep} className="mb-4 text-xs font-bold text-slate-400 hover:text-slate-600 flex items-center gap-1"><FaArrowLeft/> Back</button>
+              <h2 className="text-lg font-bold text-slate-800 uppercase tracking-wide mb-6 flex items-center gap-2">
+                 <FaIdCard className="text-blue-900"/> Identification Document
+              </h2>
+              <div className="space-y-4">
+                <div className="bg-blue-50 border border-blue-100 p-3 rounded text-[10px] text-blue-800 flex gap-2">
+                  <FaInfoCircle className="mt-0.5"/> Ensure all four corners are visible. Text must be legible.
                 </div>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-                  <UploadZone label="Front of ID" description="National ID or Passport" icon={IdCard} file={formData.idFront} onFileSelect={(file) => setFormData({...formData, idFront: file})} />
-                  <UploadZone label="Back of ID" description="Reverse side (if applicable)" icon={FileText} file={formData.idBack} onFileSelect={(file) => setFormData({...formData, idBack: file})} />
+                <div className="grid grid-cols-2 gap-4">
+                  <UploadZone label="Front Side" description="National ID / Passport" icon={FaFileContract} file={formData.idFront} onFileSelect={(f) => setFormData({...formData, idFront: f})} />
+                  <UploadZone label="Reverse Side" description="If applicable" icon={FaFileContract} file={formData.idBack} onFileSelect={(f) => setFormData({...formData, idBack: f})} />
                 </div>
               </div>
-              <button onClick={nextStep} disabled={!formData.idFront} className="w-full mt-10 py-5 bg-blue-600 text-white font-bold rounded-2xl flex items-center justify-center gap-2 hover:bg-blue-700 disabled:opacity-50 transition-all shadow-lg shadow-blue-100">
-                Continue to Selfie <ChevronRight size={18} />
+              <button onClick={nextStep} disabled={!formData.idFront} className="w-full mt-8 py-3 bg-blue-900 text-white font-bold rounded text-xs uppercase tracking-widest hover:bg-blue-800 disabled:opacity-50">
+                Proceed to Biometrics
               </button>
             </div>
           )}
 
-          {/* Step 3: Selfie Verification */}
+          {/* Step 3: Biometric Scan */}
           {step === 3 && (
-            <div className="p-8 md:p-12 animate-in slide-in-from-right-4 duration-300 text-center">
-              <button onClick={prevStep} className="mb-6 flex items-center gap-2 text-gray-400 font-bold text-sm hover:text-gray-900 transition-colors">
-                <ArrowLeft size={16} /> Back
-              </button>
-              <div className="mb-8">
-                <h2 className="text-2xl font-black text-gray-900 tracking-tight">Biometric Check</h2>
-                <p className="text-gray-500 text-sm mt-1 font-medium">Take a selfie face.</p>
-              </div>
+            <div className="p-8 animate-fade-in text-center">
+              <button onClick={prevStep} className="mb-4 text-xs font-bold text-slate-400 hover:text-slate-600 flex items-center gap-1"><FaArrowLeft/> Back</button>
+              <h2 className="text-lg font-bold text-slate-800 uppercase tracking-wide mb-2 flex items-center justify-center gap-2">
+                 <FaCamera className="text-blue-900"/> Biometric Liveness Check
+              </h2>
+              <p className="text-xs text-slate-500 mb-8">Please upload a real-time photo to verify officer identity.</p>
+              
               <div className="flex justify-center mb-8">
-                <div className="w-48 h-48 rounded-full border-4 border-dashed border-gray-200 flex items-center justify-center relative bg-gray-50">
+                <div className="w-40 h-40 rounded-full border-2 border-dashed border-slate-300 flex items-center justify-center relative bg-slate-50 hover:bg-white transition-colors">
                    {formData.selfie ? (
                      <div className="absolute inset-0 rounded-full overflow-hidden">
-                       <img src={URL.createObjectURL(formData.selfie)} alt="Selfie" className="w-full h-full object-cover" />
+                       <img src={URL.createObjectURL(formData.selfie)} alt="Scan" className="w-full h-full object-cover" />
                      </div>
                    ) : (
-                     <Camera size={48} className="text-gray-300" />
+                     <FaCamera size={32} className="text-slate-300" />
                    )}
                    <input type="file" accept="image/*" className="absolute inset-0 opacity-0 cursor-pointer" onChange={(e) => setFormData({...formData, selfie: e.target.files[0]})} />
                 </div>
               </div>
-              <div className="grid grid-cols-3 gap-2 mb-8">
-                <div className="p-3 bg-gray-50 rounded-xl border border-gray-100">
-                  <Smartphone size={16} className="mx-auto mb-2 text-blue-500" />
-                  <p className="text-[10px] font-bold text-gray-400 uppercase">Clear Focus</p>
-                </div>
-                <div className="p-3 bg-gray-50 rounded-xl border border-gray-100">
-                  <User size={16} className="mx-auto mb-2 text-blue-500" />
-                  <p className="text-[10px] font-bold text-gray-400 uppercase">Face Centered</p>
-                </div>
-                <div className="p-3 bg-gray-50 rounded-xl border border-gray-100">
-                  <IdCard size={16} className="mx-auto mb-2 text-blue-500" />
-                  <p className="text-[10px] font-bold text-gray-400 uppercase">ID Avatar Visible</p>
-                </div>
-              </div>
-              <button onClick={handleSubmit} disabled={!formData.selfie || isSubmitting} className="w-full py-5 bg-gray-900 text-white font-bold rounded-2xl flex items-center justify-center gap-2 hover:bg-black disabled:opacity-50 transition-all shadow-xl">
-                {isSubmitting ? (
-                   <div className="flex items-center gap-2">
-                     <div className="w-5 h-5 border-2 border-white/20 border-t-white rounded-full animate-spin" />
-                     {statusMessage || "Processing..."}
-                   </div>
-                ) : (
-                  <>Submit Application <ShieldCheck size={18} /></>
-                )}
+
+              <button onClick={handleSubmit} disabled={!formData.selfie || isSubmitting} className="w-full py-4 bg-emerald-600 text-white font-bold rounded text-xs uppercase tracking-widest hover:bg-emerald-700 disabled:opacity-50 shadow-lg">
+                {isSubmitting ? "Transmitting Secure Data..." : "Submit for Security Clearance"}
               </button>
             </div>
           )}
         </div>
         
-        {/* Footer info */}
-        <div className="mt-8 text-center">
-          <div className="inline-flex items-center gap-4 opacity-40">
-            <div className="flex flex-col items-center">
-              <span className="text-[8px] font-black uppercase tracking-[0.2em] mb-1">Encrypted by</span>
-              <div className="font-serif text-lg font-bold italic">AES-256</div>
-            </div>
-            <div className="w-[1px] h-8 bg-gray-300" />
-            <div className="flex flex-col items-center">
-              <span className="text-[8px] font-black uppercase tracking-[0.2em] mb-1">Regulatory</span>
-              <div className="font-sans text-sm font-black">COMPLIANT</div>
-            </div>
-          </div>
-          <p className="text-[10px] text-gray-400 mt-6 max-w-xs mx-auto font-medium">
-            Your data is stored in ISO 27001 certified data centers. We never share your personal documents with third-party marketplaces.
-          </p>
+        <div className="mt-8 text-center text-[10px] text-slate-400 font-mono">
+           <p>Data stored in ISO 27001 certified vault. Ref: SEC-9920</p>
         </div>
       </main>
     </div>

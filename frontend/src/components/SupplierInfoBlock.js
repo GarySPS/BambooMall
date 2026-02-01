@@ -1,47 +1,63 @@
 // src/components/SupplierInfoBlock.js
 import React from "react";
+import { FaIndustry, FaGlobeAsia, FaExternalLinkAlt, FaCheckCircle } from "react-icons/fa";
 
 export default function SupplierInfoBlock({ supplier, minOrder, factoryWebsite, factoryUrl }) {
+  const website = factoryWebsite || factoryUrl || "#";
+  const displayUrl = website.replace(/^https?:\/\//, "").replace(/\/$/, "");
+
   return (
-    <div
-      className="rounded-xl shadow-lg p-4 mb-4"
-      style={{
-        background: "linear-gradient(135deg, rgba(59,130,246,0.11) 60%, rgba(206,232,255,0.32) 100%)",
-        backdropFilter: "blur(6px)",
-        WebkitBackdropFilter: "blur(6px)",
-        border: "1px solid rgba(59,130,246,0.11)"
-      }}
-    >
-      <div className="text-lg font-bold text-black mb-1">
-        Supplier: <span className="font-semibold">{supplier}</span>
+    <div className="bg-slate-50 border border-slate-200 rounded p-4 my-4">
+      
+      {/* Header */}
+      <div className="flex justify-between items-start mb-4 border-b border-slate-200 pb-3">
+        <div>
+           <div className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">
+              Vendor Identity
+           </div>
+           <div className="text-sm font-bold text-slate-800 flex items-center gap-2">
+              <FaIndustry className="text-slate-400" />
+              {supplier || "Unknown Entity"}
+           </div>
+        </div>
+        <div className="bg-emerald-100 text-emerald-800 text-[10px] font-bold px-2 py-1 rounded border border-emerald-200 flex items-center gap-1">
+           <FaCheckCircle /> VERIFIED EXPORTER
+        </div>
       </div>
-      <div className="flex flex-wrap gap-4 text-base text-black/80 mb-1">
-        <span>
-          <span className="font-semibold">Min. Order:</span>{" "}
-          {minOrder || 1} pcs
-        </span>
-        <span>
-          <span className="font-semibold">Country:</span>
-          <span className="inline-block align-middle ml-1 mr-1">
-            <img
-              src="/flags/cn.svg"
-              alt="China Flag"
-              className="w-5 h-5 inline"
-            />
-          </span>
-          <span className="font-bold text-black">Made in China</span>
-        </span>
-      </div>
-      <div className="mb-1">
-        <span className="font-semibold text-black/80">Factory:</span>
-        <a
-          href={factoryWebsite || factoryUrl}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="text-blue-700 underline ml-1 hover:text-blue-900 transition"
-        >
-          {(factoryWebsite || factoryUrl || "").replace(/^https?:\/\//, "")}
-        </a>
+
+      {/* Data Grid */}
+      <div className="grid grid-cols-2 gap-4 text-xs">
+         
+         {/* Origin */}
+         <div>
+            <span className="block text-slate-400 font-bold mb-1">Origin / Jurisdiction</span>
+            <div className="flex items-center gap-2 text-slate-700 font-mono">
+               <FaGlobeAsia /> China (Mainland)
+            </div>
+         </div>
+
+         {/* MOQ */}
+         <div>
+            <span className="block text-slate-400 font-bold mb-1">MOQ Requirement</span>
+            <div className="text-slate-700 font-mono">
+               {minOrder || 1} Units
+            </div>
+         </div>
+
+         {/* Website */}
+         <div className="col-span-2 border-t border-slate-200 pt-3 mt-1">
+            <span className="block text-slate-400 font-bold mb-1">Corporate Portal</span>
+            <a
+              href={website}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex items-center gap-2 text-blue-700 hover:text-blue-900 hover:underline font-mono truncate"
+            >
+               <FaExternalLinkAlt size={10} />
+               {displayUrl || "N/A"}
+            </a>
+         </div>
+
       </div>
     </div>
   );

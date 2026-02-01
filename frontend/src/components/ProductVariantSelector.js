@@ -10,60 +10,64 @@ export default function ProductVariantSelector({
   setSelectedSize,
 }) {
   return (
-    <div className="bg-white rounded-xl shadow-md p-3 mb-4 w-full">
-      {/* Color Selector */}
-      <div className="font-bold text-base mb-1">
-        Color ({colors.length})
-      </div>
-      <div className="grid grid-cols-3 sm:grid-cols-5 gap-2 w-full">
-        {colors.map((color) => {
-          const colorName = typeof color === "string" ? color : color.name;
-          const colorImg =
-            typeof color === "object" && color.img ? color.img : undefined;
-          return (
-            <button
-              key={colorName}
-              onClick={() => setSelectedColor(colorName)}
-              className={`border rounded-xl p-2 flex flex-col items-center transition w-full ${
-                selectedColor === colorName
-                  ? "border-green-600 shadow-md bg-green-50"
-                  : "border-gray-200 bg-white"
-              }`}
-            >
-              {colorImg && (
-                <img
-                  src={colorImg}
-                  alt={colorName}
-                  className="w-full max-w-[64px] h-auto object-contain mb-1"
-                />
-              )}
-              <span className="text-xs">{colorName}</span>
-            </button>
-          );
-        })}
-      </div>
-      {/* Size Selector */}
-      <div className="mt-4 font-bold text-base mb-1">
-        Size ({sizeList.length})
-      </div>
-      <div className="grid grid-cols-3 sm:grid-cols-6 gap-2 w-full">
-        {sizeList.map((size) => {
-          const sizeLabel = typeof size === "string" ? size : size.name || size;
-          return (
-            <button
-              key={sizeLabel}
-              onClick={() => setSelectedSize(sizeLabel)}
-              className={`w-full px-2 py-2 border rounded-lg transition text-base font-semibold ${
-                selectedSize === sizeLabel
-                  ? "border-green-600 bg-green-100 shadow"
-                  : "border-gray-200 bg-white"
-              }`}
-            >
-              {sizeLabel}
-            </button>
-          );
-        })}
-      </div>
+    <div className="mb-6 space-y-4">
+      
+      {/* "Batch Variant" (Color) */}
+      {colors.length > 0 && (
+        <div>
+          <label className="block text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-2">
+            Select Batch Variant / SKU
+          </label>
+          <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
+            {colors.map((color) => {
+              const name = typeof color === "string" ? color : color.name;
+              const isSelected = selectedColor === name;
+              return (
+                <button
+                  key={name}
+                  onClick={() => setSelectedColor(name)}
+                  className={`px-3 py-2 text-left text-xs font-mono border rounded transition-all flex items-center gap-2 ${
+                    isSelected 
+                      ? "border-blue-600 bg-blue-50 text-blue-900 ring-1 ring-blue-600" 
+                      : "border-slate-200 bg-white text-slate-600 hover:border-slate-400"
+                  }`}
+                >
+                  <span className={`w-2 h-2 rounded-full ${isSelected ? "bg-blue-600" : "bg-slate-300"}`} />
+                  {name}
+                </button>
+              );
+            })}
+          </div>
+        </div>
+      )}
+
+      {/* "Unit Specification" (Size) */}
+      {sizeList.length > 0 && (
+        <div>
+          <label className="block text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-2">
+            Unit Specification
+          </label>
+          <div className="flex flex-wrap gap-2">
+            {sizeList.map((size) => {
+              const label = typeof size === "string" ? size : size.name;
+              const isSelected = selectedSize === label;
+              return (
+                <button
+                  key={label}
+                  onClick={() => setSelectedSize(label)}
+                  className={`min-w-[40px] px-3 py-2 text-center text-xs font-bold border rounded transition-all ${
+                    isSelected
+                      ? "bg-slate-800 text-white border-slate-800"
+                      : "bg-white text-slate-600 border-slate-200 hover:bg-slate-50"
+                  }`}
+                >
+                  {label}
+                </button>
+              );
+            })}
+          </div>
+        </div>
+      )}
     </div>
   );
 }

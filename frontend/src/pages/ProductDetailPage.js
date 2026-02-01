@@ -1,428 +1,412 @@
-//src>pages>ProductDetailPage.js
+// src/pages/ProductDetailPage.js
 
-import React from "react";
+import React, { useState, useEffect } from "react";
 import { useParams, Link, useNavigate } from "react-router-dom";
 import { fetchProductById, createOrder } from "../utils/api";
-import { FaArrowLeft } from "react-icons/fa";
+import { getProductImage } from "../utils/image";
+import OrderPreviewModal from "../components/OrderPreviewModal"; 
+import { 
+  FaArrowLeft, 
+  FaFilePdf, 
+  FaBoxOpen, 
+  FaWarehouse,
+  FaCheckCircle,
+  FaLock,
+  FaFileContract,
+  FaStar,
+  FaStarHalfAlt,
+  FaInfoCircle,
+  FaTag
+} from "react-icons/fa";
 import { useUser } from "../contexts/UserContext"; 
-import ProductGallery from "../components/ProductGallery";
-import ProductVariantSelector from "../components/ProductVariantSelector";
-import MoreProductDetail from "../components/MoreProductDetail";
-import SupplierInfoBlock from "../components/SupplierInfoBlock";
-import PriceTiersCard from "../components/PriceTiersCard";
 
-// --- Get VIP Discount from wallet balance (mock) ---
-function getVipDiscount(wallet) {
-  const balance = Number(wallet?.balance || 0);
-  if (balance >= 40000) return 10;
-  if (balance >= 20000) return 8;
-  if (balance >= 15000) return 6;
-  if (balance >= 10000) return 5;
-  if (balance >= 5000) return 4;
-  return 0;
-}
-
-function cleanJsonStr(str) {
-  if (typeof str !== "string") return str;
-  return str.replace(/(\r\n|\n|\r)/gm, "").trim();
-}
-
-function fillSimulatedFields(product) {
-  let priceTiers = [];
-  if (Array.isArray(product.priceTiers)) priceTiers = product.priceTiers;
-  else if (typeof product.priceTiers === "string") {
-    try { priceTiers = JSON.parse(cleanJsonStr(product.priceTiers)); } catch { priceTiers = []; }
-  } else if (typeof product.price_tiers === "string") {
-    try { priceTiers = JSON.parse(cleanJsonStr(product.price_tiers)); } catch { priceTiers = []; }
+// --- HELPER: Parse JSON safely ---
+function cleanJson(data) {
+  if (Array.isArray(data)) return data;
+  if (typeof data === 'string') {
+    try { return JSON.parse(data); } catch { return []; }
   }
+  return [];
+}
 
-  let galleryArr = [];
-  if (Array.isArray(product.gallery)) galleryArr = product.gallery;
-  else if (typeof product.gallery === "string") {
-    try { 
-      const arr = JSON.parse(cleanJsonStr(product.gallery));
-      if (Array.isArray(arr)) galleryArr = arr;
-    } catch {
-      if (product.gallery?.trim?.().length > 0) galleryArr = [product.gallery.trim()];
+// --- HELPER: Render Stars ---
+function renderRating(rating) {
+  const stars = [];
+  const fullStars = Math.floor(rating);
+  const hasHalf = rating % 1 >= 0.5;
+
+  for (let i = 0; i < 5; i++) {
+    if (i < fullStars) {
+      stars.push(<FaStar key={i} className="text-yellow-400" />);
+    } else if (i === fullStars && hasHalf) {
+      stars.push(<FaStarHalfAlt key={i} className="text-yellow-400" />);
+    } else {
+      stars.push(<FaStar key={i} className="text-slate-300" />);
     }
   }
-  
-  // FIX: Fixed Regex to remove unnecessary escape characters
-  galleryArr = (galleryArr || []).map(x =>
-    typeof x === "string"
-      ? x.replace(/[[\]"]/g, "").trim()
-      : x
-  ).filter(url =>
-    typeof url === "string" &&
-    (url.startsWith("http://") || url.startsWith("https://")) &&
-    url.endsWith(".png")
-  );
-
-  let sizeArr = [];
-  if (Array.isArray(product.size)) sizeArr = product.size;
-  else if (typeof product.size === "string") {
-    try { sizeArr = JSON.parse(cleanJsonStr(product.size)); } catch { sizeArr = []; }
-  }
-
-  let colorsArr = [];
-  if (Array.isArray(product.colors)) colorsArr = product.colors;
-  else if (typeof product.colors === "string") {
-    try { colorsArr = JSON.parse(cleanJsonStr(product.colors)); } catch { colorsArr = []; }
-  }
-  if ((!colorsArr || !colorsArr.length) && typeof product.color === "string") {
-    try { colorsArr = JSON.parse(cleanJsonStr(product.color)); } catch { colorsArr = []; }
-  }
-
-  let keyAttributesArr = [];
-  if (Array.isArray(product.keyAttributes)) keyAttributesArr = product.keyAttributes;
-  else if (typeof product.keyAttributes === "string") {
-    try { keyAttributesArr = JSON.parse(cleanJsonStr(product.keyAttributes)); } catch { keyAttributesArr = []; }
-  } else if (typeof product.key_attributes === "string") {
-    try { keyAttributesArr = JSON.parse(cleanJsonStr(product.key_attributes)); } catch { keyAttributesArr = []; }
-  }
-
-  return {
-    ...product,
-    priceTiers,
-    discount: product.discount,
-    colors: colorsArr,
-    size: sizeArr,
-    gallery: galleryArr,
-    keyAttributes: keyAttributesArr,
-  };
+  return <div className="flex gap-1 text-sm">{stars}</div>;
 }
 
 export default function ProductDetailPage() {
   const { id } = useParams();
-  const [product, setProduct] = React.useState(null);
-  const [loading, setLoading] = React.useState(true);
-  const [error, setError] = React.useState(null);
-  const [selectedColor, setSelectedColor] = React.useState("");
-  const [selectedSize, setSelectedSize] = React.useState("");
-  const [quantity, setQuantity] = React.useState(1);
   const { user, wallet, updateWallet } = useUser();
   const navigate = useNavigate();
-  const [showNotice, setShowNotice] = React.useState("");
-  const [buying, setBuying] = React.useState(false);
-  const [showConfirm, setShowConfirm] = React.useState(false);
 
+  const [product, setProduct] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [quantity, setQuantity] = useState(1);
+  const [executing, setExecuting] = useState(false);
+  const [error, setError] = useState("");
+  const [showModal, setShowModal] = useState(false);
+  const [successData, setSuccessData] = useState(null); 
+  
+  const isVerified = user && (user.verified || user.kyc_status === 'approved');
 
-  const vipDiscount = getVipDiscount(wallet);
-
-  function getResaleCalc(product, quantity) {
-    const tiers =
-      Array.isArray(product.priceTiers) ? product.priceTiers :
-      typeof product.priceTiers === "string" ? JSON.parse(cleanJsonStr(product.priceTiers)) :
-      typeof product.price_tiers === "string" ? JSON.parse(cleanJsonStr(product.price_tiers)) :
-      Array.isArray(product.price_tiers) ? product.price_tiers :
-      [];
-
-    // If tiers empty, fallback to product.price
-    let tier = tiers.slice().reverse().find((t) => quantity >= t.min);
-    if (!tier && typeof product.price === "number") {
-      tier = { min: 1, price: product.price };
-    }
-    if (!tier) tier = { min: 1, price: 1 }; // fallback
-
-    const baseDiscount = product.discount || 0;
-    const vip = getVipDiscount(wallet) || 0;
-    const totalDiscount = baseDiscount + vip;
-    const total = tier.price * quantity;
-    const discounted = total * (1 - totalDiscount / 100);
-    const resale = (typeof product.price === "number" ? product.price : tier.price) * quantity;
-    const profit = resale - discounted;
-    return { tier, total, discounted, resale, profit, totalDiscount };
-  }
-
-
-  const orderPreview = product ? getResaleCalc(product, Number(quantity)) : null;
-
-  async function handleResale() {
-    if (!user) {
-      setShowNotice("Please login to make a purchase.");
-      setTimeout(() => setShowNotice(""), 2000);
-      return;
-    }
-    if (!product) return;
-    
-    const minOrder = product.min_order || product.minQty || 1;
-    if (Number(quantity) < minOrder) {
-      setShowNotice(`Minimum order is ${minOrder} pieces.`);
-      setTimeout(() => setShowNotice(""), 2000);
-      return;
-    }
-
-    const { discounted } = getResaleCalc(product, quantity);
-
-    // 1. Check Wallet Balance (Using 'balance' from DB)
-    const currentBalance = Number(wallet?.balance || 0);
-
-    if (currentBalance < discounted) {
-      setShowNotice("Insufficient wallet balance!");
-      setTimeout(() => setShowNotice(""), 2000);
-      return;
-    }
-
-    // 2. Prepare Local Optimistic Update
-    const newWallet = { ...wallet, balance: currentBalance - discounted };
-
-    setBuying(true);
-    try {
-      await createOrder({
-        user_id: user?.id,
-        product_id: product.id,
-        quantity: Number(quantity),
-        type: "resale"
-      });
-
-      // Update local wallet state so user sees balance drop immediately
-      updateWallet(newWallet); 
-
-      setBuying(false);
-      navigate("/cart", { state: { notice: "Your order is submitted!" } });
-    } catch (err) {
-      setBuying(false);
-      setShowNotice(err.message || "Order failed. Try again.");
-      setTimeout(() => setShowNotice(""), 2400);
-    }
-  }
-
-  React.useEffect(() => {
+  useEffect(() => {
+    window.scrollTo(0, 0);
     setLoading(true);
     fetchProductById(id)
       .then((data) => {
-        const simulated = fillSimulatedFields(data);
-        setProduct(simulated);
-        setSelectedColor(simulated.colors[0]?.name || "");
-        setSelectedSize(simulated.size[0] || "");
-        setQuantity(simulated.minQty || 1);
+        setProduct({
+            ...data,
+            gallery: cleanJson(data.gallery),
+            keyAttributes: cleanJson(data.key_attributes || data.keyAttributes),
+            priceTiers: cleanJson(data.price_tiers || data.priceTiers)
+        });
+        setQuantity(data.min_order || 10); 
         setLoading(false);
       })
       .catch((err) => {
-        setError(err.message || "Product not found");
+        setError("Manifest Retrieve Failed: " + err.message);
         setLoading(false);
       });
   }, [id]);
 
-  const avgRating = product?.rating ? Number(product.rating).toFixed(1) : "—";
-  const reviewCount = product?.review_count ? Number(product.review_count) : 0;
-
-  if (loading) {
-    return (
-      <div className="max-w-3xl mx-auto py-20 text-center text-green-700 text-xl font-bold">
-        Loading product...
-      </div>
-    );
+  // --- HELPER: Backend VIP Logic ---
+  function getVipBonus(balance) {
+    if (balance >= 40000) return 10;
+    if (balance >= 20000) return 8;
+    if (balance >= 15000) return 6;
+    if (balance >= 10000) return 5;
+    if (balance >= 5000) return 4;
+    return 0;
   }
 
-  if (error || !product) {
-    return (
-      <div className="max-w-3xl mx-auto py-20 text-center">
-        <h2 className="text-2xl font-bold mb-4">Product Not Found</h2>
-        <Link to="/products" className="text-green-700 underline">
-          Back to Products
-        </Link>
-      </div>
-    );
-  }
+  // =========================================================
+  //  CALCULATION ENGINE (Waterfall Method)
+  // =========================================================
+  
+  // 1. Tiers
+  const sortedTiers = (product?.priceTiers || []).sort((a, b) => a.min - b.min);
+  const activeTier = sortedTiers.slice().reverse().find(t => quantity >= t.min);
+  
+  // 2. Prices
+  const marketUnitPrice = Number(product?.price || 0); // Always $270
+  const marketTotal = marketUnitPrice * quantity; // Gross Value ($13,500)
+
+  const bulkUnitPrice = activeTier ? Number(activeTier.price) : marketUnitPrice; // Your Price ($260)
+  const bulkTotal = bulkUnitPrice * quantity; // Cost before discount ($13,000)
+  
+  const volumeSavings = marketTotal - bulkTotal; // The $500 savings
+
+  // 3. Discounts (Split for Clarity)
+  const adminDiscount = Number(product?.discount || 0);
+  const userBalance = Number(wallet?.balance || 0);
+  const vipBonus = getVipBonus(userBalance);
+  
+  // Calculate individual amounts
+  const adminDiscountAmount = bulkTotal * (adminDiscount / 100);
+  const vipBonusAmount = bulkTotal * (vipBonus / 100);
+  const totalDiscountAmount = adminDiscountAmount + vipBonusAmount;
+  
+  // 4. Final Settlement
+  const settlementAmount = bulkTotal - totalDiscountAmount;
+  
+  // 5. Profit
+  const projectedProfit = marketTotal - settlementAmount;
+  const margin = settlementAmount > 0 ? ((projectedProfit / settlementAmount) * 100).toFixed(2) : "0.00";
+
+  // Action Handlers
+  const handleOpenTicket = () => {
+    if (!isVerified) return;
+    if (wallet.balance < settlementAmount) {
+        alert("INSUFFICIENT LIQUIDITY: Please fund your settlement account.");
+        return;
+    }
+    setShowModal(true); 
+  };
+
+  const handleConfirmOrder = async () => {
+    setExecuting(true);
+    try {
+        const response = await createOrder({
+            user_id: user.id,
+            product_id: product.id,
+            quantity: Number(quantity),
+            type: "liquidation_acquisition"
+        });
+        updateWallet({ ...wallet, balance: wallet.balance - settlementAmount });
+        setSuccessData(response.order); 
+        setExecuting(false);
+    } catch (err) {
+        alert("EXECUTION FAILED: " + err.message);
+        setExecuting(false);
+    }
+  };
+
+  const handleCloseSuccess = () => {
+      setShowModal(false);
+      navigate("/cart", { state: { success: "Lot Acquisition Executed Successfully." } });
+  };
+
+  if (loading) return <div className="p-10 text-center font-mono text-xs">LOADING MANIFEST DATA...</div>;
+  if (error) return <div className="p-10 text-center text-red-600 font-mono font-bold">{error}</div>;
 
   return (
-    <div
-      className="min-h-screen flex flex-col items-center px-2 pb-8"
-      style={{
-        backgroundImage: "url('/profilebg.jpg')",
-        backgroundSize: "cover",
-        backgroundRepeat: "no-repeat",
-        backgroundPosition: "center center",
-        backgroundAttachment: "fixed",
-        minHeight: "100vh"
-      }}
-    >
-      <div className="w-full max-w-xl mx-auto py-4 px-1 sm:px-2">
-        {/* Back button */}
-        <div className="mb-4">
-          <Link
-            to="/products"
-            className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white shadow border border-gray-200 text-green-700 font-semibold hover:bg-green-50 hover:border-green-300 transition"
-          >
-            <FaArrowLeft className="text-lg" />
-            Back to Products
-          </Link>
-        </div>
-        <ProductGallery gallery={product.gallery} title={product.title} />
-        <div className="flex items-center gap-3 mb-2 mt-2">
-          <span className="rounded-lg px-2 py-1 text-xs bg-green-100 text-green-800 font-semibold">
-            {product.brand || "Factory Brand"}
-          </span>
-          <span className="rounded px-2 py-1 text-xs bg-yellow-100 text-yellow-800">
-            Factory: {product.supplier}
-          </span>
-        </div>
-        <h2 className="text-xl sm:text-2xl font-bold text-green-700 mb-2">
-          {product.title}
-        </h2>
-        <div className="flex items-center gap-2 bg-white rounded-xl shadow p-2 mb-3 w-fit">
-          <div className="flex items-center gap-1">
-            {[1, 2, 3, 4, 5].map((i) => (
-              <svg
-                key={i}
-                viewBox="0 0 20 20"
-                fill={i <= Math.round(avgRating) ? "#FFD700" : "#E5E7EB"}
-                className="w-5 h-5"
-              >
-                <polygon points="10,2 13,7.5 19,8 14.5,12 15.5,18 10,15 4.5,18 5.5,12 1,8 7,7.5" />
-              </svg>
-            ))}
-          </div>
-          <span className="font-extrabold text-2xl text-gray-900">{avgRating}</span>
-          <span className="font-bold text-xl text-gray-700">/ 5</span>
-          <span className="ml-2 text-base text-gray-500 font-medium">
-            ({reviewCount} reviews)
-          </span>
-        </div>
-        <PriceTiersCard priceTiers={product.priceTiers} />
-        <ProductVariantSelector
-          colors={product.colors || []}
-          sizeList={
-            Array.isArray(product.size)
-              ? product.size
-              : typeof product.size === "string" && product.size.trim().startsWith("[")
-              ? JSON.parse(product.size)
-              : []
-          }
-          selectedColor={selectedColor}
-          setSelectedColor={setSelectedColor}
-          selectedSize={selectedSize}
-          setSelectedSize={setSelectedSize}
-        />
-        <MoreProductDetail keyAttributes={product.keyAttributes} />
-        <div className="mb-2 text-gray-700">{product.description}</div>
-        <SupplierInfoBlock
-          supplier={product.supplier}
-          minOrder={product.min_order || product.minQty || 1}
-          factoryWebsite={product.factoryWebsite}
-          factoryUrl={product.factory_url}
-        />
-        {/* --- Order Preview --- */}
-        {orderPreview && (
-          <div className="bg-blue-50 border border-blue-200 rounded-xl px-3 py-2 my-4 text-sm font-bold text-blue-700">
-            <div className="mb-1 text-base text-gray-800 font-semibold">Cost Estimating</div>
-            <table className="w-full text-blue-900 mb-1">
-              <tbody>
-                <tr>
-                  <td>Price</td>
-                  <td className="text-right">${orderPreview.tier?.price?.toFixed(2) || "—"}</td>
-                </tr>
-                <tr>
-                  <td>Units</td>
-                  <td className="text-right">{quantity}</td>
-                </tr>
-                <tr>
-                  <td>Total cost</td>
-                  <td className="text-right">${orderPreview.total.toFixed(2)}</td>
-                </tr>
-                <tr>
-                  <td>Discount</td>
-                  <td className="text-right">{product.discount || 0}%</td>
-                </tr>
-                <tr>
-                  <td>Membership</td>
-                  <td className="text-right">{vipDiscount || 0}%</td>
-                </tr>
-                <tr>
-                  <td>Pay</td>
-                  <td className="text-right text-green-700">${orderPreview.discounted.toFixed(2)}</td>
-                </tr>
-                <tr>
-                  <td>Sell on global markets</td>
-                  <td className="text-right">${orderPreview.resale.toFixed(2)}</td>
-                </tr>
-                <tr>
-                  <td className="font-bold">Estimated profit after sale</td>
-                  <td className="text-right font-bold text-blue-800">
-                    ${orderPreview.profit.toFixed(2)}
-                  </td>
-                </tr>
-              </tbody>
-            </table>
-          </div>
-        )}
+    <div className="max-w-[1400px] mx-auto space-y-6 animate-fade-in pb-20">
+      
+      {/* 1. HEADER */}
+      <div className="flex flex-col md:flex-row justify-between items-start border-b border-slate-200 pb-4">
+         <div>
+            <div className="flex items-center gap-2 text-xs font-mono text-slate-500 mb-1">
+               <Link to="/products" className="hover:text-blue-600 hover:underline flex items-center gap-1">
+                  <FaArrowLeft /> MASTER INVENTORY
+               </Link>
+               <span>/</span>
+               <span>LOT #{id.substring(0,8).toUpperCase()}</span>
+            </div>
+            
+            <h1 className="text-2xl font-bold text-slate-800 tracking-tight">{product.title}</h1>
+            
+            <div className="flex items-center gap-3 mt-2">
+               {renderRating(product.rating || 0)}
+               <span className="text-xs text-slate-500 font-bold">
+                  {product.rating || "0.0"} / 5.0
+               </span>
+               <span className="text-xs text-slate-400 border-l border-slate-300 pl-3">
+                  {product.review_count || 0} Verified Inspections
+               </span>
+            </div>
 
-        {/* --- Buy Card --- */}
-        <div className="bg-white rounded-xl shadow p-4 mb-4">
-          {showNotice && (
-            <div className="mb-3 text-center bg-red-50 border border-red-200 text-red-700 font-bold rounded-xl px-4 py-2 transition">
-              {showNotice}
+            <div className="flex items-center gap-4 mt-3 text-xs">
+               <span className="bg-blue-100 text-blue-800 px-2 py-0.5 rounded font-mono font-bold">
+                  BATCH: CN-{new Date().getFullYear()}-X99
+               </span>
+               <span className="flex items-center gap-1 text-slate-600">
+                  <FaWarehouse /> Origin: {product.country || "China"}
+               </span>
+               <span className="flex items-center gap-1 text-slate-600">
+                  <FaBoxOpen /> Stock: {product.stock || 0} Units
+               </span>
             </div>
-          )}
-          <div className="flex items-center gap-3 mb-2">
-            <span className="inline-block bg-green-100 text-green-700 px-2 py-1 rounded text-xs font-bold">
-              {product.discount || 0}% OFF
-            </span>
-            <span className="font-semibold text-gray-600">
-              Limited time discount!
-            </span>
-          </div>
-          <div className="flex items-center gap-3 mb-2">
-            <span className="font-semibold">Select quantity:</span>
-            <input
-              type="number"
-              min={product.min_order || product.minQty || 1}
-              value={quantity}
-              onChange={(e) => {
-                const val = e.target.value;
-                if (/^[0-9]*$/.test(val)) setQuantity(val);
-              }}
-              onBlur={() => {
-                const min = product.min_order || product.minQty || 1;
-                const num = parseInt(quantity, 10);
-                if (!num || num < min) setQuantity(min);
-                else setQuantity(num);
-              }}
-              className="border rounded-lg px-3 py-1 w-24 text-base"
-            />
-            <span className="text-xs text-gray-500">
-              (Min. {product.min_order || product.minQty || 1})
-            </span>
-          </div>
-          {!showConfirm ? (
-            <button
-              className={`mt-3 w-full bg-green-600 hover:bg-green-700 text-white rounded-xl py-2 font-bold text-lg shadow transition ${
-                buying ? "opacity-60 cursor-wait" : ""
-              }`}
-              onClick={() => setShowConfirm(true)}
-              disabled={buying}
-            >
-              {buying ? "Processing..." : "Buy & Resale"}
+         </div>
+         
+         <div className="mt-4 md:mt-0 flex gap-2">
+            <button className="flex items-center gap-2 px-4 py-2 bg-white border border-slate-300 text-slate-700 text-xs font-bold rounded hover:bg-slate-50 transition">
+               <FaFilePdf /> Inspection Report
             </button>
-          ) : (
-            <div className="flex flex-col gap-3 mt-3">
-              <div className="text-center font-semibold text-blue-900 mb-2">
-                Are you sure you want to buy and resale this product?
-              </div>
-              <div className="flex gap-3">
-                <button
-                  className="w-1/2 bg-green-600 hover:bg-green-700 text-white rounded-xl py-2 font-bold shadow transition"
-                  onClick={async () => {
-                    await handleResale();
-                    setShowConfirm(false);
-                  }}
-                  disabled={buying}
-                >
-                  Confirm
-                </button>
-                <button
-                  className="w-1/2 bg-gray-300 hover:bg-gray-400 text-gray-900 rounded-xl py-2 font-bold shadow transition"
-                  onClick={() => setShowConfirm(false)}
-                  disabled={buying}
-                >
-                  Cancel
-                </button>
-              </div>
-            </div>
-          )}
-        </div>
+            <button className="flex items-center gap-2 px-4 py-2 bg-white border border-slate-300 text-slate-700 text-xs font-bold rounded hover:bg-slate-50 transition">
+               <FaFileContract /> Export Docs
+            </button>
+         </div>
       </div>
+
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+         
+         {/* 2. LEFT COLUMN */}
+         <div className="lg:col-span-2 space-y-6">
+            <div className="bg-slate-50 border border-slate-200 rounded p-4 flex gap-4 overflow-x-auto">
+               {(product.gallery || [getProductImage(product)]).map((img, i) => (
+                  <div key={i} className="w-32 h-32 bg-white border border-slate-300 rounded flex-shrink-0 flex items-center justify-center p-2">
+                     <img src={img} alt={`spec-${i}`} className="max-w-full max-h-full object-contain mix-blend-multiply" />
+                  </div>
+               ))}
+            </div>
+            <div className="bg-white border border-slate-200 rounded overflow-hidden">
+               <div className="bg-slate-100 px-4 py-2 border-b border-slate-200 font-bold text-xs text-slate-700 uppercase">
+                  Technical Specifications
+               </div>
+               <table className="w-full text-sm text-left">
+                  <tbody>
+                     {Array.isArray(product.keyAttributes) && product.keyAttributes.length > 0 ? (
+                        product.keyAttributes.map((attr, index) => (
+                           <tr key={index} className="border-b border-slate-100 last:border-0">
+                              <td className="px-4 py-3 bg-slate-50 w-1/3 font-medium text-slate-600 capitalize">
+                                 {Object.keys(attr)[0].replace(/_/g, " ")}
+                              </td>
+                              <td className="px-4 py-3 font-mono text-slate-700">
+                                 {Object.values(attr)[0]}
+                              </td>
+                           </tr>
+                        ))
+                     ) : (
+                        <tr><td colSpan="2" className="px-4 py-3 text-slate-400 italic text-center">No specific attributes.</td></tr>
+                     )}
+                  </tbody>
+               </table>
+            </div>
+            <div className="prose prose-sm max-w-none text-slate-600">
+               <h3 className="text-xs font-bold uppercase text-slate-800 mb-2">Lot Description</h3>
+               <p>{product.description || "No description available."}</p>
+            </div>
+         </div>
+
+         {/* 3. RIGHT COLUMN: Trade Execution */}
+         <div className="space-y-4">
+            
+            <div className="bg-white border border-blue-200 shadow-lg rounded overflow-hidden">
+               <div className="bg-blue-900 px-4 py-3 text-white flex justify-between items-center">
+                  <span className="font-bold text-sm uppercase">Acquisition Ticket</span>
+                  <FaLock size={12} className="text-blue-300" />
+               </div>
+               
+               <div className="p-6 space-y-6">
+                  
+                  {/* PRICE HEADER */}
+                  <div className="flex justify-between items-end border-b border-slate-100 pb-4">
+                     <div>
+                        <div className="text-[10px] text-slate-500 uppercase tracking-wider">Market Value (FOB)</div>
+                        <div className={`text-3xl font-mono font-bold ${!isVerified ? 'blur-sm select-none' : 'text-slate-900'}`}>
+                           ${marketUnitPrice.toFixed(2)}
+                        </div>
+                     </div>
+                     <div className="text-right">
+                        <div className="text-[10px] text-slate-500 uppercase tracking-wider">Net Yield</div>
+                        <div className="text-lg font-bold text-emerald-600">+{margin}%</div>
+                     </div>
+                  </div>
+
+                  {/* PRICE TIERS */}
+                  {sortedTiers.length > 0 && (
+                     <div className="grid grid-cols-2 gap-2">
+                        <div className={`p-2 rounded border text-center transition-colors ${
+                           !activeTier ? 'bg-emerald-50 border-emerald-500' : 'bg-slate-50 border-slate-200 opacity-50'
+                        }`}>
+                           <div className="text-xs text-slate-500">Min. {product.min_order || 1} Pcs</div>
+                           <div className="font-bold text-slate-800">${Number(product.price).toFixed(2)}</div>
+                        </div>
+                        {sortedTiers.map((tier, idx) => {
+                           const isActive = activeTier && activeTier.min === tier.min;
+                           return (
+                              <div key={idx} className={`p-2 rounded border text-center transition-colors ${
+                                 isActive ? 'bg-emerald-50 border-emerald-500 ring-1 ring-emerald-500' : 'bg-slate-50 border-slate-200'
+                              }`}>
+                                 <div className={`text-xs ${isActive ? 'text-emerald-700 font-bold' : 'text-slate-500'}`}>
+                                    ≥ {tier.min} Pcs
+                                 </div>
+                                 <div className={`font-bold ${isActive ? 'text-emerald-800' : 'text-slate-800'}`}>
+                                    ${Number(tier.price).toFixed(2)}
+                                 </div>
+                              </div>
+                           );
+                        })}
+                     </div>
+                  )}
+
+                  {/* INPUT */}
+                  <div>
+                     <label className="block text-xs font-bold text-slate-500 uppercase mb-2">Allocation Volume (Units)</label>
+                     <div className="flex items-center">
+                        <input 
+                           type="number" 
+                           min={product.min_order || 1}
+                           value={quantity}
+                           onChange={(e) => setQuantity(Number(e.target.value))}
+                           className="w-full border border-slate-300 rounded-l px-3 py-2 text-slate-800 font-mono focus:ring-1 focus:ring-blue-900 outline-none"
+                        />
+                        <div className="bg-slate-100 border border-l-0 border-slate-300 px-3 py-2 text-slate-500 text-xs font-bold rounded-r">PCS</div>
+                     </div>
+                  </div>
+
+                  {/* FINANCIAL BREAKDOWN (Waterfall) */}
+                  <div className="bg-slate-50 p-3 rounded border border-slate-200 space-y-2 text-xs font-mono">
+                     <div className="flex justify-between">
+                        <span className="text-slate-500">Market Value</span>
+                        <span className="font-bold text-slate-900">${marketTotal.toFixed(2)}</span>
+                     </div>
+                     
+                     {volumeSavings > 0 && (
+                        <div className="flex justify-between text-blue-600">
+                           <span className="flex items-center gap-1"><FaTag size={10}/> Volume Tier Applied</span>
+                           <span>-${volumeSavings.toFixed(2)}</span>
+                        </div>
+                     )}
+
+                     {/* SPLIT DISCOUNTS (Clarity) */}
+                     {adminDiscount > 0 && (
+                        <div className="flex justify-between text-emerald-600">
+                           <span>Less: Batch Incentive ({adminDiscount}%)</span>
+                           <span>-${adminDiscountAmount.toFixed(2)}</span>
+                        </div>
+                     )}
+                     
+                     {vipBonus > 0 && (
+                        <div className="flex justify-between text-emerald-600">
+                           <span>Less: VIP Liquidity ({vipBonus}%)</span>
+                           <span>-${vipBonusAmount.toFixed(2)}</span>
+                        </div>
+                     )}
+
+                     <div className="border-t border-slate-200 pt-2 flex justify-between text-sm">
+                        <span className="font-bold text-slate-700">Settlement Due</span>
+                        <span className="font-bold text-blue-900">${settlementAmount.toFixed(2)}</span>
+                     </div>
+                  </div>
+
+                  {/* Action Button */}
+                  {isVerified ? (
+                     <button 
+                        onClick={handleOpenTicket}
+                        disabled={executing}
+                        className="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-3 rounded shadow transition flex justify-center items-center gap-2"
+                     >
+                        {executing ? "PROCESSING..." : <><FaCheckCircle /> GENERATE PROFORMA</>}
+                     </button>
+                  ) : (
+                     <Link to="/kyc-verification" className="block w-full bg-slate-800 text-white font-bold py-3 rounded text-center hover:bg-slate-700 text-xs uppercase tracking-wide">
+                        Verify ID to Unlock Pricing
+                     </Link>
+                  )}
+                  
+                  {isVerified && (
+                     <div className="flex items-start gap-2 bg-blue-50 p-2 rounded text-[10px] text-blue-800">
+                        <FaInfoCircle className="mt-0.5 shrink-0" />
+                        <span>Funds held in escrow via Smart Contract (USDC/XRP).</span>
+                     </div>
+                  )}
+
+               </div>
+            </div>
+
+            <div className="bg-white border border-slate-200 rounded p-4">
+               <div className="text-xs font-bold uppercase text-slate-400 mb-2">Source Origin</div>
+               <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 bg-slate-100 rounded-full flex items-center justify-center text-slate-400">
+                     <FaWarehouse />
+                  </div>
+                  <div>
+                     <div className="font-bold text-slate-700">{product.supplier || "Shenzhen Logistics Hub"}</div>
+                     <div className="text-xs text-slate-500">Verified Vendor • Lic #99203</div>
+                  </div>
+               </div>
+            </div>
+
+         </div>
+      </div>
+
+      {showModal && (
+        <OrderPreviewModal
+          product={product}
+          quantity={quantity}
+          priceTiers={product.priceTiers}
+          onClose={() => setShowModal(false)}
+          onConfirm={handleConfirmOrder}
+          isProcessing={executing}
+          successData={successData} 
+          onFinish={handleCloseSuccess} 
+        />
+      )}
+
     </div>
   );
 }

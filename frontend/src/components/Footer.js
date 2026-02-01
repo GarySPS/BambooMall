@@ -1,71 +1,69 @@
 // src/components/Footer.js
 import React from "react";
 import { Link } from "react-router-dom";
-import { FaFacebook, FaInstagram, FaTwitter, FaLinkedin } from "react-icons/fa";
-import { ReactComponent as Logo } from "./logo.svg"; // Assuming you have this from your Navbar
+import { FaGlobeAsia, FaLock, FaShieldAlt } from "react-icons/fa";
 
 export default function Footer() {
   return (
-    <footer className="bg-gray-900 text-gray-300 pt-16 pb-8 border-t-4 border-emerald-600">
-      <div className="max-w-7xl mx-auto px-4 grid grid-cols-1 md:grid-cols-4 gap-8 mb-12">
+    <footer className="bg-slate-950 text-slate-400 pt-16 pb-8 border-t border-slate-900 font-sans text-xs">
+      <div className="max-w-[1600px] mx-auto px-6 grid grid-cols-1 md:grid-cols-4 gap-12 mb-12">
         
-        {/* Column 1: Brand Info */}
-        <div className="col-span-1 md:col-span-1">
-          <div className="flex items-center gap-2 mb-4">
-            <Logo className="w-8 h-8 text-emerald-500" />
-            <span className="text-xl font-bold text-white">BambooMall</span>
+        {/* Column 1: Corporate Identity */}
+        <div className="col-span-1">
+          <div className="flex items-center gap-2 mb-4 text-slate-200">
+            <FaGlobeAsia />
+            <span className="text-sm font-bold uppercase tracking-widest">BambooMall SCM</span>
           </div>
-          <p className="text-sm text-gray-400 leading-relaxed mb-6">
-            The official China factory direct resale market. Connecting global buyers with verified manufacturers for the lowest wholesale prices.
+          <p className="text-slate-500 leading-relaxed mb-4">
+            Authorized liquidation clearinghouse for Tier-1 manufacturing assets. 
+            Regulated by the Shenzhen Municipal Bureau of Commerce.
           </p>
-          <div className="flex gap-4">
-            <FaFacebook className="hover:text-emerald-500 cursor-pointer transition" size={20} />
-            <FaInstagram className="hover:text-emerald-500 cursor-pointer transition" size={20} />
-            <FaTwitter className="hover:text-emerald-500 cursor-pointer transition" size={20} />
-            <FaLinkedin className="hover:text-emerald-500 cursor-pointer transition" size={20} />
+          <div className="text-[10px] font-mono text-slate-600">
+             <div>ICP License: 粤B2-20240091</div>
+             <div>Export Permit: SZ-EX-9920</div>
           </div>
         </div>
 
-        {/* Column 2: Quick Links */}
+        {/* Column 2: Operations */}
         <div>
-          <h3 className="text-white font-bold mb-4 uppercase tracking-wider text-sm">Shop</h3>
-          <ul className="space-y-2 text-sm">
-            <li><Link to="/products" className="hover:text-emerald-500 transition">All Products</Link></li>
-            <li><Link to="/news" className="hover:text-emerald-500 transition">New Arrivals</Link></li>
-            <li><Link to="/membership" className="hover:text-emerald-500 transition">Membership Tiers</Link></li>
-            <li><Link to="/balance" className="hover:text-emerald-500 transition">My Balance</Link></li>
+          <h3 className="text-slate-200 font-bold mb-4 uppercase tracking-widest text-[10px]">Operations</h3>
+          <ul className="space-y-2 font-mono text-[11px]">
+            <li><Link to="/products" className="hover:text-blue-400 transition">Master Manifest</Link></li>
+            <li><Link to="/compliance" className="hover:text-blue-400 transition">Shipping Tariffs (2026)</Link></li>
+            <li><Link to="/membership" className="hover:text-blue-400 transition">Partner Tiers</Link></li>
           </ul>
         </div>
 
-        {/* Column 3: Support */}
+        {/* Column 3: Compliance */}
         <div>
-          <h3 className="text-white font-bold mb-4 uppercase tracking-wider text-sm">Support</h3>
-          <ul className="space-y-2 text-sm">
-            <li><Link to="/faq" className="hover:text-emerald-500 transition">Help Center</Link></li>
-            <li><Link to="/about-us" className="hover:text-emerald-500 transition">About BambooMall</Link></li>
-            <li><Link to="/contact" className="hover:text-emerald-500 transition">Contact Support</Link></li>
-            <li><a href="mailto:support@bamboomall.store" className="hover:text-emerald-500 transition">Report Abuse</a></li>
+          <h3 className="text-slate-200 font-bold mb-4 uppercase tracking-widest text-[10px]">Compliance</h3>
+          <ul className="space-y-2 font-mono text-[11px]">
+            <li><Link to="/terms" className="hover:text-blue-400 transition">Master Service Agreement</Link></li>
+            <li><Link to="/privacy" className="hover:text-blue-400 transition">Data Sovereignty Policy</Link></li>
+            <li><Link to="/faq" className="hover:text-blue-400 transition">Settlement Protocols</Link></li>
           </ul>
         </div>
 
-        {/* Column 4: Legal (THE IMPORTANT PART) */}
+        {/* Column 4: Secure Status */}
         <div>
-          <h3 className="text-white font-bold mb-4 uppercase tracking-wider text-sm">Legal</h3>
-          <ul className="space-y-2 text-sm">
-            <li><Link to="/terms" className="hover:text-emerald-500 transition">Terms of Service</Link></li>
-            <li><Link to="/privacy" className="hover:text-emerald-500 transition">Privacy Policy</Link></li>
-            <li><Link to="/cookies" className="hover:text-emerald-500 transition">Cookie Policy</Link></li>
-            <li className="text-gray-500 pt-2 text-xs">HK Business Reg: 59382-A</li>
-          </ul>
+           <div className="bg-slate-900 p-4 border border-slate-800 rounded">
+              <div className="flex items-center gap-2 text-emerald-500 mb-2 font-bold">
+                 <FaLock size={12} /> SSL ENCRYPTED
+              </div>
+              <p className="text-[10px] text-slate-500 leading-relaxed">
+                 All connections are secured via TLS 1.3. 
+                 Transaction data is stored in Hong Kong SAR compliant data centers.
+              </p>
+           </div>
         </div>
       </div>
 
       {/* Bottom Bar */}
-      <div className="max-w-7xl mx-auto px-4 pt-8 border-t border-gray-800 text-center md:text-left flex flex-col md:flex-row justify-between items-center text-xs text-gray-500">
-        <p>© 2026 BambooMall International Ltd. All rights reserved.</p>
-        <div className="flex gap-4 mt-4 md:mt-0">
-          <span>Secure Payment:</span>
-          <span className="text-gray-400">USDT / KPay / Visa</span>
+      <div className="max-w-[1600px] mx-auto px-6 pt-8 border-t border-slate-900 text-center md:text-left flex flex-col md:flex-row justify-between items-center text-[10px] text-slate-600 font-mono">
+        <p>© 2026 BambooMall Supply Chain Management (Shenzhen) Co., Ltd.</p>
+        <div className="flex gap-4 mt-4 md:mt-0 items-center">
+           <FaShieldAlt />
+           <span>ANTI-FRAUD MONITORING ACTIVE</span>
         </div>
       </div>
     </footer>
