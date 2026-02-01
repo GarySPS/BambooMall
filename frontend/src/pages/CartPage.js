@@ -1,6 +1,6 @@
 // src/pages/CartPage.js
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react"; // Added useCallback
 import { Link } from "react-router-dom";
 import { useUser } from "../contexts/UserContext";
 import { fetchCartOrders } from "../utils/api";
@@ -31,21 +31,24 @@ export default function CartPage() {
   const [refundModalOrder, setRefundModalOrder] = useState(null); 
   const [processingRefund, setProcessingRefund] = useState(false);
 
-  useEffect(() => {
+  // --- FIX: Wrapped loadData in useCallback ---
+  const loadData = useCallback(() => {
     if (!user?.id) return;
-    loadData();
-  }, [user]);
-
-  const loadData = () => {
     setLoading(true);
     fetchCartOrders(user.id)
       .then((data) => {
+        // Filter: Show active, sold, or refund pending items
         const active = data.filter(o => o.status !== 'cancelled'); 
         setOrders(active);
         setLoading(false);
       })
       .catch(() => setLoading(false));
-  };
+  }, [user]); // Re-create this function only if 'user' changes
+
+  // --- FIX: Added loadData to dependency array ---
+  useEffect(() => {
+    loadData();
+  }, [loadData]); 
 
   // --- 1. OPEN MODAL ---
   const initiateRefund = (order) => {
@@ -68,7 +71,7 @@ export default function CartPage() {
       if (!res.ok) throw new Error(data.error || "Refund failed");
       
       setRefundModalOrder(null); // Close modal
-      loadData(); // Refresh list
+      loadData(); // Refresh list using the memoized function
     } catch (err) {
       alert(err.message);
     } finally {
