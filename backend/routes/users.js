@@ -1,16 +1,14 @@
-//routes>users.js
+//src>routes>users.js
 
 const express = require('express');
 const router = express.Router();
 
-// --- PROFILE ROUTES ---
-
-// 1. Get Profile by Short ID (Used by UserContext)
+// --- 1. Get Profile (Used by Context) ---
 router.get('/profile', async (req, res) => {
   const supabase = req.supabase;
   const { short_id } = req.query;
 
-  if (!short_id) return res.status(400).json({ error: 'Missing short_id' });
+  if (!short_id) return res.status(400).json({ error: 'Missing Identity Parameter' });
 
   try {
     const { data: user, error: userError } = await supabase
@@ -20,10 +18,10 @@ router.get('/profile', async (req, res) => {
       .single();
 
     if (userError || !user) {
-      return res.status(404).json({ error: 'User not found' });
+      return res.status(404).json({ error: 'Agent profile not found' });
     }
 
-    // Fetch Wallet
+    // Fetch Wallet & Credit Line
     const { data: walletData } = await supabase
       .from('wallets')
       .select('balance')
@@ -32,67 +30,56 @@ router.get('/profile', async (req, res) => {
 
     const wallet = {
       balance: walletData?.balance || 0,
+      // THE ANALYST HOOK: Fake Credit Limit makes them feel "Verified"
+      credit_limit: 50000.00, 
+      currency: "USDC",
+      tier: "Wholesale (Level 2)"
     };
 
     res.json({ user, wallet });
 
   } catch (error) {
-    console.error("Profile fetch error:", error);
-    res.status(500).json({ error: error.message });
+    console.error("System Error:", error);
+    res.status(500).json({ error: "Internal Service Error" });
   }
 });
 
-// 2. Get User Profile By USER_ID (Generic)
-router.get('/:user_id', async (req, res) => {
-  const supabase = req.supabase;
-  const { user_id } = req.params;
-  
-  // Safety check to ensure 'profile' requests didn't slip through
-  if (user_id === 'profile') return res.status(404).json({error: "Invalid ID"});
-
-  const { data, error } = await supabase
-    .from('users')
-    .select('*')
-    .eq('id', user_id) 
-    .single();
-
-  if (error || !data) return res.status(404).json({ error: 'User not found' });
-
-  res.json({ user: data });
-});
-
-// 3. Update User Profile By USER_ID
+// --- 2. Update Profile ---
 router.put('/:user_id', async (req, res) => {
   const supabase = req.supabase;
   const { user_id } = req.params;
-  const updateData = req.body;
+  
+  // Prevent users from hacking their own "Verified" status
+  const safeUpdateData = { ...req.body };
+  delete safeUpdateData.verified;
+  delete safeUpdateData.kyc_status;
+  delete safeUpdateData.is_admin;
 
   const { data, error } = await supabase
     .from('users')
-    .update(updateData)
+    .update(safeUpdateData)
     .eq('id', user_id)
     .select()
     .single();
     
   if (error) return res.status(400).json({ error: error.message });
-
   res.json({ user: data });
 });
 
-// 4. Change Password (Authenticated Action)
+// --- 3. Change Password ---
 router.post('/change-password', async (req, res) => {
   const supabase = req.supabase;
   const { user_id, old_password, new_password } = req.body;
 
-  // Verify old password first
+  // Verify old Access Key
   const { data: user } = await supabase
     .from('users')
-    .select('*')
+    .select('id')
     .eq('id', user_id)
-    .eq('password', old_password)
+    .eq('password', old_password) // In real prod, use bcrypt.compare
     .single();
 
-  if (!user) return res.status(401).json({ error: 'Old password incorrect' });
+  if (!user) return res.status(401).json({ error: 'Invalid Current Access Key' });
 
   const { error: updateError } = await supabase
     .from('users')
@@ -100,7 +87,7 @@ router.post('/change-password', async (req, res) => {
     .eq('id', user_id);
 
   if (updateError) return res.status(400).json({ error: updateError.message });
-  res.json({ message: 'Password changed successfully' });
+  res.json({ message: 'Access Key Updated Successfully' });
 });
 
 module.exports = router;
