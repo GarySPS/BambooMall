@@ -4,7 +4,8 @@ import React, { useState, useEffect, useRef } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { useUser } from "../contexts/UserContext";
 import { API_BASE_URL } from "../config";
-import { FaShieldAlt, FaLock, FaGlobe, FaExclamationCircle, FaServer, FaCheckCircle, FaArrowRight } from "react-icons/fa";
+// FIXED: Removed unused FaServer and FaArrowRight to fix build error
+import { FaShieldAlt, FaLock, FaGlobe, FaExclamationCircle, FaCheckCircle } from "react-icons/fa";
 
 // --- NETWORK BACKGROUND (Milky White Theme) ---
 const NetworkCanvas = () => {
@@ -208,7 +209,7 @@ export default function OTPPage() {
             {/* Decoration: Top shine */}
             <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-transparent via-blue-500/50 to-transparent opacity-50"></div>
 
-            {/* Technical Info Box (Inside the card for mobile) */}
+            {/* Technical Info Box */}
             <div className="mb-6 bg-slate-800/50 border border-slate-700 rounded p-3 font-mono text-[10px] text-slate-400 space-y-1">
                  <p className="flex justify-between">
                    <span>STATUS:</span> <span className="text-amber-400 animate-pulse">AWAITING TOKEN</span>
