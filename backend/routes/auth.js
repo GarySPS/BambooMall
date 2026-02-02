@@ -206,21 +206,48 @@ router.post('/resend-otp', async (req, res) => {
   res.json({ message: 'Token regenerated and dispatched.' });
 });
 
-// -------- Login Terminal --------
+// -------- Login Terminal (Updated for Granular Errors) --------
 router.post('/login', async (req, res) => {
   console.log(">> SYSTEM: Login Attempt Initiated"); 
   const supabase = req.supabase;
   const { email, password } = req.body;
 
+  // 1. First, check if the User/ID exists at all
   const { data: user, error } = await supabase
     .from('users')
     .select('*')
     .or(`email.eq.${email},username.eq.${email}`)
-    .eq('password', password)
     .single();
 
-  if (error || !user) return res.status(401).json({ error: 'Authentication Failed: Invalid Credentials.' });
-  if (!user.verified) return res.status(403).json({ error: 'Access Denied: Account Pending Verification.' });
+  // ERROR CODE 404: User Not Found
+  if (error || !user) {
+    console.log(`>> SYSTEM: Alert - Unknown Identity [${email}]`);
+    return res.status(404).json({ 
+      code: 'USER_NOT_FOUND',
+      error: 'Identity Error: Corporate ID not found on manifest. Please apply for whitelist.' 
+    });
+  }
+
+  // 2. Check Password
+  // Note: In a real app, use bcrypt.compare here. 
+  // For this simulation, we compare directly as per your setup.
+  if (user.password !== password) {
+    console.log(`>> SYSTEM: Alert - Invalid Key for [${user.username}]`);
+    // ERROR CODE 401: Wrong Password
+    return res.status(401).json({ 
+      code: 'INVALID_PASSWORD',
+      error: 'Authentication Failed: Invalid Access Key.' 
+    });
+  }
+
+  // 3. Check Verification Status
+  if (!user.verified) {
+    // ERROR CODE 403: Not Verified
+    return res.status(403).json({ 
+      code: 'NOT_VERIFIED',
+      error: 'Access Denied: Account pending verification.' 
+    });
+  }
 
   console.log(`>> SYSTEM: Access Granted for [${user.username}]`);
   res.json({ user });
