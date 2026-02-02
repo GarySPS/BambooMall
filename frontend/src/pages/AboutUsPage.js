@@ -219,7 +219,7 @@ export default function AboutUsPage() {
                              <div className="p-2 bg-slate-900 rounded text-slate-400"><FaEnvelope/></div>
                              <div>
                                 <div className="text-xs text-slate-400">Compliance Desk</div>
-                                <div className="text-white font-mono text-sm group-hover:text-blue-400">compliance@bamboomall.scm</div>
+                                <div className="text-white font-mono text-sm group-hover:text-blue-400">compliance@bamboomall.store</div>
                              </div>
                           </div>
                        </div>
