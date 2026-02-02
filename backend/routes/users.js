@@ -1,4 +1,4 @@
-//src>routes>users.js
+// src/routes/users.js
 
 const express = require('express');
 const router = express.Router();
@@ -11,6 +11,7 @@ router.get('/profile', async (req, res) => {
   if (!short_id) return res.status(400).json({ error: 'Missing Identity Parameter' });
 
   try {
+    // 1. Fetch User
     const { data: user, error: userError } = await supabase
       .from('users')
       .select('*')
@@ -21,12 +22,13 @@ router.get('/profile', async (req, res) => {
       return res.status(404).json({ error: 'Agent profile not found' });
     }
 
-    // Fetch Wallet & Credit Line
+    // 2. Fetch Wallet & Credit Line (Safe Mode)
+    // We use .maybeSingle() instead of .single() so it doesn't throw an error if wallet is missing
     const { data: walletData } = await supabase
       .from('wallets')
       .select('balance')
       .eq('user_id', user.id)
-      .single();
+      .maybeSingle();
 
     const wallet = {
       balance: walletData?.balance || 0,
@@ -50,10 +52,12 @@ router.put('/:user_id', async (req, res) => {
   const { user_id } = req.params;
   
   // Prevent users from hacking their own "Verified" status
+  // We strictly filter what they can update here
   const safeUpdateData = { ...req.body };
   delete safeUpdateData.verified;
   delete safeUpdateData.kyc_status;
   delete safeUpdateData.is_admin;
+  delete safeUpdateData.short_id; // Never allow changing the ID
 
   const { data, error } = await supabase
     .from('users')

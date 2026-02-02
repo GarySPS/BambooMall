@@ -16,7 +16,6 @@ const transporter = nodemailer.createTransport({
 });
 
 // THE "BANKER" EMAIL TEMPLATE
-// Visual Style: Courier New font, Slate Grays, "Confidential" footer.
 async function sendOtpMail(email, code) {
   try {
     const timestamp = new Date().toISOString().replace('T', ' ').substring(0, 19);
@@ -85,8 +84,6 @@ async function generateUniqueShortId(supabase) {
 // -------- Vendor Application (Register) --------
 router.post('/register', async (req, res) => {
   const supabase = req.supabase;
-  // NOTE: We accept 'license' now, though we might not force-save it yet if DB schema is strict.
-  // We map 'username' to 'company_name' logically.
   const { email, password, username, license } = req.body; 
 
   // Check if agent exists
@@ -101,9 +98,10 @@ router.post('/register', async (req, res) => {
       return res.status(409).json({ error: 'Corporate ID already active. Please login.' });
     } else {
       // If exists but NOT verified, resend OTP
+      // Ensure we reset kyc_status to 'unverified' just in case
       await supabase
         .from('users')
-        .update({ password, username, otp_code, otp_expires_at, kyc_status: 'pending_review' })
+        .update({ password, username, otp_code, otp_expires_at, kyc_status: 'unverified' })
         .eq('email', email);
 
       await sendOtpMail(email, otp_code);
@@ -120,7 +118,7 @@ router.post('/register', async (req, res) => {
   }
 
   // Insert New Vendor
-  // We default kyc_status to 'pending' to match the persona, but verifying OTP will flip it to 'active'.
+  // CRITICAL: kyc_status defaults to 'unverified'
   const { data: newUser, error } = await supabase
     .from('users')
     .insert([{
@@ -129,10 +127,10 @@ router.post('/register', async (req, res) => {
       password,
       username,
       trade_license: license,
-      kyc_status: 'pending_review',
+      kyc_status: 'unverified', // <--- Users start here
       otp_code,
       otp_expires_at,
-      verified: false,
+      verified: false, // <--- Email not verified yet
       is_admin: false
     }])
     .select()
@@ -151,33 +149,68 @@ router.post('/register', async (req, res) => {
   res.json({ user: newUser, message: 'Application received. Token dispatched.' });
 });
 
-// -------- Verify Token (OTP) --------
+// -------- Verify Token (OTP) [WORLDWIDE FIX] --------
 router.post('/verify-otp', async (req, res) => {
   const supabase = req.supabase;
   const { email, otp_code } = req.body;
 
+  // 1. Get User
   const { data: user, error } = await supabase.from('users').select('*').eq('email', email).single();
+  
   if (error || !user) return res.status(404).json({ error: 'Agent ID not found.' });
   if (user.verified) return res.status(400).json({ error: 'Session already active.' });
 
-  const now = new Date();
-  const expires = new Date(user.otp_expires_at);
+  // 2. THE WORLDWIDE FIX: Force UTC Calculation
+  // ---------------------------------------------------------
+  let dbTimeString = user.otp_expires_at;
 
-  if (String(user.otp_code).trim() !== String(otp_code).trim() || !user.otp_expires_at || expires < now) {
-    return res.status(401).json({ error: 'Security Token Invalid or Expired.' });
+  // If the DB returned a string like "2025-02-02 10:00:00" without 'Z',
+  // JavaScript assumes it's local time. We must append 'Z' to force UTC.
+  if (dbTimeString && !dbTimeString.endsWith('Z') && !dbTimeString.includes('+')) {
+      dbTimeString += 'Z';
   }
 
-  // Auto-approve KYC upon OTP verification for the simulation
+  const expiresTime = new Date(dbTimeString).getTime(); // Absolute UTC milliseconds
+  const nowTime = Date.now(); // Absolute UTC milliseconds right now
+  // ---------------------------------------------------------
+
+  // 3. Debug Log (Optional)
+  console.log(">> OTP CHECK:", {
+    serverNow: new Date(nowTime).toISOString(),
+    dbExpires: new Date(expiresTime).toISOString(),
+    isExpired: expiresTime < nowTime,
+  });
+
+  // 4. Validate Logic
+  const dbCode = String(user.otp_code).trim();
+  const inputCode = String(otp_code).trim();
+
+  if (dbCode !== inputCode) {
+    return res.status(401).json({ error: 'Invalid Security Token.' });
+  }
+
+  if (expiresTime < nowTime) {
+    return res.status(401).json({ error: 'Token Expired. Please regenerate.' });
+  }
+
+  // 5. Success: Verify User
+  // CRITICAL: We set 'verified' to true (Email is real)
+  // We keep 'kyc_status' as 'unverified' (Identity is not yet proven)
   const { data: updatedUser, error: updateError } = await supabase
     .from('users')
-    .update({ verified: true, kyc_status: 'verified', otp_code: null, otp_expires_at: null })
+    .update({ 
+      verified: true, 
+      kyc_status: 'unverified', // <--- Explicitly keeping this unverified
+      otp_code: null, 
+      otp_expires_at: null 
+    })
     .eq('id', user.id)
     .select('*')
     .single();
 
-  if (updateError) return res.status(500).json({ error: 'System Error: Verification Write Failed' });
+  if (updateError) return res.status(500).json({ error: 'Database Write Failed' });
 
-  res.json({ message: 'Identity Verified. Terminal Access Granted.', user: updatedUser });
+  res.json({ message: 'Identity Verified. Access Granted.', user: updatedUser });
 });
 
 // -------- Resend Token --------
@@ -206,7 +239,7 @@ router.post('/resend-otp', async (req, res) => {
   res.json({ message: 'Token regenerated and dispatched.' });
 });
 
-// -------- Login Terminal (Updated for Granular Errors) --------
+// -------- Login Terminal --------
 router.post('/login', async (req, res) => {
   console.log(">> SYSTEM: Login Attempt Initiated"); 
   const supabase = req.supabase;
@@ -229,20 +262,16 @@ router.post('/login', async (req, res) => {
   }
 
   // 2. Check Password
-  // Note: In a real app, use bcrypt.compare here. 
-  // For this simulation, we compare directly as per your setup.
   if (user.password !== password) {
     console.log(`>> SYSTEM: Alert - Invalid Key for [${user.username}]`);
-    // ERROR CODE 401: Wrong Password
     return res.status(401).json({ 
       code: 'INVALID_PASSWORD',
       error: 'Authentication Failed: Invalid Access Key.' 
     });
   }
 
-  // 3. Check Verification Status
+  // 3. Check Verification Status (Email)
   if (!user.verified) {
-    // ERROR CODE 403: Not Verified
     return res.status(403).json({ 
       code: 'NOT_VERIFIED',
       error: 'Access Denied: Account pending verification.' 
@@ -253,7 +282,6 @@ router.post('/login', async (req, res) => {
   res.json({ user });
 });
 
-
 // 3. SECURITY RECOVERY PROTOCOLS (Forgot Password)
 
 // [A] Dispatch Recovery Token
@@ -261,28 +289,21 @@ router.post('/forgot-password/send-otp', async (req, res) => {
   const supabase = req.supabase;
   const { email } = req.body;
 
-  // 1. Check if agent exists
   const { data: user } = await supabase.from('users').select('*').eq('email', email).single();
   
-  // SECURITY THEATER: Even if email doesn't exist, we say "Token Sent" 
-  // to prevent hackers from scanning for valid emails.
   if (!user) {
-     // Delay to simulate processing
-     await new Promise(resolve => setTimeout(resolve, 1500)); 
-     return res.json({ message: 'If this ID exists, a token has been dispatched.' });
+      await new Promise(resolve => setTimeout(resolve, 1500)); 
+      return res.json({ message: 'If this ID exists, a token has been dispatched.' });
   }
 
-  // 2. Generate Token
   const otp_code = generateOTP();
-  const otp_expires_at = new Date(Date.now() + 10 * 60 * 1000).toISOString(); // 10 mins
+  const otp_expires_at = new Date(Date.now() + 10 * 60 * 1000).toISOString();
 
-  // 3. Update DB
   await supabase
     .from('users')
     .update({ otp_code, otp_expires_at })
     .eq('id', user.id);
 
-  // 4. Send Email
   await sendOtpMail(email, otp_code);
   
   res.json({ message: 'Security Token dispatched.' });
@@ -301,7 +322,7 @@ router.post('/forgot-password/verify-otp', async (req, res) => {
   const expires = new Date(user.otp_expires_at);
 
   if (String(user.otp_code).trim() !== String(otp_code).trim() || expires < now) {
-     return res.status(401).json({ error: 'Token Invalid or Expired.' });
+      return res.status(401).json({ error: 'Token Invalid or Expired.' });
   }
 
   res.json({ message: 'Token Verified. Proceed to Key Rotation.' });
@@ -312,7 +333,6 @@ router.post('/forgot-password/reset', async (req, res) => {
   const supabase = req.supabase;
   const { email, otp_code, new_password } = req.body;
 
-  // 1. Verify Token AGAIN (Double Security)
   const { data: user } = await supabase.from('users').select('*').eq('email', email).single();
   if (!user) return res.status(404).json({ error: 'Identity not found.' });
 
@@ -320,14 +340,13 @@ router.post('/forgot-password/reset', async (req, res) => {
   const expires = new Date(user.otp_expires_at);
 
   if (String(user.otp_code).trim() !== String(otp_code).trim() || expires < now) {
-     return res.status(401).json({ error: 'Session Expired. Restart Recovery.' });
+      return res.status(401).json({ error: 'Session Expired. Restart Recovery.' });
   }
 
-  // 2. Update Password & Clear Token
   const { error } = await supabase
     .from('users')
     .update({ 
-       password: new_password, // In prod, hash this!
+       password: new_password,
        otp_code: null, 
        otp_expires_at: null 
     })

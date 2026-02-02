@@ -1,10 +1,17 @@
-//routes>upload.js
+// src/routes/upload.js
 
 const express = require('express');
 const multer = require('multer');
+const path = require('path'); // Import path
 const router = express.Router();
 
 const upload = multer({ storage: multer.memoryStorage() });
+
+// Helper to generate safe filenames
+const getSafeFilename = (originalName) => {
+  const ext = path.extname(originalName);
+  return `${Date.now()}-${Math.floor(Math.random() * 1000)}${ext}`;
+};
 
 // ---- Product Image Upload ----
 router.post('/product-image', upload.single('file'), async (req, res) => {
@@ -12,7 +19,7 @@ router.post('/product-image', upload.single('file'), async (req, res) => {
   const file = req.file;
   if (!file) return res.status(400).json({ error: 'No file uploaded' });
 
-  const filename = Date.now() + '-' + file.originalname;
+  const filename = getSafeFilename(file.originalname);
 
   const { error } = await supabase.storage
     .from('products')
@@ -28,7 +35,7 @@ router.post('/product-image', upload.single('file'), async (req, res) => {
     .from('products')
     .getPublicUrl(filename);
 
-  res.json({ url: (publicUrl?.publicUrl || '').replace(/[\r\n]+/g, '') });
+  res.json({ url: (publicUrl?.publicUrl || '') });
 });
 
 // ---- Avatar Upload ----
@@ -37,7 +44,7 @@ router.post('/avatar', upload.single('file'), async (req, res) => {
   const file = req.file;
   if (!file) return res.status(400).json({ error: 'No file uploaded' });
 
-  const filename = Date.now() + '-' + file.originalname;
+  const filename = getSafeFilename(file.originalname);
 
   const { error } = await supabase.storage
     .from('avatars')
@@ -53,7 +60,7 @@ router.post('/avatar', upload.single('file'), async (req, res) => {
     .from('avatars')
     .getPublicUrl(filename);
 
-  res.json({ url: (publicUrl?.publicUrl || '').replace(/[\r\n]+/g, '') });
+  res.json({ url: (publicUrl?.publicUrl || '') });
 });
 
 // ---- KYC Document Upload ----
@@ -62,10 +69,10 @@ router.post('/kyc', upload.single('file'), async (req, res) => {
   const file = req.file;
   if (!file) return res.status(400).json({ error: 'No file uploaded' });
 
-  const filename = Date.now() + '-' + file.originalname;
+  const filename = getSafeFilename(file.originalname);
 
   const { error } = await supabase.storage
-    .from('kyc')
+    .from('kyc') // <--- Make sure this bucket exists!
     .upload(filename, file.buffer, {
       contentType: file.mimetype,
       upsert: true,
@@ -78,7 +85,7 @@ router.post('/kyc', upload.single('file'), async (req, res) => {
     .from('kyc')
     .getPublicUrl(filename);
 
-  res.json({ url: (publicUrl?.publicUrl || '').replace(/[\r\n]+/g, '') });
+  res.json({ url: (publicUrl?.publicUrl || '') });
 });
 
 // ---- Deposit Screenshot Upload ----
@@ -87,7 +94,7 @@ router.post('/deposit', upload.single('file'), async (req, res) => {
   const file = req.file;
   if (!file) return res.status(400).json({ error: 'No file uploaded' });
 
-  const filename = Date.now() + '-' + file.originalname;
+  const filename = getSafeFilename(file.originalname);
 
   const { error } = await supabase.storage
     .from('deposit')
@@ -103,7 +110,7 @@ router.post('/deposit', upload.single('file'), async (req, res) => {
     .from('deposit')
     .getPublicUrl(filename);
 
-  res.json({ url: (publicUrl?.publicUrl || '').replace(/[\r\n]+/g, '') });
+  res.json({ url: (publicUrl?.publicUrl || '') });
 });
 
 module.exports = router;

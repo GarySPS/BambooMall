@@ -1,9 +1,9 @@
-//routes>kyc.js
+// src/routes/kyc.js
 
 const express = require('express');
 const router = express.Router();
 
-// 1. Submit Full KYC Application (Updated)
+// 1. Submit Full KYC Application
 router.post('/submit-application', async (req, res) => {
   const supabase = req.supabase;
   const { 
@@ -17,19 +17,35 @@ router.post('/submit-application', async (req, res) => {
     selfie_url 
   } = req.body;
 
+  // 1. Input Validation
   if (!short_id) return res.status(400).json({ error: "User ID missing" });
+  if (!front_url || !back_url || !selfie_url) {
+      return res.status(400).json({ error: "Missing required document photos" });
+  }
 
   try {
-    // A. CLEANUP: Delete ALL previous documents for this user before adding new ones
-    // This prevents "stacking" images if they got rejected and are trying again.
-    const { error: deleteError } = await supabase
-      .from('kyc_documents')
-      .delete()
-      .eq('short_id', short_id);
+    // 2. Verify User Exists
+    const { data: userCheck, error: checkError } = await supabase
+      .from('users')
+      .select('id, kyc_status')
+      .eq('short_id', String(short_id)) // Ensure string comparison
+      .single();
 
-    if (deleteError) throw deleteError;
+    if (checkError || !userCheck) {
+        return res.status(404).json({ error: "User identity not found in registry." });
+    }
 
-    // B. Update User Profile Data
+    // 3. Prevent re-submission if already approved
+    if (userCheck.kyc_status === 'approved') {
+        return res.status(400).json({ error: "Clearance already granted. No further action required." });
+    }
+
+    // A. CLEANUP: Delete previous documents for this user (prevent stacking)
+    await supabase.from('kyc_documents').delete().eq('short_id', short_id);
+
+    // B. Update User Profile Data & Status
+    // CRITICAL: We set kyc_status to 'pending'. 
+    // This tells the frontend to stop showing the "Lock" and start showing "Audit in Progress".
     const { error: userError } = await supabase
       .from('users')
       .update({ 
@@ -43,7 +59,7 @@ router.post('/submit-application', async (req, res) => {
 
     if (userError) throw userError;
 
-    // C. Insert Document Records (3 rows)
+    // C. Insert Document Records
     const docs = [
       { short_id, name: 'ID Front', doc_type: 'id_front', doc_url: front_url, status: 'pending' },
       { short_id, name: 'ID Back', doc_type: 'id_back', doc_url: back_url, status: 'pending' },
@@ -68,16 +84,14 @@ router.post('/submit-application', async (req, res) => {
 // 2. Get all KYC docs (Existing)
 router.get('/', async (req, res) => {
   const supabase = req.supabase;
-  let short_id = req.query.short_id;
-
-  if (short_id && !isNaN(short_id)) {
-    short_id = parseInt(short_id, 10);
-  } else {
-    short_id = null;
-  }
+  const { short_id } = req.query;
 
   let query = supabase.from('kyc_documents').select('*');
-  if (short_id) query = query.eq('short_id', short_id);
+  
+  // FIX: Treat short_id strictly as a string to preserve leading zeros (e.g. "05211")
+  if (short_id) {
+    query = query.eq('short_id', String(short_id));
+  }
 
   const { data, error } = await query.order('created_at', { ascending: false });
   if (error) return res.status(400).json({ error: error.message });

@@ -1,3 +1,5 @@
+// src/routes/admin.js
+
 const express = require('express');
 const router = express.Router();
 
@@ -29,48 +31,63 @@ router.post('/tx-approve', async (req, res) => {
   if (updateError) return res.status(400).json({ error: updateError.message });
 
   // 4. HANDLE BALANCE UPDATES
-  const { data: wallet } = await supabase
+  let { data: wallet } = await supabase
     .from('wallets')
     .select('*')
     .eq('user_id', tx.user_id)
     .single();
 
-  if (wallet) {
-    const currentBalance = Number(wallet.balance) || 0;
-    const txAmount = Math.abs(Number(tx.amount)); // Always work with positive number for math
-    let newBalance = currentBalance;
-    let balanceChanged = false;
-
-    // --- LOGIC MATRIX ---
-    // DEPOSIT + APPROVE = Add Money
-    // DEPOSIT + REJECT  = Do Nothing (Money never entered system)
-    // WITHDRAW + APPROVE = Do Nothing (Money was already deducted in wallet.js)
-    // WITHDRAW + REJECT  = REFUND Money (Add it back)
-
-    if (tx.type === 'deposit' && approve) {
-       newBalance = currentBalance + txAmount;
-       balanceChanged = true;
-    } 
-    else if (tx.type === 'withdraw' && !approve) {
-       // REJECTING A WITHDRAWAL: We must refund the locked funds
-       newBalance = currentBalance + txAmount;
-       balanceChanged = true;
-    }
-    // Note: withdrawing & approving needs no action because funds were deducted at request time.
-
-    // 5. Apply Balance Update if needed
-    if (balanceChanged) {
-      await supabase
-        .from('wallets')
-        .update({ balance: newBalance })
-        .eq('user_id', tx.user_id);
+  // [FIX] If wallet doesn't exist yet, create it immediately
+  if (!wallet) {
+    const { data: newWallet, error: createError } = await supabase
+      .from('wallets')
+      .insert([{ user_id: tx.user_id, balance: 0 }])
+      .select()
+      .single();
+    
+    if (!createError) {
+       wallet = newWallet;
+    } else {
+       console.error("Critical: Failed to create wallet during approval", createError);
+       return res.status(500).json({ error: "System failed to initialize user wallet." });
     }
   }
 
-  res.json({ message: `Transaction ${status}` });
+  // Now we are guaranteed to have a wallet
+  const currentBalance = Number(wallet.balance) || 0;
+  const txAmount = Math.abs(Number(tx.amount)); 
+  let newBalance = currentBalance;
+  let balanceChanged = false;
+
+  // --- LOGIC MATRIX ---
+  if (tx.type === 'deposit' && approve) {
+      newBalance = currentBalance + txAmount;
+      balanceChanged = true;
+  } 
+  else if (tx.type === 'withdraw' && !approve) {
+      // REJECTING A WITHDRAWAL: Refund the locked funds
+      newBalance = currentBalance + txAmount;
+      balanceChanged = true;
+  }
+
+  // 5. Apply Balance Update
+  if (balanceChanged) {
+    const { error: balanceError } = await supabase
+      .from('wallets')
+      .update({ balance: newBalance })
+      .eq('user_id', tx.user_id);
+
+    // [FIX] explicit error check
+    if (balanceError) {
+       console.error("Balance Update Failed:", balanceError);
+       return res.status(500).json({ error: "Transaction approved but balance update failed." });
+    }
+  }
+
+  res.json({ message: `Transaction ${status}, Balance updated.` });
 });
 
-// 2. Admin: Approve/Reject KYC (Unchanged - Logic is solid)
+// 2. Admin: Approve/Reject KYC
 router.post('/kyc-approve', async (req, res) => {
   const supabase = req.supabase;
   const { user_id, approve } = req.body; 
@@ -108,7 +125,7 @@ router.post('/kyc-approve', async (req, res) => {
   }
 });
 
-// 3. Admin: Approve/Reject order refund (Unchanged - Logic is solid)
+// 3. Admin: Approve/Reject order refund
 router.post('/orders/refund-approve', async (req, res) => {
   const supabase = req.supabase;
   const { order_id, approve } = req.body;
@@ -156,7 +173,7 @@ router.post('/orders/refund-approve', async (req, res) => {
   res.json({ message: 'Refund completed', refund_amount, refund_fee });
 });
 
-// 3b. Admin: Approve/Reject order resale (Unchanged - Logic is solid)
+// 3b. Admin: Approve/Reject order resale
 router.post('/orders/resale-approve', async (req, res) => {
   const supabase = req.supabase;
   const { order_id, approve, sell_quantity } = req.body;
@@ -182,7 +199,7 @@ router.post('/orders/resale-approve', async (req, res) => {
   if (fetchError || !order) return res.status(404).json({ message: "Order not found" });
   
   if (order.status !== 'selling' && order.status !== 'pending') {
-     return res.status(400).json({ error: 'Order is not pending resale' });
+      return res.status(400).json({ error: 'Order is not pending resale' });
   }
 
   const currentQty = parseInt(order.quantity, 10);
@@ -276,7 +293,7 @@ router.post('/orders/resale-approve', async (req, res) => {
   return res.json({ message: "Success", profit, resale_amount: resaleRevenue, qty_sold: qtyToSell });
 });
 
-// 4. Admin: List all users (Unchanged - Logic is solid)
+// 4. Admin: List all users
 router.get('/users', async (req, res) => {
   const supabase = req.supabase;
   
@@ -312,7 +329,7 @@ router.get('/users', async (req, res) => {
       username: u.username,
       email: u.email,
       created_at: u.created_at,
-      kycStatus: u.kyc_status,
+      kyc_status: u.kyc_status, // <--- FIXED: Changed from kycStatus to match Frontend
       full_name: u.full_name,
       phone: u.phone,
       id_number: u.id_number,
