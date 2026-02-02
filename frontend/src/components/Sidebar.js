@@ -15,7 +15,8 @@ import {
   FaCrown,
   FaClipboardList,
   FaInfoCircle,
-  FaTimes // Added for mobile close button
+  FaNewspaper, // <--- Import this new icon
+  FaTimes 
 } from "react-icons/fa";
 
 // Receive props from Layout
@@ -30,6 +31,9 @@ export default function Sidebar({ isOpen, closeSidebar }) {
     { name: "Active Allocations", path: "/cart", icon: <FaClipboardList /> },
     { name: "Treasury & Funds", path: "/balance", icon: <FaWallet /> },
     { name: "Partner Status", path: "/membership", icon: <FaCrown /> },
+    // --- NEW ITEM ADDED HERE ---
+    { name: "Corporate News", path: "/news", icon: <FaNewspaper /> }, 
+    // ---------------------------
     { name: "Operational Manual", path: "/faq", icon: <FaInfoCircle /> },
     { name: "Legal & Compliance", path: "/compliance", icon: <FaShieldAlt /> },
   ];

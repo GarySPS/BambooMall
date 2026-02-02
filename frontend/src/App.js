@@ -33,6 +33,7 @@ const MembershipPage = lazy(() => import("./pages/MembershipPage"));
 const NewsPage = lazy(() => import("./pages/NewsPage"));
 const AboutUsPage = lazy(() => import("./pages/AboutUsPage")); 
 const FAQPage = lazy(() => import("./pages/FAQPage"));
+const NotFoundPage = lazy(() => import("./pages/NotFoundPage"));
 
 // Legal
 const TermsPage = lazy(() => import("./pages/LegalPages").then(module => ({ default: module.TermsPage })));
@@ -107,6 +108,7 @@ function AppContent() {
             <Route path="/terms" element={<TermsPage />} />
             <Route path="/privacy" element={<PrivacyPage />} />
             <Route path="/news" element={<NewsPage />} />
+            <Route path="*" element={<NotFoundPage />} />
 
             {/* Protected Agent Pages (Requires Login) */}
             <Route element={<PrivateRoute />}>
