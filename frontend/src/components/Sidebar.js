@@ -15,8 +15,10 @@ import {
   FaCrown,
   FaClipboardList,
   FaInfoCircle,
-  FaNewspaper, // <--- Import this new icon
-  FaTimes 
+  FaNewspaper, 
+  FaTimes,
+  FaClock,
+  FaExclamationCircle
 } from "react-icons/fa";
 
 // Receive props from Layout
@@ -31,9 +33,7 @@ export default function Sidebar({ isOpen, closeSidebar }) {
     { name: "Active Allocations", path: "/cart", icon: <FaClipboardList /> },
     { name: "Treasury & Funds", path: "/balance", icon: <FaWallet /> },
     { name: "Partner Status", path: "/membership", icon: <FaCrown /> },
-    // --- NEW ITEM ADDED HERE ---
     { name: "Corporate News", path: "/news", icon: <FaNewspaper /> }, 
-    // ---------------------------
     { name: "Operational Manual", path: "/faq", icon: <FaInfoCircle /> },
     { name: "Legal & Compliance", path: "/compliance", icon: <FaShieldAlt /> },
   ];
@@ -43,16 +43,24 @@ export default function Sidebar({ isOpen, closeSidebar }) {
     navigate("/login");
   };
 
+  // --- DYNAMIC STATUS LOGIC ---
+  const getStatusDisplay = () => {
+    if (!user) return { label: "GUEST", color: "text-slate-500", icon: null };
+
+    if (user.kyc_status === 'approved') {
+      return { label: "VERIFIED AGENT", color: "text-emerald-500", icon: <FaUserSecret className="text-emerald-500"/> };
+    }
+    if (user.kyc_status === 'pending') {
+      return { label: "REVIEW PENDING", color: "text-amber-500", icon: <FaClock className="text-amber-500"/> };
+    }
+    // Default / Unverified
+    return { label: "UNVERIFIED ENTITY", color: "text-red-500", icon: <FaExclamationCircle className="text-red-500"/> };
+  };
+
+  const status = getStatusDisplay();
+
   return (
     <>
-      {/* Responsive Classes:
-        - fixed, h-screen, left-0, top-0: Always fixed position.
-        - z-50: Always on top.
-        - transform transition-transform: Smooth slide animation.
-        - -translate-x-full: Hidden by default on mobile.
-        - md:translate-x-0: Always visible on desktop.
-        - ${isOpen ? "translate-x-0" : ""}: Slide in when open on mobile.
-      */}
       <div className={`
         w-64 bg-slate-900 h-screen fixed left-0 top-0 text-slate-300 flex flex-col border-r border-slate-800 shadow-xl z-50 font-sans
         transition-transform duration-300 ease-in-out
@@ -82,22 +90,23 @@ export default function Sidebar({ isOpen, closeSidebar }) {
           <div className="px-4 py-6">
             <Link 
               to="/profile" 
-              onClick={closeSidebar} // Close on click (Mobile UX)
+              onClick={closeSidebar} 
               className="block bg-slate-800/50 p-4 rounded border border-slate-700/50 backdrop-blur-sm hover:bg-slate-800 hover:border-slate-600 transition-all group"
             >
                <div className="flex items-center gap-3 mb-2">
-                  <div className="p-1.5 bg-slate-900 rounded border border-slate-700 group-hover:border-emerald-500/50 transition-colors">
-                      <FaUserSecret className="text-emerald-500" />
+                  <div className={`p-1.5 bg-slate-900 rounded border border-slate-700 transition-colors ${user.kyc_status === 'approved' ? 'group-hover:border-emerald-500/50' : ''}`}>
+                      {status.icon}
                   </div>
                   <div className="flex flex-col min-w-0">
                     <span className="text-sm font-mono text-white font-bold truncate">{user.username}</span>
-                    <span className="text-[9px] text-emerald-500 font-bold tracking-tighter">VIEW PROFILE</span>
+                    <span className={`text-[9px] font-bold tracking-tighter ${status.color}`}>VIEW PROFILE</span>
                   </div>
                </div>
                <div className="text-[10px] text-slate-500 font-mono pl-1">
                   ID: <span className="text-slate-300">{user.short_id || "PENDING"}</span>
                   <br />
-                  STATUS: <span className="text-emerald-500 font-bold uppercase">Verified Agent</span>
+                  {/* DYNAMIC STATUS LABEL */}
+                  STATUS: <span className={`${status.color} font-bold uppercase`}>{status.label}</span>
                </div>
             </Link>
           </div>
@@ -111,7 +120,7 @@ export default function Sidebar({ isOpen, closeSidebar }) {
               <Link
                 key={item.path}
                 to={item.path}
-                onClick={closeSidebar} // Close on click (Mobile UX)
+                onClick={closeSidebar} 
                 className={`flex items-center gap-3 px-4 py-3 rounded-md text-sm font-medium transition-all duration-200 group ${
                   isActive 
                     ? "bg-blue-900/30 text-blue-400 border-l-4 border-blue-500 shadow-inner" 

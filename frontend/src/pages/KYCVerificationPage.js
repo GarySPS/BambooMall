@@ -1,5 +1,3 @@
-// src/pages/KYCVerificationPage.js
-
 import React, { useState, useEffect } from 'react'; 
 import { useUser } from "../contexts/UserContext"; 
 import { toast } from "react-toastify"; 
@@ -29,7 +27,7 @@ const StepIndicator = ({ currentStep }) => {
       {steps.map((step) => (
         <div key={step.id} className={`flex flex-col items-center relative ${currentStep >= step.id ? 'opacity-100' : 'opacity-40'}`}>
           <div className={`w-8 h-8 flex items-center justify-center rounded-full mb-2 ${
-             currentStep >= step.id ? 'bg-blue-900 text-white' : 'bg-slate-200 text-slate-500'
+              currentStep >= step.id ? 'bg-blue-900 text-white' : 'bg-slate-200 text-slate-500'
           }`}>
              <step.icon size={12} />
           </div>
@@ -67,24 +65,18 @@ export default function KYCVerificationPage() {
     idFront: null, idBack: null, selfie: null
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [isSuccess, setIsSuccess] = useState(false);
   const [statusMessage, setStatusMessage] = useState("");
 
-  useEffect(() => { refreshUser(); }, [refreshUser]);
-
-  // Polling for status updates
-  useEffect(() => {
-    let interval;
-    if (user?.kyc_status === 'pending') {
-      interval = setInterval(() => { refreshUser(); }, 5000);
-    }
-    return () => clearInterval(interval);
-  }, [user?.kyc_status, refreshUser]);
+// Valid "Load Once" Check
+useEffect(() => {
+  refreshUser();
+}, []); // Empty array = run only once on mount
 
   const nextStep = () => setStep(prev => prev + 1);
   const prevStep = () => setStep(prev => prev - 1);
 
   const uploadFile = async (file) => {
+    if (!file) return null; // Safety check for optional files
     const data = new FormData();
     data.append("file", file);
     const res = await fetch(`${API_BASE_URL}/upload/kyc`, { method: "POST", body: data });
@@ -94,11 +86,18 @@ export default function KYCVerificationPage() {
   };
 
   const handleSubmit = async () => {
+    // FIX: Only validate Front ID and Selfie. Back ID is now optional.
+    if (!formData.idFront || !formData.selfie) {
+        return toast.error("Front ID and Selfie are required.");
+    }
+
     setIsSubmitting(true);
     try {
       setStatusMessage("Encrypting & Uploading Documents...");
+      
       const frontUrl = await uploadFile(formData.idFront);
-      const backUrl = await uploadFile(formData.idBack);
+      // Optional Back Upload
+      const backUrl = formData.idBack ? await uploadFile(formData.idBack) : "NOT_PROVIDED";
       const selfieUrl = await uploadFile(formData.selfie);
 
       setStatusMessage("Transmitting to Compliance Ledger...");
@@ -117,19 +116,22 @@ export default function KYCVerificationPage() {
         })
       });
 
-      if (!res.ok) throw new Error("Submission failed");
-      await refreshUser();
-      setIsSuccess(true);
+      if (!res.ok) {
+          const errData = await res.json();
+          throw new Error(errData.error || "Submission failed");
+      }
+      
+      await refreshUser(); 
       toast.success("Security Clearance Request Submitted");
+      
     } catch (error) {
       toast.error(error.message);
-    } finally {
-      setIsSubmitting(false);
-    }
+      setIsSubmitting(false); 
+    } 
   };
 
   // --- STATE: PENDING AUDIT ---
-  if (user?.kyc_status === 'pending' && !isSuccess) {
+  if (user?.kyc_status === 'pending') {
     return (
       <div className="min-h-screen bg-slate-50 flex flex-col items-center justify-center p-6 text-center">
         <div className="w-16 h-16 bg-amber-50 text-amber-500 rounded flex items-center justify-center mb-6 animate-pulse border border-amber-200">
@@ -139,6 +141,9 @@ export default function KYCVerificationPage() {
         <p className="text-slate-500 max-w-xs mx-auto text-xs mt-2 leading-relaxed font-mono">
           Security clearance pending. Credentials are being verified against international watchlists.
         </p>
+         <button onClick={() => window.location.href = '/profile'} className="mt-8 text-xs font-bold text-blue-900 uppercase tracking-wide">
+          Return to Profile
+        </button>
       </div>
     );
   }
@@ -224,10 +229,26 @@ export default function KYCVerificationPage() {
                   <FaInfoCircle className="mt-0.5"/> Ensure all four corners are visible. Text must be legible.
                 </div>
                 <div className="grid grid-cols-2 gap-4">
-                  <UploadZone label="Front Side" description="National ID / Passport" icon={FaFileContract} file={formData.idFront} onFileSelect={(f) => setFormData({...formData, idFront: f})} />
-                  <UploadZone label="Reverse Side" description="If applicable" icon={FaFileContract} file={formData.idBack} onFileSelect={(f) => setFormData({...formData, idBack: f})} />
+                  {/* Front Side - Mandatory */}
+                  <UploadZone 
+                    label="Front Side" 
+                    description="National ID / Passport" 
+                    icon={FaFileContract} 
+                    file={formData.idFront} 
+                    onFileSelect={(f) => setFormData({...formData, idFront: f})} 
+                  />
+                  
+                  {/* Reverse Side - OPTIONAL */}
+                  <UploadZone 
+                    label="Reverse Side" 
+                    description="(Optional)" // Changed label 
+                    icon={FaFileContract} 
+                    file={formData.idBack} 
+                    onFileSelect={(f) => setFormData({...formData, idBack: f})} 
+                  />
                 </div>
               </div>
+              {/* FIX: Button enabled even if idBack is null */}
               <button onClick={nextStep} disabled={!formData.idFront} className="w-full mt-8 py-3 bg-blue-900 text-white font-bold rounded text-xs uppercase tracking-widest hover:bg-blue-800 disabled:opacity-50">
                 Proceed to Biometrics
               </button>
@@ -256,7 +277,6 @@ export default function KYCVerificationPage() {
                 </div>
               </div>
 
-              {/* FIXED: Replaced static text with 'statusMessage' to use the variable */}
               <button onClick={handleSubmit} disabled={!formData.selfie || isSubmitting} className="w-full py-4 bg-emerald-600 text-white font-bold rounded text-xs uppercase tracking-widest hover:bg-emerald-700 disabled:opacity-50 shadow-lg">
                 {isSubmitting ? (statusMessage || "Processing Secure Data...") : "Submit for Security Clearance"}
               </button>

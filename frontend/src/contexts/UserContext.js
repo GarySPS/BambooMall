@@ -1,75 +1,84 @@
 // src/contexts/UserContext.js
 
-import React, { createContext, useContext, useState, useEffect } from "react";
+import React, { createContext, useContext, useState, useEffect, useCallback } from "react";
 import { API_BASE_URL } from "../config";
 
 const UserContext = createContext();
 
 export function UserProvider({ children }) {
+  // 1. Load Initial State
   const [user, setUser] = useState(() => {
-    const saved = localStorage.getItem("bamboomall_user");
-    return saved ? JSON.parse(saved) : null;
+    try {
+      const saved = localStorage.getItem("bamboomall_user");
+      return saved ? JSON.parse(saved) : null;
+    } catch (e) {
+      return null;
+    }
   });
   
-  // FIX: Default wallet is just a single balance now
   const [wallet, setWallet] = useState(() => {
-    const saved = localStorage.getItem("bamboomall_wallet");
-    // Default to a simple object with balance: 0
-    return saved ? JSON.parse(saved) : { balance: 0 };
+    try {
+      const saved = localStorage.getItem("bamboomall_wallet");
+      return saved ? JSON.parse(saved) : { balance: 0 };
+    } catch (e) {
+      return { balance: 0 };
+    }
   });
 
-  // Persist user
+  // 2. Persist to LocalStorage
   useEffect(() => {
     if (user) localStorage.setItem("bamboomall_user", JSON.stringify(user));
     else localStorage.removeItem("bamboomall_user");
   }, [user]);
 
-  // Persist wallet
   useEffect(() => {
     localStorage.setItem("bamboomall_wallet", JSON.stringify(wallet));
   }, [wallet]);
 
-  function login(userObj) {
-    setUser(userObj);
-  }
+  // --- Actions (WRAPPED IN useCallback TO FIX INFINITE LOOP) ---
 
-  function logout() {
+  const login = useCallback((userObj) => {
+    setUser(userObj);
+  }, []);
+
+  const logout = useCallback(() => {
     setUser(null);
-    // FIX: Reset to single balance 0 on logout
     setWallet({ balance: 0 });
     localStorage.removeItem("bamboomall_user");
     localStorage.removeItem("bamboomall_wallet");
-  }
+    window.location.href = "/login"; 
+  }, []);
 
-  function updateWallet(newData) {
+  // [CRITICAL FIX] This prevents BalancePage from re-running the API endlessly
+  const updateWallet = useCallback((newData) => {
     setWallet((prev) => ({ ...prev, ...newData }));
-  }
+  }, []);
 
-  // --- Fetch latest user data from DB ---
-  async function refreshUser() {
+  // --- Fetch latest user data ---
+  // We wrap this too, just to be safe, though it's mainly called on mount
+  const refreshUser = useCallback(async () => {
     if (!user || !user.short_id) return;
 
     try {
-      // Calls the /profile route you just fixed in auth.js
       const res = await fetch(`${API_BASE_URL}/users/profile?short_id=${user.short_id}`);
-      
       if (res.ok) {
         const data = await res.json();
-        
-        // Update user state if data exists
-        if (data.user) {
-          setUser(prev => ({ ...prev, ...data.user }));
-        }
-        
-        // Update wallet state if data exists
-        if (data.wallet) {
-          setWallet(data.wallet);
-        }
+        if (data.user) setUser(prev => ({ ...prev, ...data.user }));
+        if (data.wallet) setWallet(data.wallet);
+      } else if (res.status === 404) {
+          logout();
       }
     } catch (error) {
       console.error("Failed to refresh user data:", error);
     }
-  }
+  }, [user, logout]); 
+
+  // 3. Force Sync on Load
+  useEffect(() => {
+    if (user && user.short_id) {
+       refreshUser(); 
+    }
+  }, []); // Run once on mount
 
   return (
     <UserContext.Provider value={{ user, wallet, login, logout, updateWallet, refreshUser }}>

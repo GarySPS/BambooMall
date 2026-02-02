@@ -1,5 +1,3 @@
-// src/pages/AdminKYCPage.js
-
 import React, { useEffect, useState, useMemo } from "react";
 import { 
   FaShieldAlt, 
@@ -39,8 +37,8 @@ export default function AdminKYCPage() {
         const usersWithKYC = await Promise.all(
           usersData.map(async (u) => {
             let kycDocs = [];
-            // Fetch docs for pending or approved reviews
-            if (u.kycStatus === "pending" || u.kycStatus === "approved") {
+            // FIX: Changed kycStatus to kyc_status (Database format)
+            if (u.kyc_status === "pending" || u.kyc_status === "approved") {
               try {
                 const r = await fetch(`${KYC_API_URL}?short_id=${u.short_id}`);
                 const d = await r.json();
@@ -58,7 +56,7 @@ export default function AdminKYCPage() {
           })
         );
         // Initial Sort: Pending first
-        usersWithKYC.sort((a, b) => (a.kycStatus === "pending" ? -1 : 1));
+        usersWithKYC.sort((a, b) => (a.kyc_status === "pending" ? -1 : 1));
         setUsers(usersWithKYC);
       } catch (err) {
         console.error("Admin Fetch Error:", err);
@@ -72,16 +70,19 @@ export default function AdminKYCPage() {
   // --- HANDLERS ---
   const handleApproveKYC = async (userId, approve) => {
     try {
-      await fetch(`${API_URL}/kyc-approve`, {
+      const res = await fetch(`${API_URL}/kyc-approve`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ user_id: userId, approve }),
       });
+      
+      if (!res.ok) throw new Error("API Error");
 
       setUsers((prev) =>
         prev.map((u) =>
           u.id === userId
-            ? { ...u, kycStatus: approve ? "approved" : "rejected" }
+            // FIX: Update local state to match DB snake_case
+            ? { ...u, kyc_status: approve ? "approved" : "rejected" }
             : u
         )
       );
@@ -96,7 +97,8 @@ export default function AdminKYCPage() {
     return users.filter((u) => {
       // 1. Status Filter
       if (statusFilter !== "all") {
-        const status = u.kycStatus || "unverified";
+        // FIX: kyc_status
+        const status = u.kyc_status || "unverified";
         if (statusFilter === "pending" && status !== "pending") return false;
         if (statusFilter === "approved" && status !== "approved") return false;
         if (statusFilter === "rejected" && status !== "rejected") return false;
@@ -151,7 +153,7 @@ export default function AdminKYCPage() {
           <div className="bg-white px-4 py-2 rounded-lg shadow-sm border border-slate-200 text-sm">
              <span className="text-slate-500">Pending Requests:</span> 
              <span className="font-bold text-amber-600 ml-1">
-               {users.filter(u => u.kycStatus === 'pending').length}
+               {users.filter(u => u.kyc_status === 'pending').length}
              </span>
           </div>
         </div>
@@ -267,9 +269,9 @@ export default function AdminKYCPage() {
                           )}
                         </td>
 
-                        {/* 3. Status */}
+                        {/* 3. Status - FIX: kyc_status */}
                         <td className="px-4 py-4 align-top">
-                          <StatusBadge status={u.kycStatus} />
+                          <StatusBadge status={u.kyc_status} />
                         </td>
 
                         {/* 4. Documents */}
@@ -295,9 +297,9 @@ export default function AdminKYCPage() {
                           </div>
                         </td>
 
-                        {/* 5. Action */}
+                        {/* 5. Action - FIX: kyc_status */}
                         <td className="px-4 py-4 align-middle text-center">
-                          {u.kycStatus === "pending" ? (
+                          {u.kyc_status === "pending" ? (
                             <div className="flex flex-col gap-2 max-w-[120px] mx-auto">
                               <button
                                 onClick={() => handleApproveKYC(u.id, true)}
@@ -312,7 +314,7 @@ export default function AdminKYCPage() {
                                 <FaTimes /> Reject
                               </button>
                             </div>
-                          ) : u.kycStatus === "approved" ? (
+                          ) : u.kyc_status === "approved" ? (
                              <div className="flex items-center justify-center gap-1 text-emerald-600 font-bold text-xs bg-emerald-50 py-1 px-2 rounded-lg border border-emerald-100 mx-auto w-fit">
                                <FaCheck size={10} /> Verified
                              </div>
