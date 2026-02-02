@@ -4,11 +4,12 @@ import React, { useState, useEffect, useRef } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { useUser } from "../contexts/UserContext";
 import { API_BASE_URL } from "../config";
-import { FaShieldAlt, FaLock, FaGlobe, FaServer, FaExclamationCircle } from "react-icons/fa";
+import { FaShieldAlt, FaLock, FaGlobe, FaExclamationCircle, FaServer, FaCheckCircle, FaArrowRight } from "react-icons/fa";
 
-// --- NETWORK BACKGROUND (The "Slate/Blue" Corporate Version) ---
+// --- NETWORK BACKGROUND (Milky White Theme) ---
 const NetworkCanvas = () => {
   const canvasRef = useRef(null);
+  
   useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
@@ -16,15 +17,14 @@ const NetworkCanvas = () => {
     let width, height;
     let particles = [];
     let animationFrameId; 
-    const particleCount = 40; 
+    
+    const getParticleCount = () => window.innerWidth < 768 ? 30 : 50;
     const connectionDistance = 120;
-    const speed = 0.3;
+    const speed = 0.25; 
 
     const resize = () => {
-      if (canvas.parentElement) {
-        width = canvas.width = canvas.parentElement.offsetWidth;
-        height = canvas.height = canvas.parentElement.offsetHeight;
-      }
+      width = canvas.width = window.innerWidth;
+      height = canvas.height = window.innerHeight;
     };
 
     class Particle {
@@ -33,7 +33,7 @@ const NetworkCanvas = () => {
         this.y = Math.random() * height;
         this.vx = (Math.random() - 0.5) * speed;
         this.vy = (Math.random() - 0.5) * speed;
-        this.size = Math.random() * 1.5 + 0.5; 
+        this.size = Math.random() * 1.5 + 0.5;
       }
       update() {
         this.x += this.vx;
@@ -44,7 +44,8 @@ const NetworkCanvas = () => {
       draw() {
         ctx.beginPath();
         ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
-        ctx.fillStyle = "rgba(148, 163, 184, 0.5)"; 
+        // Dark particles for light background
+        ctx.fillStyle = "rgba(148, 163, 184, 0.6)"; 
         ctx.fill();
       }
     }
@@ -52,14 +53,14 @@ const NetworkCanvas = () => {
     const init = () => {
       resize();
       particles = [];
-      for (let i = 0; i < particleCount; i++) {
+      const count = getParticleCount();
+      for (let i = 0; i < count; i++) {
         particles.push(new Particle());
       }
     };
 
     const animate = () => {
       ctx.clearRect(0, 0, width, height);
-      ctx.lineWidth = 0.5;
       particles.forEach((p, index) => {
         p.update();
         p.draw();
@@ -71,7 +72,7 @@ const NetworkCanvas = () => {
           if (distSq < 15000) {
             const distance = Math.sqrt(distSq);
             ctx.beginPath();
-            ctx.strokeStyle = `rgba(148, 163, 184, ${0.4 - distance / connectionDistance})`;
+            ctx.strokeStyle = `rgba(71, 85, 105, ${0.15 - (distance / connectionDistance) * 0.1})`; 
             ctx.moveTo(p.x, p.y);
             ctx.lineTo(p2.x, p2.y);
             ctx.stroke();
@@ -81,15 +82,21 @@ const NetworkCanvas = () => {
       animationFrameId = requestAnimationFrame(animate);
     };
 
-    window.addEventListener("resize", resize);
+    window.addEventListener("resize", () => {
+      resize();
+      init();
+    });
+    
     init();
     animate();
+    
     return () => {
       window.removeEventListener("resize", resize);
       cancelAnimationFrame(animationFrameId);
     };
   }, []);
-  return <canvas ref={canvasRef} className="absolute inset-0 w-full h-full z-0 bg-slate-900" />;
+
+  return <canvas ref={canvasRef} className="fixed inset-0 w-full h-full pointer-events-none z-0 bg-slate-50" />;
 };
 
 export default function OTPPage() {
@@ -104,7 +111,6 @@ export default function OTPPage() {
   const location = useLocation();
   const email = location.state?.email || "unknown_agent";
 
-  // Generate a fake "Session ID" on mount to look technical
   useEffect(() => {
     const randomId = "SES-" + Math.random().toString(36).substr(2, 9).toUpperCase();
     setSessionId(randomId);
@@ -164,65 +170,60 @@ export default function OTPPage() {
   }
 
   return (
-    <div className="min-h-screen font-sans bg-slate-900 relative flex flex-col">
+    <div className="min-h-screen font-sans bg-slate-50 relative flex flex-col overflow-y-auto selection:bg-blue-500/30">
       
-      {/* --- COMPLIANCE HEADER --- */}
-      <div className="bg-blue-950 text-slate-400 text-[10px] md:text-xs py-1 px-4 flex justify-between items-center border-b border-slate-800 z-50">
+      {/* 1. BACKGROUND */}
+      <NetworkCanvas />
+
+      {/* 2. HEADER - Dark Background for consistency */}
+      <div className="relative z-20 bg-slate-900 border-b border-slate-800 py-2 px-4 flex justify-between items-center text-[10px] md:text-xs text-slate-400">
         <span className="flex items-center gap-2">
-          <FaGlobe size={10} />
-          <span className="font-mono">SECURE CONNECTION: NODE-SZ-04</span>
+          <FaGlobe className="text-blue-500" />
+          <span className="font-mono tracking-wide hidden sm:inline">SECURE GLOBAL GATEWAY // NODE-SZ-04</span>
+          <span className="font-mono tracking-wide sm:hidden">NODE-SZ-04</span>
         </span>
         <span className="flex items-center gap-2">
-          <FaLock size={10} />
-          <span className="font-mono tracking-wider">SESSION ID: {sessionId}</span>
+          <FaLock className="text-emerald-500" />
+          <span className="font-mono tracking-wider">SESSION: {sessionId}</span>
         </span>
       </div>
 
-      <div className="flex-1 flex relative">
-        {/* --- LEFT: TECHNICAL INFO (Desktop Only) --- */}
-        <div className="hidden lg:flex w-7/12 relative bg-slate-900 items-center justify-center overflow-hidden border-r border-slate-800">
-          <NetworkCanvas />
-          <div className="relative z-10 p-12 max-w-xl">
-             <div className="border border-blue-900/50 bg-slate-800/80 p-6 rounded backdrop-blur-sm">
-                <div className="flex items-center gap-3 mb-4 text-blue-400">
-                   <FaServer className="text-xl"/>
-                   <h3 className="text-sm font-bold uppercase tracking-widest">Authentication Protocol</h3>
-                </div>
-                <div className="space-y-3 font-mono text-xs text-slate-400">
-                   <p className="flex justify-between border-b border-slate-700 pb-1">
-                      <span>Status:</span> <span className="text-amber-500">Awaiting Token</span>
-                   </p>
-                   <p className="flex justify-between border-b border-slate-700 pb-1">
-                      <span>Encryption:</span> <span className="text-slate-200">AES-256-GCM</span>
-                   </p>
-                   <p className="flex justify-between border-b border-slate-700 pb-1">
-                      <span>User Endpoint:</span> <span className="text-slate-200">{email}</span>
-                   </p>
-                   <p className="flex justify-between">
-                      <span>Time Remaining:</span> <span className="text-slate-200">Session Valid</span>
-                   </p>
-                </div>
-             </div>
+      {/* 3. CONTENT */}
+      <div className="relative z-10 flex-1 flex flex-col items-center justify-center p-4 py-10 sm:p-6">
+        
+        {/* Title Section */}
+        <div className="text-center mb-6">
+          <div className="inline-flex items-center justify-center w-12 h-12 bg-gradient-to-br from-blue-600 to-blue-900 rounded-lg shadow-lg shadow-blue-900/20 mb-3 border border-blue-400/20">
+             <FaShieldAlt className="text-white text-xl" />
           </div>
+          <h2 className="text-2xl font-bold text-slate-900 tracking-tight">Two-Factor Verification</h2>
+          <p className="mt-1 text-xs text-slate-500 max-w-xs mx-auto">
+             A 6-digit security token has been dispatched to the registered endpoint.
+          </p>
         </div>
 
-        {/* --- RIGHT: THE OTP TERMINAL --- */}
-        <div className="flex-1 flex flex-col justify-center items-center p-6 bg-slate-50 relative">
-          <div className="w-full max-w-sm">
+        {/* Card - DARK MODE */}
+        <div className="w-full max-w-md bg-slate-900 backdrop-blur-xl border border-slate-700 rounded-2xl shadow-2xl p-6 md:p-8 relative overflow-hidden group">
             
-            <div className="text-center mb-8">
-              <div className="inline-flex items-center justify-center w-12 h-12 rounded-full bg-blue-100 text-blue-900 mb-4">
-                 <FaShieldAlt size={20} />
-              </div>
-              <h2 className="text-xl font-bold text-slate-900 uppercase tracking-tight">Two-Factor Verification</h2>
-              <p className="text-slate-500 text-xs mt-2 px-4">
-                A 6-digit security token has been dispatched to the registered corporate email endpoint.
-              </p>
+            {/* Decoration: Top shine */}
+            <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-transparent via-blue-500/50 to-transparent opacity-50"></div>
+
+            {/* Technical Info Box (Inside the card for mobile) */}
+            <div className="mb-6 bg-slate-800/50 border border-slate-700 rounded p-3 font-mono text-[10px] text-slate-400 space-y-1">
+                 <p className="flex justify-between">
+                   <span>STATUS:</span> <span className="text-amber-400 animate-pulse">AWAITING TOKEN</span>
+                 </p>
+                 <p className="flex justify-between">
+                   <span>ENDPOINT:</span> <span className="text-slate-200 truncate max-w-[150px]">{email}</span>
+                 </p>
+                 <p className="flex justify-between">
+                   <span>ENCRYPTION:</span> <span className="text-emerald-500">AES-256-GCM</span>
+                 </p>
             </div>
 
             <form onSubmit={handleSubmit} className="space-y-6">
               <div>
-                <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-widest text-center mb-2">
+                <label className="block text-[10px] font-bold text-slate-500 uppercase tracking-widest text-center mb-3">
                   Enter Security Token
                 </label>
                 <input
@@ -233,49 +234,59 @@ export default function OTPPage() {
                   placeholder="000 000"
                   value={otp}
                   onChange={e => setOtp(e.target.value.replace(/\D/g, ""))}
-                  className="block w-full text-center px-4 py-4 text-3xl font-mono tracking-[0.5em] bg-white border border-slate-300 rounded text-slate-900 placeholder-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-900 focus:border-blue-900 transition-all shadow-inner"
+                  className="block w-full text-center px-4 py-4 text-3xl font-mono tracking-[0.5em] bg-slate-800 border border-slate-700 rounded-lg text-white placeholder-slate-600 focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500 focus:bg-slate-800 transition-all shadow-inner"
                   required
                   autoFocus
                 />
               </div>
 
               {error && (
-                <div className="text-red-600 text-xs bg-red-50 p-2 rounded border border-red-200 flex items-center justify-center gap-2">
+                <div className="text-red-400 text-xs bg-red-900/20 p-3 rounded-lg border border-red-500/30 flex items-center justify-center gap-2 animate-pulse">
                   <FaExclamationCircle />
-                  {error}
+                  <span>{error}</span>
                 </div>
               )}
 
               <button
                 type="submit"
                 disabled={loading}
-                className="w-full flex items-center justify-center py-3 px-4 border border-transparent rounded shadow-sm text-sm font-bold text-white bg-blue-900 hover:bg-blue-800 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-900 transition-all"
+                className="w-full relative group overflow-hidden flex items-center justify-center py-3.5 px-4 border border-transparent rounded-lg shadow-lg shadow-blue-900/20 text-sm font-bold text-white bg-gradient-to-r from-blue-700 to-blue-900 hover:from-blue-600 hover:to-blue-800 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-slate-900 focus:ring-blue-500 transition-all transform active:scale-[0.98]"
               >
-                {loading ? "Verifying Token..." : "Authenticate Session"}
+                <span className="absolute inset-0 w-full h-full bg-gradient-to-r from-transparent via-white/10 to-transparent -translate-x-full group-hover:animate-shimmer"></span>
+                <span className="flex items-center gap-2">
+                   {loading ? "Verifying..." : "Authenticate Session"}
+                   {!loading && <FaCheckCircle className="opacity-0 group-hover:opacity-100 transition-opacity text-blue-300" />}
+                </span>
               </button>
             </form>
 
-            <div className="mt-8 text-center">
-               <p className="text-xs text-slate-400 mb-2">Token not received?</p>
+            <div className="mt-6 pt-5 border-t border-white/5 text-center">
                <button
                  onClick={handleResend}
                  disabled={resendCooldown > 0}
-                 className={`text-xs font-bold uppercase tracking-wide ${
+                 className={`text-xs font-bold uppercase tracking-wide flex items-center justify-center gap-2 mx-auto ${
                    resendCooldown > 0 
-                   ? "text-slate-400 cursor-not-allowed" 
-                   : "text-blue-900 hover:underline"
+                   ? "text-slate-500 cursor-not-allowed" 
+                   : "text-blue-400 hover:text-blue-300 transition-colors"
                  }`}
                >
-                 {resendCooldown > 0 ? `Retry in ${resendCooldown}s` : "Regenerate Token"}
+                 {resendCooldown > 0 ? (
+                    <>Processing Request ({resendCooldown}s)</>
+                 ) : (
+                    <>Token not received? <span className="underline">Regenerate</span></>
+                 )}
                </button>
             </div>
-          </div>
-          
-          {/* Footer */}
-          <div className="absolute bottom-6 w-full text-center">
-             <p className="text-[10px] text-slate-300">Unauthorized access attempts are monitored.</p>
-          </div>
         </div>
+
+        {/* Footer */}
+        <div className="mt-8 text-center opacity-100">
+             <p className="text-[10px] text-slate-500 font-mono">
+               SESSION ID: {sessionId} <br/>
+               Unauthorized access attempts are monitored and logged.
+             </p>
+        </div>
+
       </div>
     </div>
   );
