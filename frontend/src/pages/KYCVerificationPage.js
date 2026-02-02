@@ -69,8 +69,9 @@ export default function KYCVerificationPage() {
 
 // Valid "Load Once" Check
 useEffect(() => {
-  refreshUser();
-}, []); // Empty array = run only once on mount
+    refreshUser();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const nextStep = () => setStep(prev => prev + 1);
   const prevStep = () => setStep(prev => prev - 1);

@@ -1,5 +1,3 @@
-// src/contexts/UserContext.js
-
 import React, { createContext, useContext, useState, useEffect, useCallback } from "react";
 import { API_BASE_URL } from "../config";
 
@@ -55,7 +53,6 @@ export function UserProvider({ children }) {
   }, []);
 
   // --- Fetch latest user data ---
-  // We wrap this too, just to be safe, though it's mainly called on mount
   const refreshUser = useCallback(async () => {
     if (!user || !user.short_id) return;
 
@@ -78,6 +75,7 @@ export function UserProvider({ children }) {
     if (user && user.short_id) {
        refreshUser(); 
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []); // Run once on mount
 
   return (
