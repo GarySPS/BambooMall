@@ -144,6 +144,12 @@ export default function BalancePage() {
         screenshot_url: screenshotUrl,
         note: selectedMethod,
       });
+
+      // [FIX] REFRESH DATA HERE
+      // Fetch the history again so the new "Pending" row appears instantly
+      fetchTransactionHistory(user.id).then(setTransactions);
+      fetchWalletFromBackend(user.id).then(updateWallet);
+
       setSubmitState("success");
       setTimeout(() => { setModalType(null); setSubmitState("idle"); }, 1500);
     } catch (err) {
