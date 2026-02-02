@@ -83,7 +83,8 @@ function AppContent() {
           <Route path="/login" element={<LoginPage />} />
           <Route path="/signup" element={<SignupPage />} />
           <Route path="/otp" element={<OTPPage />} />
-          <Route path="/forgot" element={<ForgotPasswordPage />} />
+          {/* FIXED: Changed from "/forgot" to "/forgot-password" to match Login Page link */}
+          <Route path="/forgot-password" element={<ForgotPasswordPage />} />
 
           {/* --- 2. ADMIN ROUTES (God Mode) --- */}
           {/* Requires user.role === 'admin' check inside AdminLayout */}
