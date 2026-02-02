@@ -167,7 +167,7 @@ export default function LoginPage() {
       {/* 1. BACKGROUND LAYER */}
       <NetworkCanvas />
       
-      {/* 2. HEADER - Restored to Dark Background (bg-slate-900) with Light Text */}
+      {/* 2. HEADER */}
       <div className="relative z-20 bg-slate-900 border-b border-slate-800 py-2 px-4 flex justify-between items-center text-[10px] md:text-xs text-slate-400">
         <span className="flex items-center gap-2">
           <FaGlobe className="text-blue-500" />
@@ -183,7 +183,7 @@ export default function LoginPage() {
       {/* 3. MAIN CONTENT */}
       <div className="relative z-10 flex-1 flex flex-col items-center justify-center p-4 sm:p-6 lg:p-8">
         
-        {/* LOGO - Dark Text for Light Background */}
+        {/* LOGO */}
         <div className="mb-8 text-center">
           <div className="inline-flex items-center justify-center w-14 h-14 bg-gradient-to-br from-blue-600 to-blue-900 rounded-xl shadow-lg shadow-blue-900/20 mb-4 border border-blue-400/20">
             <FaBuilding className="text-white text-2xl" />
@@ -195,7 +195,7 @@ export default function LoginPage() {
           <p className="text-slate-500 text-xs md:text-sm font-medium tracking-widest mt-2 uppercase">Factory Direct Liquidation Network</p>
         </div>
 
-        {/* LOGIN CARD - DARK */}
+        {/* LOGIN CARD */}
         <div className="w-full max-w-md">
           
           <StatusHUD />
@@ -252,6 +252,17 @@ export default function LoginPage() {
                 </div>
               </div>
 
+              {/* Forgot Password Link (New) */}
+              <div className="flex justify-end -mt-2">
+                <button 
+                  type="button" 
+                  onClick={() => navigate("/forgot-password")}
+                  className="text-[10px] text-slate-500 hover:text-blue-400 transition-colors uppercase tracking-wider font-bold"
+                >
+                  Forgot Access Key?
+                </button>
+              </div>
+
               {error && (
                 <div className="text-red-400 text-xs bg-red-900/20 p-3 rounded-lg border border-red-500/30 flex items-start gap-2 animate-pulse">
                   <FaExclamationTriangle className="mt-0.5 flex-shrink-0" />
@@ -289,7 +300,7 @@ export default function LoginPage() {
             </div>
           </div>
           
-          {/* FOOTER - Removed opacity, darkened text for readability */}
+          {/* FOOTER */}
           <div className="mt-8 flex flex-col items-center space-y-2">
              <div className="flex items-center gap-4 text-slate-500 font-semibold">
                <FaShieldAlt className="text-emerald-600" />
