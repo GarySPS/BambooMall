@@ -121,14 +121,29 @@ export default function LoginPage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email: userOrEmail, password }),
       });
+
       const data = await res.json();
       
-      if (!res.ok) throw new Error(data.error || "Authentication Failed. Invalid Clearance.");
+      if (!res.ok) {
+        // If the server sends a specific error message, use it.
+        // Otherwise, fallback to status text.
+        throw new Error(data.error || `Server Error: ${res.statusText}`);
+      }
       
       login(data.user);
       
     } catch (err) {
-      setError(err.message);
+      // --- LOGIC: HANDLE CONNECTION ERRORS VS AUTH ERRORS ---
+      
+      // 1. Network / Server Down (Fetch failed to even reach the API)
+      if (err.message === "Failed to fetch" || err.message.includes("NetworkError")) {
+        setError("Uplink Failed: Unable to reach settlement server. Please try again later.");
+      } 
+      // 2. Specific Logic from Backend
+      else {
+        setError(err.message); 
+      }
+      
       setLoading(false);
     }
   }

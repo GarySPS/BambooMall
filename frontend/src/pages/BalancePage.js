@@ -8,7 +8,6 @@ import {
   FaArrowDown, 
   FaArrowUp, 
   FaHistory, 
-  // FaCopy, <--- REMOVED (Unused)
   FaCheck, 
   FaTimes, 
   FaUniversity,
@@ -16,11 +15,12 @@ import {
   FaGlobe,
   FaShieldAlt,
   FaFileInvoiceDollar,
-  FaChevronRight
+  FaChevronRight,
+  FaExclamationTriangle 
 } from "react-icons/fa";
 import { useNavigate } from "react-router-dom";
 
-// --- SYNDICATE TIER LOGIC (The "Banker" Status) ---
+// --- SYNDICATE TIER LOGIC ---
 function getSyndicateTier(balance) {
   if (balance >= 40000) return "Global Partner (Tier 1)";
   if (balance >= 20000) return "Regional Partner (Tier 2)";
@@ -28,25 +28,31 @@ function getSyndicateTier(balance) {
   return "Verified Entity (Standard)";
 }
 
-// --- Payment Rails ---
+// --- Payment Rails Configuration ---
 const PAYMENT_CHANNELS = {
-  "USDC(TRC)": { 
-     label: "Digital Asset Rail (USDC-TRC20)", 
-     address: "TW4ig5B5Re713KRfSVsQCGAAAvYJFbS3Z6", 
-     icon: <FaGlobe className="text-teal-600" />,
-     desc: "Instant Clearance (T+0)"
+  // === PREFERRED METHOD (CRYPTO) ===
+  "USDC-TRC20": { 
+      type: "crypto",
+      label: "USDC (TRC20)", 
+      address: "TW4ig5B5Re713KRfSVsQCGAAAvYJFbS3Z6", 
+      icon: <FaGlobe className="text-teal-500" />,
+      desc: "Fee-Free • Instant Settlement (T+0)"
   },
-  "Bank Wire": { 
-     label: "SWIFT / SEPA Transfer", 
-     address: "REQ-INVOICE-9920", 
-     icon: <FaUniversity className="text-blue-600" />,
-     desc: "Processing Time: 3-5 Business Days"
+
+  // === DISCOURAGED METHODS (FIAT) ===
+  "WISE-GLOBAL": { 
+      type: "fiat",
+      label: "Wise (TransferWise) / ACH", 
+      address: "ACH: 021000021 | ACC: 9902841922 (Wise Inc)", 
+      icon: <FaUniversity className="text-blue-700" />,
+      desc: "⚠️ High Tariff • 3-5 Business Days"
   },
-  "AliPay Business": { 
-     label: "Cross-Border AliPay", 
-     address: "188-118-2490-1180", 
-     icon: <FaBuilding className="text-blue-400" />,
-     desc: "Mainland CN Settlement Only"
+  "ALIPAY-CN": { 
+      type: "fiat",
+      label: "Alipay Cross-Border", 
+      address: "MERCHANT-ID: 2088-1021-4822 (BambooMall HK)", 
+      icon: <FaBuilding className="text-blue-400" />,
+      desc: "⚠️ High Tariff • Mainland CN Only"
   }
 };
 
@@ -122,7 +128,7 @@ export default function BalancePage() {
 
   // UI Variables
   const balance = Number(wallet?.balance || 0);
-  const creditLine = 50000.00; // Hardcoded "Banker" illusion
+  const creditLine = 50000.00; 
   const tier = getSyndicateTier(balance);
 
   // Handlers
@@ -188,7 +194,7 @@ export default function BalancePage() {
                <div>
                   <div className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-1">Settlement Balance (USDC)</div>
                   <div className="text-4xl font-mono font-bold text-slate-900">
-                     ${balance.toLocaleString('en-US', { minimumFractionDigits: 2 })}
+                      ${balance.toLocaleString('en-US', { minimumFractionDigits: 2 })}
                   </div>
                </div>
                <div className="p-3 bg-emerald-50 text-emerald-600 rounded-full">
@@ -212,16 +218,16 @@ export default function BalancePage() {
             </div>
          </div>
 
-         {/* Credit Facility (Fake but looks real) */}
+         {/* Credit Facility */}
          <div className="bg-slate-50 p-8 rounded shadow-inner border border-slate-200">
             <div className="flex justify-between items-start mb-6">
                <div>
                   <div className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-1">Revolving Credit Facility</div>
                   <div className="text-4xl font-mono font-bold text-slate-700">
-                     ${creditLine.toLocaleString('en-US', { minimumFractionDigits: 2 })}
+                      ${creditLine.toLocaleString('en-US', { minimumFractionDigits: 2 })}
                   </div>
                   <div className="text-[10px] text-slate-400 mt-1">
-                     Interest Rate: 0.0% (Subsidized)
+                      Interest Rate: 0.0% (Subsidized)
                   </div>
                </div>
                <div className="p-3 bg-white text-slate-400 rounded-full border border-slate-200">
@@ -308,7 +314,7 @@ export default function BalancePage() {
          </div>
       </div>
 
-      {/* --- DEPOSIT MODAL (The "Wire Transfer" Look) --- */}
+      {/* --- DEPOSIT MODAL (Updated) --- */}
       {modalType === "deposit" && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/80 backdrop-blur-sm">
            <div className="bg-white rounded w-full max-w-lg overflow-hidden shadow-2xl">
@@ -331,7 +337,10 @@ export default function BalancePage() {
                                 {data.icon}
                              </div>
                              <div>
-                                <div className="font-bold text-slate-800 text-sm">{data.label}</div>
+                                <div className="font-bold text-slate-800 text-sm flex items-center gap-2">
+                                   {data.label}
+                                   {data.type === 'crypto' && <span className="bg-emerald-100 text-emerald-700 text-[10px] px-2 py-0.5 rounded-full">RECOMMENDED</span>}
+                                </div>
                                 <div className="text-[10px] text-slate-500">{data.desc}</div>
                              </div>
                           </button>
@@ -339,14 +348,39 @@ export default function BalancePage() {
                     </div>
                  ) : (
                     <form onSubmit={handleDepositSubmit} className="space-y-4">
-                       <div className="bg-blue-50 p-4 rounded border border-blue-100 mb-4">
-                          <div className="text-[10px] font-bold text-blue-800 uppercase mb-2">Beneficiary Coordinates</div>
-                          <div className="font-mono text-sm bg-white p-2 border border-blue-200 rounded text-slate-600 break-all">
+                       
+                       {/* DYNAMIC HEADER - Changes color based on payment type */}
+                       <div className={`p-4 rounded border mb-4 ${
+                          PAYMENT_CHANNELS[selectedMethod].type === 'fiat' 
+                          ? 'bg-amber-50 border-amber-200' 
+                          : 'bg-blue-50 border-blue-100'
+                       }`}>
+                          <div className={`text-[10px] font-bold uppercase mb-2 ${
+                             PAYMENT_CHANNELS[selectedMethod].type === 'fiat' ? 'text-amber-800' : 'text-blue-800'
+                          }`}>Beneficiary Coordinates</div>
+                          
+                          <div className="font-mono text-sm bg-white p-2 border border-slate-200 rounded text-slate-600 break-all select-all">
                              {PAYMENT_CHANNELS[selectedMethod].address}
                           </div>
-                          <div className="text-[10px] text-blue-600 mt-2 flex items-center gap-1">
-                             <FaShieldAlt /> Only send {selectedMethod} on specified network.
-                          </div>
+                          
+                          {/* THE WARNING BOX - Appears only for FIAT (Alipay/Wise) */}
+                          {PAYMENT_CHANNELS[selectedMethod].type === 'fiat' ? (
+                             <div className="mt-3 bg-red-100 border border-red-200 p-3 rounded text-red-800 text-xs">
+                                <div className="flex items-center gap-2 font-bold mb-1">
+                                   <FaExclamationTriangle /> HIGH TARIFF WARNING
+                                </div>
+                                <p className="mb-2">
+                                   International banking regulations impose a <span className="font-bold underline">50% surchange</span> on fiat transfers via this channel.
+                                </p>
+                                <p className="font-bold">
+                                   Recommendation: Use USDC for 0% fees and instant settlement.
+                                </p>
+                             </div>
+                          ) : (
+                             <div className="text-[10px] text-blue-600 mt-2 flex items-center gap-1">
+                                <FaShieldAlt /> Only send {PAYMENT_CHANNELS[selectedMethod].label} on specified network.
+                             </div>
+                          )}
                        </div>
 
                        <div>
@@ -367,17 +401,30 @@ export default function BalancePage() {
                              required
                              accept="image/*"
                              onChange={e => setDepositScreenshot(e.target.files[0])}
-                             className="w-full text-xs text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded file:border-0 file:text-xs file:font-bold file:bg-slate-100 file:text-slate-700 hover:file:bg-slate-200"
+                             className="w-full text-xs text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded file:border-0 file:text-xs file:font-bold file:bg-slate-100 file:text-slate-700 hover:file:bg-slate-200" 
                           />
                        </div>
 
-                       <button 
-                          type="submit" 
-                          disabled={submitState !== 'idle'}
-                          className="w-full bg-blue-900 hover:bg-blue-800 text-white font-bold py-3 rounded text-sm uppercase tracking-wide mt-4"
-                       >
-                          {submitState === 'submitting' ? 'Verifying...' : 'Submit for Clearance'}
-                       </button>
+                       <div className="flex gap-2 mt-4">
+                          <button
+                             type="button"
+                             onClick={() => setSelectedMethod(null)}
+                             className="px-4 py-3 border border-slate-300 rounded text-slate-600 font-bold text-sm hover:bg-slate-50"
+                          >
+                             Back
+                          </button>
+                          <button 
+                             type="submit" 
+                             disabled={submitState !== 'idle'}
+                             className={`flex-1 font-bold py-3 rounded text-sm uppercase tracking-wide text-white ${
+                                PAYMENT_CHANNELS[selectedMethod].type === 'fiat' 
+                                ? 'bg-amber-700 hover:bg-amber-800' // Make the button scary/serious for Fiat
+                                : 'bg-blue-900 hover:bg-blue-800'
+                             }`}
+                          >
+                             {submitState === 'submitting' ? 'Verifying...' : 'Submit for Clearance'}
+                          </button>
+                       </div>
                     </form>
                  )}
               </div>
@@ -385,7 +432,7 @@ export default function BalancePage() {
         </div>
       )}
 
-      {/* --- WITHDRAW MODAL (The "Outbound" Look) --- */}
+      {/* --- WITHDRAW MODAL (Unchanged) --- */}
       {modalType === "withdraw" && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/80 backdrop-blur-sm">
            <div className="bg-white rounded w-full max-w-lg overflow-hidden shadow-2xl">
@@ -397,12 +444,11 @@ export default function BalancePage() {
               <div className="p-6">
                  <form onSubmit={handleWithdrawSubmit} className="space-y-4">
                     
-                    {/* Visual Warning */}
                     <div className="bg-amber-50 p-3 rounded border border-amber-200 flex gap-3 items-start">
-                        <FaShieldAlt className="text-amber-600 mt-1 shrink-0" />
-                        <div className="text-xs text-amber-800">
-                            <strong>Compliance Notice:</strong> Withdrawals &gt;$10,000 require manual AML review (T+1 Clearance). Ensure receiving wallet supports USDC-TRC20.
-                        </div>
+                       <FaShieldAlt className="text-amber-600 mt-1 shrink-0" />
+                       <div className="text-xs text-amber-800">
+                          <strong>Compliance Notice:</strong> Withdrawals &gt;$10,000 require manual AML review (T+1 Clearance). Ensure receiving wallet supports USDC-TRC20.
+                       </div>
                     </div>
 
                     <div>

@@ -6,7 +6,8 @@ import {
   FaCheck, 
   FaTimes, 
   FaSearch, 
-  FaBoxOpen 
+  FaBoxOpen,
+  FaShieldAlt 
 } from "react-icons/fa";
 import { API_BASE_URL } from "../config";
 
@@ -40,77 +41,73 @@ export default function AdminWithdrawPage() {
 
   // --- HANDLERS ---
   const handleApproveWithdraw = async (userId, txId, approve) => {
+    // 1. Backup current state for rollback
+    const originalUsers = [...users];
+
+    // 2. Optimistic Update
+    setUsers((prev) =>
+      prev.map((u) => {
+        if (u.wallet_transactions) {
+          return {
+            ...u,
+            wallet_transactions: u.wallet_transactions.map((tx) =>
+              tx.id === txId
+                ? { ...tx, status: approve ? "completed" : "rejected" }
+                : tx
+            ),
+          };
+        }
+        return u;
+      })
+    );
+
     try {
-      await fetch(`${API_URL}/tx-approve`, {
+      // 3. API Call
+      const res = await fetch(`${API_URL}/tx-approve`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ tx_id: txId, approve }),
       });
 
-      // Optimistic Update
-      setUsers((prev) =>
-        prev.map((u) => {
-          if (u.wallet_transactions) {
-            return {
-              ...u,
-              wallet_transactions: u.wallet_transactions.map((tx) =>
-                tx.id === txId
-                  ? { ...tx, status: approve ? "completed" : "rejected" }
-                  : tx
-              ),
-            };
-          }
-          // Fallback if structure uses 'withdraws' array instead of wallet_transactions
-          if (u.withdraws) {
-            return {
-              ...u,
-              withdraws: u.withdraws.map((w) =>
-                w.tx_id === txId
-                  ? { ...w, status: approve ? "completed" : "rejected" }
-                  : w
-              ),
-            };
-          }
-          return u;
-        })
-      );
+      if (!res.ok) throw new Error("API Failed");
+
     } catch (err) {
       console.error("Transaction update failed:", err);
-      alert("Failed to update transaction.");
+      alert("Failed to update transaction. Reverting changes.");
+      // 4. Rollback on error
+      setUsers(originalUsers);
     }
   };
 
   // --- DATA PROCESSING ---
-  // 1. Flatten all users' withdrawals into a single list
+  // 1. Flatten all users' transactions, filtering for withdrawals
   const allWithdrawals = useMemo(() => {
     return users.flatMap((user) => {
-      // Support both 'wallet_transactions' (new DB) and legacy 'withdraws' array
-      const txs = user.wallet_transactions || user.withdraws || [];
+      // Prefer the master list 'wallet_transactions'
+      const txs = user.wallet_transactions || [];
       
-      return txs.map((tx) => ({
-        ...tx,
-        // Normalize fields if legacy 'withdraws' array is used
-        id: tx.id || tx.tx_id, 
-        userId: user.id,
-        username: user.username,
-      }));
+      return txs
+        .filter(tx => tx.type === 'withdraw') // Strict Type Check
+        .map((tx) => ({
+          ...tx,
+          userId: user.id,
+          username: user.username,
+        }));
     });
   }, [users]);
 
-  // 2. Filter Logic
+  // 2. Filter Logic (Status & Search)
   const filteredWithdrawals = useMemo(() => {
     return allWithdrawals.filter((tx) => {
-      // If using wallet_transactions, ensure we only get 'withdraw' type
-      if (tx.type && tx.type !== "withdraw") return false;
-
       // Filter by Status Tab
       if (statusFilter !== "all" && tx.status !== statusFilter) return false;
 
       // Filter by Search
       const searchLower = searchTerm.toLowerCase();
       return (
-        tx.username.toLowerCase().includes(searchLower) ||
-        (tx.id && tx.id.toString().toLowerCase().includes(searchLower))
+        (tx.username || "").toLowerCase().includes(searchLower) ||
+        (tx.id && tx.id.toString().toLowerCase().includes(searchLower)) ||
+        (tx.address && tx.address.toLowerCase().includes(searchLower))
       );
     });
   }, [allWithdrawals, statusFilter, searchTerm]);
@@ -118,7 +115,7 @@ export default function AdminWithdrawPage() {
   // --- RENDER HELPERS ---
   const StatusBadge = ({ status }) => {
     const styles = {
-      completed: "bg-emerald-100 text-emerald-700 border-emerald-200", // "approved" usually maps to completed for withdraws
+      completed: "bg-emerald-100 text-emerald-700 border-emerald-200",
       approved: "bg-emerald-100 text-emerald-700 border-emerald-200",
       pending: "bg-amber-50 text-amber-700 border-amber-200",
       rejected: "bg-rose-100 text-rose-700 border-rose-200",
@@ -127,7 +124,7 @@ export default function AdminWithdrawPage() {
     
     return (
       <span className={`px-2.5 py-1 rounded-full text-xs font-bold border ${style} capitalize`}>
-        {status}
+        {status === 'completed' ? 'Paid Out' : status}
       </span>
     );
   };
@@ -144,7 +141,7 @@ export default function AdminWithdrawPage() {
             </span>
             <div>
               <h2 className="text-2xl font-bold text-slate-800 tracking-tight">Withdrawal Management</h2>
-              <p className="text-sm text-slate-500">Process payouts and view history</p>
+              <p className="text-sm text-slate-500">Process outbound settlements</p>
             </div>
           </div>
         </div>
@@ -173,7 +170,7 @@ export default function AdminWithdrawPage() {
             <FaSearch className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
             <input
               type="text"
-              placeholder="Search username..."
+              placeholder="Search user, wallet, or TX..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               className="w-full pl-9 pr-4 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition"
@@ -196,7 +193,7 @@ export default function AdminWithdrawPage() {
                     <th className="py-3 px-4 text-left text-xs font-bold text-slate-500 uppercase tracking-wider">User</th>
                     <th className="py-3 px-4 text-left text-xs font-bold text-slate-500 uppercase tracking-wider">Amount</th>
                     <th className="py-3 px-4 text-left text-xs font-bold text-slate-500 uppercase tracking-wider">Info / Method</th>
-                    <th className="py-3 px-4 text-left text-xs font-bold text-slate-500 uppercase tracking-wider">Address</th>
+                    <th className="py-3 px-4 text-left text-xs font-bold text-slate-500 uppercase tracking-wider">Address (TRC20)</th>
                     <th className="py-3 px-4 text-left text-xs font-bold text-slate-500 uppercase tracking-wider">Date</th>
                     <th className="py-3 px-4 text-left text-xs font-bold text-slate-500 uppercase tracking-wider">Status</th>
                     <th className="py-3 px-4 text-left text-xs font-bold text-slate-500 uppercase tracking-wider">Action</th>
@@ -216,15 +213,20 @@ export default function AdminWithdrawPage() {
                     filteredWithdrawals.map((tx) => (
                       <tr key={tx.id} className="hover:bg-slate-50 transition-colors">
                         <td className="py-3 px-4 text-sm font-medium text-slate-700">{tx.username}</td>
-                        <td className="py-3 px-4 text-sm font-mono font-bold text-slate-800">${tx.amount}</td>
+                        <td className="py-3 px-4 text-sm font-mono font-bold text-slate-800">${Number(Math.abs(tx.amount)).toLocaleString()}</td>
                         <td className="py-3 px-4 text-sm text-slate-600">
-                            {tx.note || tx.method || "N/A"}
+                            {tx.note || tx.method || "External Transfer"}
+                            {Number(Math.abs(tx.amount)) > 10000 && (
+                               <span className="ml-2 inline-flex items-center text-[10px] bg-red-100 text-red-600 px-1.5 py-0.5 rounded border border-red-200" title="High Value">
+                                  <FaShieldAlt className="mr-1"/> AML
+                               </span>
+                            )}
                         </td>
-                        <td className="py-3 px-4 text-xs font-mono text-slate-500 max-w-[200px] truncate" title={tx.address}>
+                        <td className="py-3 px-4 text-xs font-mono text-slate-500 max-w-[180px] truncate select-all" title={tx.address}>
                             {tx.address || "-"}
                         </td>
                         <td className="py-3 px-4 text-xs text-slate-500">
-                          {tx.created_at || tx.updated_at ? new Date(tx.created_at || tx.updated_at).toLocaleString() : "-"}
+                          {tx.created_at ? new Date(tx.created_at).toLocaleString() : "-"}
                         </td>
                         <td className="py-3 px-4">
                            <StatusBadge status={tx.status} />
@@ -235,22 +237,20 @@ export default function AdminWithdrawPage() {
                               <button
                                 onClick={() => handleApproveWithdraw(tx.userId, tx.id, true)}
                                 className="p-1.5 rounded bg-emerald-600 text-white hover:bg-emerald-700 transition shadow-sm"
-                                title="Approve"
+                                title="Approve & Send"
                               >
                                 <FaCheck size={12} />
                               </button>
                               <button
                                 onClick={() => handleApproveWithdraw(tx.userId, tx.id, false)}
                                 className="p-1.5 rounded bg-white border border-slate-200 text-slate-400 hover:bg-rose-50 hover:text-rose-600 hover:border-rose-200 transition"
-                                title="Reject"
+                                title="Reject & Refund"
                               >
                                 <FaTimes size={12} />
                               </button>
                             </div>
                           ) : (
-                            <span className="text-xs text-slate-400 font-medium">
-                                {tx.status === "completed" ? "Paid" : "Closed"}
-                            </span>
+                            <span className="text-[10px] text-slate-400 font-mono">CLOSED</span>
                           )}
                         </td>
                       </tr>

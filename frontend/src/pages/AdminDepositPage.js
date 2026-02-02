@@ -42,42 +42,45 @@ export default function AdminDepositPage() {
 
   // --- HANDLERS ---
   const handleApproveTransaction = async (userId, txId, approve) => {
+    // Optimistic Update: Update the local state immediately for snappy UX
+    const originalUsers = [...users]; // Keep backup in case of error
+
+    setUsers((prev) =>
+      prev.map((u) => {
+        if (u.wallet_transactions) {
+          return {
+            ...u,
+            wallet_transactions: u.wallet_transactions.map((tx) =>
+              tx.id === txId
+                ? { ...tx, status: approve ? "approved" : "rejected" }
+                : tx
+            ),
+          };
+        }
+        return u;
+      })
+    );
+
     try {
-      await fetch(`${API_URL}/tx-approve`, {
+      const res = await fetch(`${API_URL}/tx-approve`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ tx_id: txId, approve }),
       });
 
-      // Optimistic Update: Update the local state immediately
-      setUsers((prev) =>
-        prev.map((u) => {
-          // Find if this user has the transaction
-          if (u.wallet_transactions) {
-            return {
-              ...u,
-              wallet_transactions: u.wallet_transactions.map((tx) =>
-                tx.id === txId
-                  ? { ...tx, status: approve ? "approved" : "rejected" }
-                  : tx
-              ),
-            };
-          }
-          return u;
-        })
-      );
+      if (!res.ok) throw new Error("API Error");
+
     } catch (err) {
       console.error("Transaction update failed:", err);
-      alert("Failed to update transaction.");
+      alert("Failed to update transaction. Reverting changes.");
+      setUsers(originalUsers); // Revert on failure
     }
   };
 
-  // --- DATA PROCESSING (The "History" Fix) ---
+  // --- DATA PROCESSING ---
   // 1. Flatten all users' transactions into a single list
   const allTransactions = useMemo(() => {
     return users.flatMap((user) => {
-      // We look for 'wallet_transactions' array based on your SQL table
-      // If your API still returns 'deposit', you might need to adjust this check.
       const txs = user.wallet_transactions || []; 
       return txs.map((tx) => ({
         ...tx,
@@ -90,8 +93,7 @@ export default function AdminDepositPage() {
   // 2. Filter Logic
   const filteredTransactions = useMemo(() => {
     return allTransactions.filter((tx) => {
-      // Filter by Type (Only show deposits, assuming 'deposit' type exists in DB)
-      // If you want to show ALL wallet txs, remove this line.
+      // Filter by Type: Only show DEPOSITS on this page
       if (tx.type !== "deposit") return false;
 
       // Filter by Status Tab
@@ -100,7 +102,7 @@ export default function AdminDepositPage() {
       // Filter by Search
       const searchLower = searchTerm.toLowerCase();
       return (
-        tx.username.toLowerCase().includes(searchLower) ||
+        (tx.username || "").toLowerCase().includes(searchLower) ||
         (tx.id && tx.id.toString().toLowerCase().includes(searchLower))
       );
     });
@@ -110,14 +112,18 @@ export default function AdminDepositPage() {
   const StatusBadge = ({ status }) => {
     const styles = {
       approved: "bg-emerald-100 text-emerald-700 border-emerald-200",
+      completed: "bg-emerald-100 text-emerald-700 border-emerald-200", // Backend might send 'completed'
       pending: "bg-amber-50 text-amber-700 border-amber-200",
       rejected: "bg-rose-100 text-rose-700 border-rose-200",
     };
     const style = styles[status] || "bg-gray-100 text-gray-500 border-gray-200";
     
+    // Normalize display text
+    const label = status === 'completed' ? 'Approved' : status;
+
     return (
       <span className={`px-2.5 py-1 rounded-full text-xs font-bold border ${style} capitalize`}>
-        {status}
+        {label}
       </span>
     );
   };
@@ -134,7 +140,7 @@ export default function AdminDepositPage() {
             </span>
             <div>
               <h2 className="text-2xl font-bold text-slate-800 tracking-tight">Deposit Management</h2>
-              <p className="text-sm text-slate-500">Approve top-ups and view history</p>
+              <p className="text-sm text-slate-500">Audit inbound liquidity requests</p>
             </div>
           </div>
         </div>
@@ -163,7 +169,7 @@ export default function AdminDepositPage() {
             <FaSearch className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
             <input
               type="text"
-              placeholder="Search username..."
+              placeholder="Search username or TX ID..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               className="w-full pl-9 pr-4 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition"
@@ -176,7 +182,7 @@ export default function AdminDepositPage() {
           {loading ? (
             <div className="flex flex-col items-center justify-center py-20">
               <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-emerald-600"></div>
-              <p className="mt-4 text-slate-500 font-medium">Loading transactions...</p>
+              <p className="mt-4 text-slate-500 font-medium">Loading ledger...</p>
             </div>
           ) : (
             <div className="overflow-x-auto">
@@ -185,10 +191,10 @@ export default function AdminDepositPage() {
                   <tr>
                     <th className="py-3 px-4 text-left text-xs font-bold text-slate-500 uppercase tracking-wider">User</th>
                     <th className="py-3 px-4 text-left text-xs font-bold text-slate-500 uppercase tracking-wider">Amount</th>
-                    <th className="py-3 px-4 text-left text-xs font-bold text-slate-500 uppercase tracking-wider">Method</th>
+                    <th className="py-3 px-4 text-left text-xs font-bold text-slate-500 uppercase tracking-wider">Rail / Method</th>
                     <th className="py-3 px-4 text-left text-xs font-bold text-slate-500 uppercase tracking-wider">Date</th>
                     <th className="py-3 px-4 text-left text-xs font-bold text-slate-500 uppercase tracking-wider">Status</th>
-                    <th className="py-3 px-4 text-left text-xs font-bold text-slate-500 uppercase tracking-wider">Screenshot</th>
+                    <th className="py-3 px-4 text-left text-xs font-bold text-slate-500 uppercase tracking-wider">Proof</th>
                     <th className="py-3 px-4 text-left text-xs font-bold text-slate-500 uppercase tracking-wider">Action</th>
                   </tr>
                 </thead>
@@ -206,8 +212,10 @@ export default function AdminDepositPage() {
                     filteredTransactions.map((tx) => (
                       <tr key={tx.id} className="hover:bg-slate-50 transition-colors">
                         <td className="py-3 px-4 text-sm font-medium text-slate-700">{tx.username}</td>
-                        <td className="py-3 px-4 text-sm font-mono font-bold text-slate-800">${tx.amount}</td>
-                        <td className="py-3 px-4 text-sm text-slate-600">{tx.address || "Manual"}</td>
+                        <td className="py-3 px-4 text-sm font-mono font-bold text-emerald-700">+${Number(tx.amount).toLocaleString()}</td>
+                        <td className="py-3 px-4 text-xs text-slate-600 font-mono">
+                           {tx.note ? tx.note : (tx.address ? "Crypto" : "Manual")}
+                        </td>
                         <td className="py-3 px-4 text-xs text-slate-500">
                           {tx.created_at ? new Date(tx.created_at).toLocaleString() : "-"}
                         </td>
@@ -245,7 +253,7 @@ export default function AdminDepositPage() {
                               </button>
                             </div>
                           ) : (
-                            <span className="text-xs text-slate-400 font-medium">Completed</span>
+                            <span className="text-[10px] text-slate-400 font-mono">AUDITED</span>
                           )}
                         </td>
                       </tr>

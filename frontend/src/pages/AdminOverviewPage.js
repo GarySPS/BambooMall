@@ -105,7 +105,7 @@ export default function AdminOverviewPage() {
       alert: stats.pendingKYC > 0
     },
     {
-      to: "/admin/deposit",
+      to: "/admin/deposits",
       label: "Deposits",
       count: stats.pendingDeposits,
       subLabel: "Pending Approval",
@@ -116,7 +116,7 @@ export default function AdminOverviewPage() {
       alert: stats.pendingDeposits > 0
     },
     {
-      to: "/admin/withdraw",
+      to: "/admin/withdrawals",
       label: "Withdrawals",
       count: stats.pendingWithdraws,
       subLabel: "Pending Payout",

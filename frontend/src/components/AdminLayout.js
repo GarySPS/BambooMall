@@ -17,11 +17,11 @@ import {
 
 // Navigation Configuration
 const navLinks = [
-  { to: "/admin/overview", label: "Overview", icon: <FaChartPie className="text-lg" /> },
+  { to: "/admin", label: "Overview", icon: <FaChartPie className="text-lg" /> },
   { to: "/admin/users", label: "Users", icon: <FaUsers className="text-lg" /> },
   { to: "/admin/kyc", label: "KYC", icon: <FaShieldAlt className="text-lg" /> },
-  { to: "/admin/deposit", label: "Deposits", icon: <FaMoneyCheckAlt className="text-lg" /> },
-  { to: "/admin/withdraw", label: "Withdrawals", icon: <FaExchangeAlt className="text-lg" /> },
+  { to: "/admin/deposits", label: "Deposits", icon: <FaMoneyCheckAlt className="text-lg" /> },
+  { to: "/admin/withdrawals", label: "Withdrawals", icon: <FaExchangeAlt className="text-lg" /> },
   { to: "/admin/orders", label: "Orders", icon: <FaClipboardList className="text-lg" /> },
 ];
 
