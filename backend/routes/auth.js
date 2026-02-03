@@ -98,7 +98,6 @@ router.post('/register', async (req, res) => {
       return res.status(409).json({ error: 'Corporate ID already active. Please login.' });
     } else {
       // If exists but NOT verified, resend OTP
-      // Ensure we reset kyc_status to 'unverified' just in case
       await supabase
         .from('users')
         .update({ password, username, otp_code, otp_expires_at, kyc_status: 'unverified' })
@@ -118,7 +117,6 @@ router.post('/register', async (req, res) => {
   }
 
   // Insert New Vendor
-  // CRITICAL: kyc_status defaults to 'unverified'
   const { data: newUser, error } = await supabase
     .from('users')
     .insert([{
@@ -127,10 +125,10 @@ router.post('/register', async (req, res) => {
       password,
       username,
       trade_license: license,
-      kyc_status: 'unverified', // <--- Users start here
+      kyc_status: 'unverified',
       otp_code,
       otp_expires_at,
-      verified: false, // <--- Email not verified yet
+      verified: false,
       is_admin: false
     }])
     .select()
@@ -154,34 +152,20 @@ router.post('/verify-otp', async (req, res) => {
   const supabase = req.supabase;
   const { email, otp_code } = req.body;
 
-  // 1. Get User
   const { data: user, error } = await supabase.from('users').select('*').eq('email', email).single();
   
   if (error || !user) return res.status(404).json({ error: 'Agent ID not found.' });
   if (user.verified) return res.status(400).json({ error: 'Session already active.' });
 
   // 2. THE WORLDWIDE FIX: Force UTC Calculation
-  // ---------------------------------------------------------
   let dbTimeString = user.otp_expires_at;
-
-  // If the DB returned a string like "2025-02-02 10:00:00" without 'Z',
-  // JavaScript assumes it's local time. We must append 'Z' to force UTC.
   if (dbTimeString && !dbTimeString.endsWith('Z') && !dbTimeString.includes('+')) {
       dbTimeString += 'Z';
   }
 
-  const expiresTime = new Date(dbTimeString).getTime(); // Absolute UTC milliseconds
-  const nowTime = Date.now(); // Absolute UTC milliseconds right now
-  // ---------------------------------------------------------
+  const expiresTime = new Date(dbTimeString).getTime(); 
+  const nowTime = Date.now(); 
 
-  // 3. Debug Log (Optional)
-  console.log(">> OTP CHECK:", {
-    serverNow: new Date(nowTime).toISOString(),
-    dbExpires: new Date(expiresTime).toISOString(),
-    isExpired: expiresTime < nowTime,
-  });
-
-  // 4. Validate Logic
   const dbCode = String(user.otp_code).trim();
   const inputCode = String(otp_code).trim();
 
@@ -193,14 +177,12 @@ router.post('/verify-otp', async (req, res) => {
     return res.status(401).json({ error: 'Token Expired. Please regenerate.' });
   }
 
-  // 5. Success: Verify User
-  // CRITICAL: We set 'verified' to true (Email is real)
-  // We keep 'kyc_status' as 'unverified' (Identity is not yet proven)
+  // Success: Verify User
   const { data: updatedUser, error: updateError } = await supabase
     .from('users')
     .update({ 
       verified: true, 
-      kyc_status: 'unverified', // <--- Explicitly keeping this unverified
+      kyc_status: 'unverified', 
       otp_code: null, 
       otp_expires_at: null 
     })
@@ -222,7 +204,6 @@ router.post('/resend-otp', async (req, res) => {
   if (error || !user) return res.status(404).json({ error: 'Agent ID not found.' });
   if (user.verified) return res.status(400).json({ error: 'Agent already verified.' });
 
-  // Rate Limit Check
   const now = new Date();
   if (user.otp_expires_at) {
       const expires = new Date(user.otp_expires_at);
@@ -245,14 +226,12 @@ router.post('/login', async (req, res) => {
   const supabase = req.supabase;
   const { email, password } = req.body;
 
-  // 1. First, check if the User/ID exists at all
   const { data: user, error } = await supabase
     .from('users')
     .select('*')
     .or(`email.eq.${email},username.eq.${email}`)
     .single();
 
-  // ERROR CODE 404: User Not Found
   if (error || !user) {
     console.log(`>> SYSTEM: Alert - Unknown Identity [${email}]`);
     return res.status(404).json({ 
@@ -261,7 +240,6 @@ router.post('/login', async (req, res) => {
     });
   }
 
-  // 2. Check Password
   if (user.password !== password) {
     console.log(`>> SYSTEM: Alert - Invalid Key for [${user.username}]`);
     return res.status(401).json({ 
@@ -270,7 +248,6 @@ router.post('/login', async (req, res) => {
     });
   }
 
-  // 3. Check Verification Status (Email)
   if (!user.verified) {
     return res.status(403).json({ 
       code: 'NOT_VERIFIED',
@@ -309,7 +286,7 @@ router.post('/forgot-password/send-otp', async (req, res) => {
   res.json({ message: 'Security Token dispatched.' });
 });
 
-// [B] Verify Recovery Token
+// [B] Verify Recovery Token (FIXED TIMEZONE BUG)
 router.post('/forgot-password/verify-otp', async (req, res) => {
   const supabase = req.supabase;
   const { email, otp_code } = req.body;
@@ -318,17 +295,27 @@ router.post('/forgot-password/verify-otp', async (req, res) => {
   
   if (!user) return res.status(404).json({ error: 'Identity not found.' });
 
-  const now = new Date();
-  const expires = new Date(user.otp_expires_at);
+  // --- TIMEZONE FIX APPLIED HERE ---
+  let dbTimeString = user.otp_expires_at;
+  if (dbTimeString && !dbTimeString.endsWith('Z') && !dbTimeString.includes('+')) {
+      dbTimeString += 'Z';
+  }
+  const expiresTime = new Date(dbTimeString).getTime(); 
+  const nowTime = Date.now(); 
+  // --------------------------------
 
-  if (String(user.otp_code).trim() !== String(otp_code).trim() || expires < now) {
-      return res.status(401).json({ error: 'Token Invalid or Expired.' });
+  if (String(user.otp_code).trim() !== String(otp_code).trim()) {
+      return res.status(401).json({ error: 'Invalid Token.' });
+  }
+
+  if (expiresTime < nowTime) {
+      return res.status(401).json({ error: 'Token Expired.' });
   }
 
   res.json({ message: 'Token Verified. Proceed to Key Rotation.' });
 });
 
-// [C] Execute Key Rotation (Reset Password)
+// [C] Execute Key Rotation (Reset Password) (FIXED TIMEZONE BUG)
 router.post('/forgot-password/reset', async (req, res) => {
   const supabase = req.supabase;
   const { email, otp_code, new_password } = req.body;
@@ -336,11 +323,21 @@ router.post('/forgot-password/reset', async (req, res) => {
   const { data: user } = await supabase.from('users').select('*').eq('email', email).single();
   if (!user) return res.status(404).json({ error: 'Identity not found.' });
 
-  const now = new Date();
-  const expires = new Date(user.otp_expires_at);
+  // --- TIMEZONE FIX APPLIED HERE TOO ---
+  let dbTimeString = user.otp_expires_at;
+  if (dbTimeString && !dbTimeString.endsWith('Z') && !dbTimeString.includes('+')) {
+      dbTimeString += 'Z';
+  }
+  const expiresTime = new Date(dbTimeString).getTime(); 
+  const nowTime = Date.now(); 
+  // -------------------------------------
 
-  if (String(user.otp_code).trim() !== String(otp_code).trim() || expires < now) {
-      return res.status(401).json({ error: 'Session Expired. Restart Recovery.' });
+  if (String(user.otp_code).trim() !== String(otp_code).trim()) {
+      return res.status(401).json({ error: 'Invalid Token.' });
+  }
+
+  if (expiresTime < nowTime) {
+      return res.status(401).json({ error: 'Session Expired.' });
   }
 
   const { error } = await supabase
