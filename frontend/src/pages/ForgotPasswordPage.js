@@ -4,7 +4,6 @@ import React, { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { API_BASE_URL } from "../config";
 import { 
-  FaLock, 
   FaGlobe,
   FaArrowRight, 
   FaShieldAlt,
@@ -12,7 +11,8 @@ import {
   FaExclamationTriangle,
   FaServer,
   FaBuilding,
-  FaCheckCircle
+  FaCheckCircle,
+  FaLock // Added missing import
 } from "react-icons/fa";
 
 // --- NETWORK BACKGROUND (Milky White Theme) ---
