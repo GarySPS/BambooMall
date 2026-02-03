@@ -64,17 +64,17 @@ export default function NewsPage() {
             <div>
               <div className="flex items-center gap-2 mb-2">
                  <span className="px-2 py-0.5 rounded bg-blue-900 text-white text-[10px] font-bold uppercase tracking-widest">
-                    V.3.0.1
+                    V.3.1.0
                  </span>
                  <span className="flex items-center gap-1 text-[10px] font-bold text-slate-400 uppercase tracking-widest">
-                    <FaSatelliteDish /> Global Feed
+                    <FaSatelliteDish /> Trade & Logistics Feed
                  </span>
               </div>
               <h1 className="text-4xl font-bold text-slate-900 tracking-tight font-sans">
-                Strategic Intelligence
+                Global Market Intelligence
               </h1>
               <p className="text-slate-500 mt-2 font-medium max-w-2xl text-sm leading-relaxed">
-                Real-time aggregation of macro-economic indicators, supply chain disruptions, and retail sector arbitrage opportunities.
+                Aggregated updates on China manufacturing, export regulations, and global supply chain disruptions.
               </p>
             </div>
             
@@ -147,12 +147,36 @@ export default function NewsPage() {
                   {/* Gradient Overlay */}
                   <div className="absolute inset-0 bg-gradient-to-t from-slate-900/80 via-transparent to-transparent opacity-60"></div>
                   
-                  {/* Top Badge: Source */}
+                  {/* Top Badge: Category instead of Source */}
                   <div className="absolute top-4 left-4">
-                     <span className="px-2 py-1 bg-blue-600/90 text-white text-[9px] font-bold uppercase tracking-widest rounded shadow-sm backdrop-blur-md flex items-center gap-1">
-                        <FaGlobeAsia size={8} /> {post.source || "Global Wire"}
-                     </span>
+                      <span className="px-2 py-1 bg-blue-600/90 text-white text-[9px] font-bold uppercase tracking-widest rounded shadow-sm backdrop-blur-md flex items-center gap-1">
+                         <FaGlobeAsia size={8} /> {post.category || post.source}
+                      </span>
                   </div>
+
+                  {/* Bottom Badge: Time */}
+                  <div className="absolute bottom-4 left-4 right-4 flex items-center justify-between text-white/90">
+                      <span className="flex items-center gap-1.5 text-[10px] font-mono font-medium bg-black/40 px-2 py-1 rounded backdrop-blur-sm">
+                         <FaClock size={10} /> {formatDate(post.date) || "LIVE"}
+                      </span>
+                  </div>
+                </div>
+
+                {/* Content Section */}
+                <div className="p-6 flex flex-col flex-grow relative">
+                  {/* Decorative Accent Line - Emerald color for Trade theme */}
+                  <div className="absolute top-0 left-6 w-10 h-0.5 bg-emerald-500"></div>
+
+                  <h3 className="text-xl font-bold font-serif text-slate-900 leading-snug mb-3 line-clamp-3 group-hover:text-blue-800 transition-colors mt-2">
+                    {post.title}
+                  </h3>
+                  
+                  {/* Added Snippet Text */}
+                  {post.snippet && (
+                    <p className="text-slate-500 text-xs line-clamp-2 mb-4 leading-relaxed">
+                        {post.snippet.replace(/<[^>]+>/g, '')}
+                    </p>
+                  )}
 
                   {/* Bottom Badge: Time */}
                   <div className="absolute bottom-4 left-4 right-4 flex items-center justify-between text-white/90">
