@@ -3,8 +3,11 @@
 import React, { useState, useEffect } from "react";
 import { useParams, Link, useNavigate } from "react-router-dom";
 import { fetchProductById, createOrder } from "../utils/api";
-import { getProductImage } from "../utils/image";
 import OrderPreviewModal from "../components/OrderPreviewModal"; 
+// [NEW] Import the new components
+import ProductGallery from "../components/ProductGallery"; 
+import SupplierInfoBlock from "../components/SupplierInfoBlock"; 
+
 import { 
   FaArrowLeft, 
   FaFilePdf, 
@@ -74,7 +77,7 @@ export default function ProductDetailPage() {
     fetchProductById(id)
       .then((data) => {
         const parsedSizes = cleanJson(data.size);
-        const parsedColors = cleanJson(data.color); // [NEW] Parse Colors
+        const parsedColors = cleanJson(data.color);
 
         setProduct({
             ...data,
@@ -82,7 +85,7 @@ export default function ProductDetailPage() {
             keyAttributes: cleanJson(data.key_attributes || data.keyAttributes),
             priceTiers: cleanJson(data.price_tiers || data.priceTiers),
             sizes: parsedSizes,
-            colors: parsedColors // [NEW] Save colors
+            colors: parsedColors
         });
         
         // Auto-select the first size if available
@@ -233,16 +236,10 @@ export default function ProductDetailPage() {
          {/* 2. LEFT COLUMN */}
          <div className="lg:col-span-2 space-y-6">
             
-            {/* Gallery */}
-            <div className="bg-slate-50 border border-slate-200 rounded p-4 flex gap-4 overflow-x-auto">
-               {(product.gallery || [getProductImage(product)]).map((img, i) => (
-                  <div key={i} className="w-32 h-32 bg-white border border-slate-300 rounded flex-shrink-0 flex items-center justify-center p-2">
-                     <img src={img} alt={`spec-${i}`} className="max-w-full max-h-full object-contain mix-blend-multiply" />
-                  </div>
-               ))}
-            </div>
+            {/* [UPDATED] Use the new BIG Gallery Component */}
+            <ProductGallery gallery={product.gallery} title={product.title} />
 
-            {/* [NEW] COLOR SHOWCASE (Read Only) */}
+            {/* COLOR SHOWCASE (Read Only) */}
             {product.colors && product.colors.length > 0 && (
                <div className="bg-white border border-slate-200 rounded p-4">
                   <div className="text-xs font-bold uppercase text-slate-400 mb-3 flex items-center gap-2">
@@ -251,7 +248,6 @@ export default function ProductDetailPage() {
                   <div className="flex flex-wrap gap-2">
                      {product.colors.map((col, i) => (
                         <div key={i} className="flex items-center gap-2 px-3 py-1.5 bg-slate-50 border border-slate-200 rounded-full">
-                           {/* Small color dot approximation */}
                            <div className="w-3 h-3 rounded-full bg-slate-300 border border-slate-400"></div> 
                            <span className="text-xs font-bold text-slate-600">{col.name}</span>
                         </div>
@@ -267,7 +263,7 @@ export default function ProductDetailPage() {
                </div>
                <table className="w-full text-sm text-left">
                   <tbody>
-                     {/* [NEW] Brand Row */}
+                     {/* Brand Row */}
                      {product.brand && (
                         <tr className="border-b border-slate-100">
                            <td className="px-4 py-3 bg-slate-50 w-1/3 font-medium text-slate-600 capitalize flex items-center gap-2">
@@ -451,18 +447,12 @@ export default function ProductDetailPage() {
                </div>
             </div>
 
-            <div className="bg-white border border-slate-200 rounded p-4">
-               <div className="text-xs font-bold uppercase text-slate-400 mb-2">Source Origin</div>
-               <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 bg-slate-100 rounded-full flex items-center justify-center text-slate-400">
-                     <FaWarehouse />
-                  </div>
-                  <div>
-                     <div className="font-bold text-slate-700">{product.supplier || "Shenzhen Logistics Hub"}</div>
-                     <div className="text-xs text-slate-500">Verified Vendor • Lic #99203</div>
-                  </div>
-               </div>
-            </div>
+            {/* [UPDATED] Use the new Supplier Component */}
+            <SupplierInfoBlock 
+               supplier={product.supplier} 
+               minOrder={product.min_order}
+               factoryUrl={product.factory_url}
+            />
 
          </div>
       </div>
