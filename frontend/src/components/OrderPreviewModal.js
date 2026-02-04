@@ -19,7 +19,8 @@ export default function OrderPreviewModal({
   onConfirm,
   isProcessing,
   successData,
-  onFinish
+  onFinish,
+  selectedSize // [NEW] Accept the selected size
 }) {
   const { user, wallet } = useUser();
 
@@ -148,6 +149,13 @@ export default function OrderPreviewModal({
                     <td className="py-4 pr-4">
                        <div className="font-bold text-slate-900">{product.title}</div>
                        <div className="text-xs text-slate-400">SKU: {product.id?.substring(0,8).toUpperCase()}</div>
+                       
+                       {/* [NEW] SHOW CONFIGURATION HERE */}
+                       {selectedSize && (
+                          <div className="text-xs text-blue-600 font-bold mt-1 bg-blue-50 inline-block px-1 rounded border border-blue-100">
+                             CONFIG: {selectedSize}
+                          </div>
+                       )}
                     </td>
                     <td className="py-4 text-right">{quantity}</td>
                     <td className="py-4 text-right">${marketUnitPrice.toFixed(2)}</td>

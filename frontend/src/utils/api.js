@@ -21,6 +21,13 @@ async function fetchJson(endpoint, options = {}) {
   return data;
 }
 
+export function createProduct(productData) {
+  return fetchJson("/products", {
+    method: "POST",
+    body: JSON.stringify(productData),
+  });
+}
+
 // --- PRODUCTS ---
 export function fetchProducts() {
   return fetchJson("/products");

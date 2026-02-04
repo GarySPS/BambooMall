@@ -16,7 +16,9 @@ import {
   FaStar,
   FaStarHalfAlt,
   FaInfoCircle,
-  FaTag
+  FaTag,
+  FaPalette,
+  FaTrademark
 } from "react-icons/fa";
 import { useUser } from "../contexts/UserContext"; 
 
@@ -54,6 +56,10 @@ export default function ProductDetailPage() {
 
   const [product, setProduct] = useState(null);
   const [loading, setLoading] = useState(true);
+  
+  // Size Selection State
+  const [selectedSize, setSelectedSize] = useState(null);
+  
   const [quantity, setQuantity] = useState(1);
   const [executing, setExecuting] = useState(false);
   const [error, setError] = useState("");
@@ -67,12 +73,23 @@ export default function ProductDetailPage() {
     setLoading(true);
     fetchProductById(id)
       .then((data) => {
+        const parsedSizes = cleanJson(data.size);
+        const parsedColors = cleanJson(data.color); // [NEW] Parse Colors
+
         setProduct({
             ...data,
             gallery: cleanJson(data.gallery),
             keyAttributes: cleanJson(data.key_attributes || data.keyAttributes),
-            priceTiers: cleanJson(data.price_tiers || data.priceTiers)
+            priceTiers: cleanJson(data.price_tiers || data.priceTiers),
+            sizes: parsedSizes,
+            colors: parsedColors // [NEW] Save colors
         });
+        
+        // Auto-select the first size if available
+        if (parsedSizes.length > 0) {
+            setSelectedSize(parsedSizes[0].name);
+        }
+        
         setQuantity(data.min_order || 10); 
         setLoading(false);
       })
@@ -101,20 +118,19 @@ export default function ProductDetailPage() {
   const activeTier = sortedTiers.slice().reverse().find(t => quantity >= t.min);
   
   // 2. Prices
-  const marketUnitPrice = Number(product?.price || 0); // Always $270
-  const marketTotal = marketUnitPrice * quantity; // Gross Value ($13,500)
+  const marketUnitPrice = Number(product?.price || 0); 
+  const marketTotal = marketUnitPrice * quantity; 
 
-  const bulkUnitPrice = activeTier ? Number(activeTier.price) : marketUnitPrice; // Your Price ($260)
-  const bulkTotal = bulkUnitPrice * quantity; // Cost before discount ($13,000)
+  const bulkUnitPrice = activeTier ? Number(activeTier.price) : marketUnitPrice; 
+  const bulkTotal = bulkUnitPrice * quantity; 
   
-  const volumeSavings = marketTotal - bulkTotal; // The $500 savings
+  const volumeSavings = marketTotal - bulkTotal; 
 
-  // 3. Discounts (Split for Clarity)
+  // 3. Discounts
   const adminDiscount = Number(product?.discount || 0);
   const userBalance = Number(wallet?.balance || 0);
   const vipBonus = getVipBonus(userBalance);
   
-  // Calculate individual amounts
   const adminDiscountAmount = bulkTotal * (adminDiscount / 100);
   const vipBonusAmount = bulkTotal * (vipBonus / 100);
   const totalDiscountAmount = adminDiscountAmount + vipBonusAmount;
@@ -143,7 +159,8 @@ export default function ProductDetailPage() {
             user_id: user.id,
             product_id: product.id,
             quantity: Number(quantity),
-            type: "liquidation_acquisition"
+            type: "liquidation_acquisition",
+            details: { size: selectedSize } 
         });
         updateWallet({ ...wallet, balance: wallet.balance - settlementAmount });
         setSuccessData(response.order); 
@@ -215,6 +232,8 @@ export default function ProductDetailPage() {
          
          {/* 2. LEFT COLUMN */}
          <div className="lg:col-span-2 space-y-6">
+            
+            {/* Gallery */}
             <div className="bg-slate-50 border border-slate-200 rounded p-4 flex gap-4 overflow-x-auto">
                {(product.gallery || [getProductImage(product)]).map((img, i) => (
                   <div key={i} className="w-32 h-32 bg-white border border-slate-300 rounded flex-shrink-0 flex items-center justify-center p-2">
@@ -222,12 +241,44 @@ export default function ProductDetailPage() {
                   </div>
                ))}
             </div>
+
+            {/* [NEW] COLOR SHOWCASE (Read Only) */}
+            {product.colors && product.colors.length > 0 && (
+               <div className="bg-white border border-slate-200 rounded p-4">
+                  <div className="text-xs font-bold uppercase text-slate-400 mb-3 flex items-center gap-2">
+                     <FaPalette /> Factory Color Options
+                  </div>
+                  <div className="flex flex-wrap gap-2">
+                     {product.colors.map((col, i) => (
+                        <div key={i} className="flex items-center gap-2 px-3 py-1.5 bg-slate-50 border border-slate-200 rounded-full">
+                           {/* Small color dot approximation */}
+                           <div className="w-3 h-3 rounded-full bg-slate-300 border border-slate-400"></div> 
+                           <span className="text-xs font-bold text-slate-600">{col.name}</span>
+                        </div>
+                     ))}
+                  </div>
+               </div>
+            )}
+
+            {/* Technical Specs */}
             <div className="bg-white border border-slate-200 rounded overflow-hidden">
                <div className="bg-slate-100 px-4 py-2 border-b border-slate-200 font-bold text-xs text-slate-700 uppercase">
                   Technical Specifications
                </div>
                <table className="w-full text-sm text-left">
                   <tbody>
+                     {/* [NEW] Brand Row */}
+                     {product.brand && (
+                        <tr className="border-b border-slate-100">
+                           <td className="px-4 py-3 bg-slate-50 w-1/3 font-medium text-slate-600 capitalize flex items-center gap-2">
+                              <FaTrademark size={10}/> Brand
+                           </td>
+                           <td className="px-4 py-3 font-mono text-slate-700 font-bold">
+                              {product.brand}
+                           </td>
+                        </tr>
+                     )}
+
                      {Array.isArray(product.keyAttributes) && product.keyAttributes.length > 0 ? (
                         product.keyAttributes.map((attr, index) => (
                            <tr key={index} className="border-b border-slate-100 last:border-0">
@@ -240,11 +291,12 @@ export default function ProductDetailPage() {
                            </tr>
                         ))
                      ) : (
-                        <tr><td colSpan="2" className="px-4 py-3 text-slate-400 italic text-center">No specific attributes.</td></tr>
+                        !product.brand && <tr><td colSpan="2" className="px-4 py-3 text-slate-400 italic text-center">No specific attributes.</td></tr>
                      )}
                   </tbody>
                </table>
             </div>
+
             <div className="prose prose-sm max-w-none text-slate-600">
                <h3 className="text-xs font-bold uppercase text-slate-800 mb-2">Lot Description</h3>
                <p>{product.description || "No description available."}</p>
@@ -303,6 +355,28 @@ export default function ProductDetailPage() {
                      </div>
                   )}
 
+                  {/* SIZE SELECTOR */}
+                  {product.sizes && product.sizes.length > 0 && (
+                     <div>
+                        <label className="block text-xs font-bold text-slate-500 uppercase mb-2">Configuration / Size</label>
+                        <div className="flex flex-wrap gap-2">
+                           {product.sizes.map((s, i) => (
+                              <button
+                                 key={i}
+                                 onClick={() => setSelectedSize(s.name)}
+                                 className={`px-3 py-1.5 text-xs font-bold rounded border transition-all ${
+                                    selectedSize === s.name 
+                                    ? 'bg-slate-800 text-white border-slate-800' 
+                                    : 'bg-white text-slate-600 border-slate-200 hover:border-slate-400'
+                                 }`}
+                              >
+                                 {s.name}
+                              </button>
+                           ))}
+                        </div>
+                     </div>
+                  )}
+
                   {/* INPUT */}
                   <div>
                      <label className="block text-xs font-bold text-slate-500 uppercase mb-2">Allocation Volume (Units)</label>
@@ -318,7 +392,7 @@ export default function ProductDetailPage() {
                      </div>
                   </div>
 
-                  {/* FINANCIAL BREAKDOWN (Waterfall) */}
+                  {/* FINANCIAL BREAKDOWN */}
                   <div className="bg-slate-50 p-3 rounded border border-slate-200 space-y-2 text-xs font-mono">
                      <div className="flex justify-between">
                         <span className="text-slate-500">Market Value</span>
@@ -332,7 +406,6 @@ export default function ProductDetailPage() {
                         </div>
                      )}
 
-                     {/* SPLIT DISCOUNTS (Clarity) */}
                      {adminDiscount > 0 && (
                         <div className="flex justify-between text-emerald-600">
                            <span>Less: Batch Incentive ({adminDiscount}%)</span>
@@ -404,6 +477,7 @@ export default function ProductDetailPage() {
           isProcessing={executing}
           successData={successData} 
           onFinish={handleCloseSuccess} 
+          selectedSize={selectedSize} 
         />
       )}
 

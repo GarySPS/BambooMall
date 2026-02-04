@@ -211,12 +211,22 @@ export default function CartPage() {
                                </div>
                            </td>
 
-                           {/* Description */}
+                           {/* Description & Configuration */}
                            <td className="px-6 py-4">
                               <div className="flex flex-col">
                                  <span className="font-bold text-slate-700 text-sm line-clamp-1 group-hover:text-blue-900 transition-colors">
                                     {order.product?.title || "Allocated Inventory Lot"}
                                  </span>
+                                 
+                                 {/* [NEW] Show Size/Color if available */}
+                                 {order.details && order.details.size && (
+                                    <div className="mt-1">
+                                       <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-bold bg-slate-100 text-slate-600 border border-slate-200">
+                                          CONFIG: {order.details.size}
+                                       </span>
+                                    </div>
+                                 )}
+
                                  <div className="flex items-center gap-3 mt-1">
                                     <span className="text-[10px] text-slate-400 font-mono">
                                          Allocated: {new Date(order.created_at).toLocaleDateString()}

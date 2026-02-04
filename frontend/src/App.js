@@ -46,6 +46,7 @@ const AdminOrderPage = lazy(() => import("./pages/AdminOrderPage"));
 const AdminDepositPage = lazy(() => import("./pages/AdminDepositPage"));
 const AdminWithdrawPage = lazy(() => import("./pages/AdminWithdrawPage"));
 const AdminKYCPage = lazy(() => import("./pages/AdminKYCPage"));
+const AdminProductCreate = lazy(() => import("./pages/AdminProductCreate"));
 
 // --- UI COMPONENTS ---
 const PageLoader = () => (
@@ -95,6 +96,7 @@ function AppContent() {
              <Route path="deposits" element={<AdminDepositPage />} />
              <Route path="withdrawals" element={<AdminWithdrawPage />} />
              <Route path="kyc" element={<AdminKYCPage />} />
+             <Route path="create-product" element={<AdminProductCreate />} />
           </Route>
 
           {/* --- 3. AGENT DASHBOARD (Sidebar Layout) --- */}

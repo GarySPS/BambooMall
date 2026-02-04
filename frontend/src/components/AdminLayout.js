@@ -12,12 +12,14 @@ import {
   FaExchangeAlt, 
   FaClipboardList, 
   FaSignOutAlt,
-  FaChartPie 
+  FaChartPie,
+  FaPlusCircle
 } from "react-icons/fa";
 
 // Navigation Configuration
 const navLinks = [
   { to: "/admin", label: "Overview", icon: <FaChartPie className="text-lg" /> },
+  { to: "/admin/create-product", label: "Add Product", icon: <FaPlusCircle className="text-lg text-emerald-400" /> },
   { to: "/admin/users", label: "Users", icon: <FaUsers className="text-lg" /> },
   { to: "/admin/kyc", label: "KYC", icon: <FaShieldAlt className="text-lg" /> },
   { to: "/admin/deposits", label: "Deposits", icon: <FaMoneyCheckAlt className="text-lg" /> },
