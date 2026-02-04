@@ -1,27 +1,18 @@
-// src/pages/ProductDetailPage.js
+//src>pages>ProductDetailPage.js
 
 import React, { useState, useEffect } from "react";
 import { useParams, Link, useNavigate } from "react-router-dom";
 import { fetchProductById, createOrder } from "../utils/api";
 import OrderPreviewModal from "../components/OrderPreviewModal"; 
-// [NEW] Import the new components
 import ProductGallery from "../components/ProductGallery"; 
 import SupplierInfoBlock from "../components/SupplierInfoBlock"; 
+import { toast } from "react-toastify"; 
 
 import { 
-  FaArrowLeft, 
-  FaFilePdf, 
-  FaBoxOpen, 
-  FaWarehouse,
-  FaCheckCircle,
-  FaLock,
-  FaFileContract,
-  FaStar,
-  FaStarHalfAlt,
-  FaInfoCircle,
-  FaTag,
-  FaPalette,
-  FaTrademark
+  FaArrowLeft, FaFilePdf, FaBoxOpen, FaWarehouse,
+  FaCheckCircle, FaLock, FaStar,
+  FaStarHalfAlt, FaInfoCircle, FaTag, FaPalette,
+  FaTrademark, FaBalanceScale, FaGlobeAmericas, FaShieldAlt
 } from "react-icons/fa";
 import { useUser } from "../contexts/UserContext"; 
 
@@ -39,17 +30,12 @@ function renderRating(rating) {
   const stars = [];
   const fullStars = Math.floor(rating);
   const hasHalf = rating % 1 >= 0.5;
-
   for (let i = 0; i < 5; i++) {
-    if (i < fullStars) {
-      stars.push(<FaStar key={i} className="text-yellow-400" />);
-    } else if (i === fullStars && hasHalf) {
-      stars.push(<FaStarHalfAlt key={i} className="text-yellow-400" />);
-    } else {
-      stars.push(<FaStar key={i} className="text-slate-300" />);
-    }
+    if (i < fullStars) stars.push(<FaStar key={i} className="text-emerald-500 text-[10px]" />);
+    else if (i === fullStars && hasHalf) stars.push(<FaStarHalfAlt key={i} className="text-emerald-500 text-[10px]" />);
+    else stars.push(<FaStar key={i} className="text-slate-200 text-[10px]" />);
   }
-  return <div className="flex gap-1 text-sm">{stars}</div>;
+  return <div className="flex gap-0.5">{stars}</div>;
 }
 
 export default function ProductDetailPage() {
@@ -59,16 +45,16 @@ export default function ProductDetailPage() {
 
   const [product, setProduct] = useState(null);
   const [loading, setLoading] = useState(true);
-  
-  // Size Selection State
   const [selectedSize, setSelectedSize] = useState(null);
-  
   const [quantity, setQuantity] = useState(1);
   const [executing, setExecuting] = useState(false);
   const [error, setError] = useState("");
   const [showModal, setShowModal] = useState(false);
   const [successData, setSuccessData] = useState(null); 
   
+  // [NEW] State to hold the calculated minimum based on tiers
+  const [calculatedMin, setCalculatedMin] = useState(1);
+
   const isVerified = user && (user.verified || user.kyc_status === 'approved');
 
   useEffect(() => {
@@ -78,22 +64,32 @@ export default function ProductDetailPage() {
       .then((data) => {
         const parsedSizes = cleanJson(data.size);
         const parsedColors = cleanJson(data.color);
+        const parsedTiers = cleanJson(data.price_tiers || data.priceTiers);
+
+        // [LOGIC FIX] Find the absolute lowest 'min' from price_tiers
+        let derivedMin = 1;
+        if (parsedTiers.length > 0) {
+            // Sort tiers by min quantity to find the lowest one
+            const sorted = parsedTiers.sort((a, b) => a.min - b.min);
+            derivedMin = sorted[0].min;
+        } else if (data.min_order) {
+            // Fallback to column if no tiers exist
+            derivedMin = parseInt(data.min_order);
+        }
+
+        setCalculatedMin(derivedMin);
+        setQuantity(derivedMin); // Set default input value
 
         setProduct({
             ...data,
             gallery: cleanJson(data.gallery),
             keyAttributes: cleanJson(data.key_attributes || data.keyAttributes),
-            priceTiers: cleanJson(data.price_tiers || data.priceTiers),
+            priceTiers: parsedTiers,
             sizes: parsedSizes,
             colors: parsedColors
         });
         
-        // Auto-select the first size if available
-        if (parsedSizes.length > 0) {
-            setSelectedSize(parsedSizes[0].name);
-        }
-        
-        setQuantity(data.min_order || 10); 
+        if (parsedSizes.length > 0) setSelectedSize(parsedSizes[0].name);
         setLoading(false);
       })
       .catch((err) => {
@@ -102,34 +98,23 @@ export default function ProductDetailPage() {
       });
   }, [id]);
 
-  // --- HELPER: Backend VIP Logic ---
+  // --- CALCULATION ENGINE ---
   function getVipBonus(balance) {
     if (balance >= 40000) return 10;
     if (balance >= 20000) return 8;
-    if (balance >= 15000) return 6;
-    if (balance >= 10000) return 5;
-    if (balance >= 5000) return 4;
     return 0;
   }
 
-  // =========================================================
-  //  CALCULATION ENGINE (Waterfall Method)
-  // =========================================================
-  
-  // 1. Tiers
   const sortedTiers = (product?.priceTiers || []).sort((a, b) => a.min - b.min);
   const activeTier = sortedTiers.slice().reverse().find(t => quantity >= t.min);
   
-  // 2. Prices
   const marketUnitPrice = Number(product?.price || 0); 
   const marketTotal = marketUnitPrice * quantity; 
 
   const bulkUnitPrice = activeTier ? Number(activeTier.price) : marketUnitPrice; 
   const bulkTotal = bulkUnitPrice * quantity; 
-  
   const volumeSavings = marketTotal - bulkTotal; 
 
-  // 3. Discounts
   const adminDiscount = Number(product?.discount || 0);
   const userBalance = Number(wallet?.balance || 0);
   const vipBonus = getVipBonus(userBalance);
@@ -137,19 +122,40 @@ export default function ProductDetailPage() {
   const adminDiscountAmount = bulkTotal * (adminDiscount / 100);
   const vipBonusAmount = bulkTotal * (vipBonus / 100);
   const totalDiscountAmount = adminDiscountAmount + vipBonusAmount;
-  
-  // 4. Final Settlement
   const settlementAmount = bulkTotal - totalDiscountAmount;
   
-  // 5. Profit
   const projectedProfit = marketTotal - settlementAmount;
   const margin = settlementAmount > 0 ? ((projectedProfit / settlementAmount) * 100).toFixed(2) : "0.00";
 
-  // Action Handlers
+  // --- HANDLERS (STRICT MODE) ---
+
+  const handleQuantityChange = (e) => {
+    let valStr = e.target.value.replace(/[^0-9]/g, '');
+    if (valStr.length > 1 && valStr.startsWith('0')) valStr = valStr.replace(/^0+/, '');
+    if (valStr === "") { setQuantity(""); return; }
+    setQuantity(parseInt(valStr, 10));
+  };
+
+  const handleQuantityBlur = () => {
+    // Use the calculated min from tiers
+    if (!quantity || quantity < calculatedMin) {
+        toast.info(`Volume auto-corrected to Tier Minimum: ${calculatedMin} Units`);
+        setQuantity(calculatedMin);
+    }
+  };
+
   const handleOpenTicket = () => {
     if (!isVerified) return;
+    
+    // Strict Check against Tier Min
+    if (quantity < calculatedMin) {
+        toast.error(`Order Rejected: Minimum allocation is ${calculatedMin} units.`);
+        setQuantity(calculatedMin);
+        return;
+    }
+
     if (wallet.balance < settlementAmount) {
-        alert("INSUFFICIENT LIQUIDITY: Please fund your settlement account.");
+        toast.error("INSUFFICIENT LIQUIDITY: Please fund your settlement account.");
         return;
     }
     setShowModal(true); 
@@ -157,6 +163,12 @@ export default function ProductDetailPage() {
 
   const handleConfirmOrder = async () => {
     setExecuting(true);
+    if (quantity < calculatedMin) {
+        toast.error(`Volume Error: Minimum is ${calculatedMin} units.`);
+        setExecuting(false);
+        return;
+    }
+
     try {
         const response = await createOrder({
             user_id: user.id,
@@ -169,7 +181,7 @@ export default function ProductDetailPage() {
         setSuccessData(response.order); 
         setExecuting(false);
     } catch (err) {
-        alert("EXECUTION FAILED: " + err.message);
+        toast.error("EXECUTION FAILED: " + err.message);
         setExecuting(false);
     }
   };
@@ -179,298 +191,298 @@ export default function ProductDetailPage() {
       navigate("/cart", { state: { success: "Lot Acquisition Executed Successfully." } });
   };
 
-  if (loading) return <div className="p-10 text-center font-mono text-xs">LOADING MANIFEST DATA...</div>;
+  const isInvalidQuantity = !quantity || quantity < calculatedMin;
+
+  if (loading) return <div className="h-screen flex items-center justify-center font-mono text-xs text-slate-500">LOADING MANIFEST DATA...</div>;
   if (error) return <div className="p-10 text-center text-red-600 font-mono font-bold">{error}</div>;
 
   return (
-    <div className="max-w-[1400px] mx-auto space-y-6 animate-fade-in pb-20">
+    <div className="min-h-screen bg-slate-50 pb-20 font-sans text-slate-800">
       
-      {/* 1. HEADER */}
-      <div className="flex flex-col md:flex-row justify-between items-start border-b border-slate-200 pb-4">
-         <div>
-            <div className="flex items-center gap-2 text-xs font-mono text-slate-500 mb-1">
-               <Link to="/products" className="hover:text-blue-600 hover:underline flex items-center gap-1">
-                  <FaArrowLeft /> MASTER INVENTORY
-               </Link>
-               <span>/</span>
-               <span>LOT #{id.substring(0,8).toUpperCase()}</span>
-            </div>
-            
-            <h1 className="text-2xl font-bold text-slate-800 tracking-tight">{product.title}</h1>
-            
-            <div className="flex items-center gap-3 mt-2">
-               {renderRating(product.rating || 0)}
-               <span className="text-xs text-slate-500 font-bold">
-                  {product.rating || "0.0"} / 5.0
-               </span>
-               <span className="text-xs text-slate-400 border-l border-slate-300 pl-3">
-                  {product.review_count || 0} Verified Inspections
-               </span>
-            </div>
-
-            <div className="flex items-center gap-4 mt-3 text-xs">
-               <span className="bg-blue-100 text-blue-800 px-2 py-0.5 rounded font-mono font-bold">
-                  BATCH: CN-{new Date().getFullYear()}-X99
-               </span>
-               <span className="flex items-center gap-1 text-slate-600">
-                  <FaWarehouse /> Origin: {product.country || "China"}
-               </span>
-               <span className="flex items-center gap-1 text-slate-600">
-                  <FaBoxOpen /> Stock: {product.stock || 0} Units
-               </span>
-            </div>
-         </div>
-         
-         <div className="mt-4 md:mt-0 flex gap-2">
-            <button className="flex items-center gap-2 px-4 py-2 bg-white border border-slate-300 text-slate-700 text-xs font-bold rounded hover:bg-slate-50 transition">
-               <FaFilePdf /> Inspection Report
-            </button>
-            <button className="flex items-center gap-2 px-4 py-2 bg-white border border-slate-300 text-slate-700 text-xs font-bold rounded hover:bg-slate-50 transition">
-               <FaFileContract /> Export Docs
-            </button>
-         </div>
+      {/* 1. TOP NAV */}
+      <div className="bg-white border-b border-slate-200 sticky top-0 z-30 shadow-sm">
+        <div className="max-w-[1600px] mx-auto px-4 md:px-8 h-12 flex items-center justify-between">
+           <div className="flex items-center gap-4 text-[10px] md:text-xs font-mono uppercase tracking-wide text-slate-500">
+              <Link to="/products" className="hover:text-emerald-700 flex items-center gap-1 transition-colors">
+                 <FaArrowLeft /> MASTER_INVENTORY
+              </Link>
+              <span className="text-slate-300">/</span>
+              <span>LOT_ID: {id.substring(0,8).toUpperCase()}</span>
+              <span className="text-slate-300">/</span>
+              <span className="bg-emerald-100 text-emerald-800 px-1.5 py-0.5 rounded-sm">STATUS: LIVE</span>
+           </div>
+           <div className="flex gap-2">
+              <button className="flex items-center gap-2 px-3 py-1 bg-slate-100 hover:bg-slate-200 border border-slate-300 text-slate-600 text-[10px] uppercase font-bold tracking-wider rounded-sm transition">
+                 <FaFilePdf /> Tech_Report.pdf
+              </button>
+           </div>
+        </div>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-         
-         {/* 2. LEFT COLUMN */}
-         <div className="lg:col-span-2 space-y-6">
+      <div className="max-w-[1600px] mx-auto px-4 md:px-8 mt-6">
+        
+        {/* 2. MAIN HEADER */}
+        <div className="mb-8">
+            <h1 className="text-2xl md:text-3xl font-bold text-slate-900 tracking-tight mb-2">
+               {product.title}
+            </h1>
             
-            {/* [UPDATED] Use the new BIG Gallery Component */}
-            <ProductGallery gallery={product.gallery} title={product.title} />
-
-            {/* COLOR SHOWCASE (Read Only) */}
-            {product.colors && product.colors.length > 0 && (
-               <div className="bg-white border border-slate-200 rounded p-4">
-                  <div className="text-xs font-bold uppercase text-slate-400 mb-3 flex items-center gap-2">
-                     <FaPalette /> Factory Color Options
-                  </div>
-                  <div className="flex flex-wrap gap-2">
-                     {product.colors.map((col, i) => (
-                        <div key={i} className="flex items-center gap-2 px-3 py-1.5 bg-slate-50 border border-slate-200 rounded-full">
-                           <div className="w-3 h-3 rounded-full bg-slate-300 border border-slate-400"></div> 
-                           <span className="text-xs font-bold text-slate-600">{col.name}</span>
-                        </div>
-                     ))}
-                  </div>
-               </div>
-            )}
-
-            {/* Technical Specs */}
-            <div className="bg-white border border-slate-200 rounded overflow-hidden">
-               <div className="bg-slate-100 px-4 py-2 border-b border-slate-200 font-bold text-xs text-slate-700 uppercase">
-                  Technical Specifications
-               </div>
-               <table className="w-full text-sm text-left">
-                  <tbody>
-                     {/* Brand Row */}
-                     {product.brand && (
-                        <tr className="border-b border-slate-100">
-                           <td className="px-4 py-3 bg-slate-50 w-1/3 font-medium text-slate-600 capitalize flex items-center gap-2">
-                              <FaTrademark size={10}/> Brand
-                           </td>
-                           <td className="px-4 py-3 font-mono text-slate-700 font-bold">
-                              {product.brand}
-                           </td>
-                        </tr>
-                     )}
-
-                     {Array.isArray(product.keyAttributes) && product.keyAttributes.length > 0 ? (
-                        product.keyAttributes.map((attr, index) => (
-                           <tr key={index} className="border-b border-slate-100 last:border-0">
-                              <td className="px-4 py-3 bg-slate-50 w-1/3 font-medium text-slate-600 capitalize">
-                                 {Object.keys(attr)[0].replace(/_/g, " ")}
-                              </td>
-                              <td className="px-4 py-3 font-mono text-slate-700">
-                                 {Object.values(attr)[0]}
-                              </td>
-                           </tr>
-                        ))
-                     ) : (
-                        !product.brand && <tr><td colSpan="2" className="px-4 py-3 text-slate-400 italic text-center">No specific attributes.</td></tr>
-                     )}
-                  </tbody>
-               </table>
+            <div className="flex flex-wrap items-center gap-6 text-xs text-slate-600 border-b border-slate-200 pb-6">
+                <div className="flex items-center gap-2">
+                   <span className="font-mono font-bold text-slate-400 uppercase">Origin</span>
+                   <span className="flex items-center gap-1 font-semibold text-slate-800"><FaGlobeAmericas size={10} /> {product.country || "Global"}</span>
+                </div>
+                <div className="h-4 w-px bg-slate-300"></div>
+                <div className="flex items-center gap-2">
+                   <span className="font-mono font-bold text-slate-400 uppercase">Condition</span>
+                   <span className="font-semibold text-slate-800">Factory New (A-Grade)</span>
+                </div>
+                <div className="h-4 w-px bg-slate-300"></div>
+                <div className="flex items-center gap-2">
+                   <span className="font-mono font-bold text-slate-400 uppercase">Inspection</span>
+                   <div className="flex items-center gap-2 bg-emerald-50 text-emerald-800 px-2 py-0.5 rounded-full border border-emerald-100">
+                      <FaShieldAlt size={10} />
+                      <span className="font-bold">VERIFIED</span>
+                   </div>
+                </div>
+                <div className="h-4 w-px bg-slate-300"></div>
+                <div className="flex items-center gap-2">
+                    <span className="font-mono font-bold text-slate-400 uppercase">Rating</span>
+                    <div className="flex items-center gap-1">
+                        {renderRating(product.rating || 0)}
+                        <span className="font-mono font-bold text-slate-700 ml-1">{product.rating}</span>
+                    </div>
+                </div>
             </div>
+        </div>
 
-            <div className="prose prose-sm max-w-none text-slate-600">
-               <h3 className="text-xs font-bold uppercase text-slate-800 mb-2">Lot Description</h3>
-               <p>{product.description || "No description available."}</p>
-            </div>
-         </div>
+        {/* 3. GRID LAYOUT */}
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+           
+           {/* LEFT COLUMN */}
+           <div className="lg:col-span-8 space-y-8">
+              <ProductGallery gallery={product.gallery} title={product.title} />
 
-         {/* 3. RIGHT COLUMN: Trade Execution */}
-         <div className="space-y-4">
-            
-            <div className="bg-white border border-blue-200 shadow-lg rounded overflow-hidden">
-               <div className="bg-blue-900 px-4 py-3 text-white flex justify-between items-center">
-                  <span className="font-bold text-sm uppercase">Acquisition Ticket</span>
-                  <FaLock size={12} className="text-blue-300" />
-               </div>
-               
-               <div className="p-6 space-y-6">
-                  
-                  {/* PRICE HEADER */}
-                  <div className="flex justify-between items-end border-b border-slate-100 pb-4">
-                     <div>
-                        <div className="text-[10px] text-slate-500 uppercase tracking-wider">Market Value (FOB)</div>
-                        <div className={`text-3xl font-mono font-bold ${!isVerified ? 'blur-sm select-none' : 'text-slate-900'}`}>
-                           ${marketUnitPrice.toFixed(2)}
+              {/* COLORS */}
+              {product.colors && product.colors.length > 0 && (
+                 <div className="bg-white border border-slate-200 rounded-sm p-6 shadow-sm">
+                    <div className="text-xs font-bold uppercase text-slate-400 mb-4 flex items-center gap-2">
+                       <FaPalette /> Factory Color Options
+                    </div>
+                    <div className="flex flex-wrap gap-3">
+                       {product.colors.map((col, i) => (
+                          <div key={i} className="flex items-center gap-3 px-4 py-2 bg-slate-50 border border-slate-200 rounded-full">
+                             <div className="w-4 h-4 rounded-full bg-slate-800 border border-slate-300 shadow-inner"></div> 
+                             <span className="text-xs font-bold text-slate-700 font-mono uppercase">{col.name}</span>
+                          </div>
+                       ))}
+                    </div>
+                 </div>
+              )}
+
+              {/* SPECS */}
+              <div className="bg-white border border-slate-200 shadow-sm rounded-sm">
+                 <div className="bg-slate-100/50 px-6 py-3 border-b border-slate-200 flex justify-between items-center">
+                    <h3 className="text-xs font-bold uppercase tracking-widest text-slate-800">Technical Specifications</h3>
+                    <span className="text-[10px] font-mono text-slate-400">REF: SPEC-Sheet-V2</span>
+                 </div>
+                 <div className="p-6">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-x-12 gap-y-4">
+                       {product.brand && (
+                          <div className="flex justify-between py-2 border-b border-slate-100">
+                             <span className="text-xs font-semibold text-slate-500 uppercase flex items-center gap-2"><FaTrademark size={10} /> Manufacturer</span>
+                             <span className="text-sm font-mono font-bold text-slate-900">{product.brand}</span>
+                          </div>
+                       )}
+                       {Array.isArray(product.keyAttributes) && product.keyAttributes.map((attr, index) => (
+                          <div key={index} className="flex justify-between py-2 border-b border-slate-100">
+                             <span className="text-xs font-semibold text-slate-500 uppercase">
+                                {Object.keys(attr)[0].replace(/_/g, " ")}
+                             </span>
+                             <span className="text-sm font-mono text-slate-900">
+                                {Object.values(attr)[0]}
+                             </span>
+                          </div>
+                       ))}
+                    </div>
+                    <div className="mt-8 pt-6 border-t border-slate-100">
+                       <h4 className="text-xs font-bold text-slate-800 mb-3 uppercase">Asset Description</h4>
+                       <p className="text-sm leading-relaxed text-slate-600 font-normal">
+                          {product.description || "No detailed description available for this asset."}
+                       </p>
+                    </div>
+                 </div>
+              </div>
+
+              <SupplierInfoBlock 
+                supplier={product.supplier} 
+                minOrder={calculatedMin} // [FIX] Show the REAL min order here
+                factoryUrl={product.factory_url}
+              />
+           </div>
+
+           {/* RIGHT COLUMN */}
+           <div className="lg:col-span-4 space-y-4 sticky top-24">
+              
+              <div className="bg-white border-t-4 border-emerald-600 shadow-xl rounded-sm overflow-hidden">
+                 <div className="bg-slate-900 px-5 py-4 flex justify-between items-start">
+                    <div>
+                       <div className="text-[10px] text-emerald-400 font-mono uppercase tracking-widest mb-1">Current Market Valuation</div>
+                       <div className={`text-3xl font-mono font-bold text-white ${!isVerified ? 'blur-sm select-none' : ''}`}>
+                          ${marketUnitPrice.toFixed(2)}
+                       </div>
+                    </div>
+                    <div className="text-right">
+                       <div className="text-[10px] text-slate-400 font-mono uppercase tracking-widest mb-1">Spread / Yield</div>
+                       <div className="text-lg font-bold text-emerald-400">+{margin}%</div>
+                    </div>
+                 </div>
+
+                 <div className="p-5 space-y-6">
+                    {sortedTiers.length > 0 && (
+                       <div>
+                          <div className="flex justify-between items-center mb-2">
+                             <span className="text-[10px] font-bold uppercase text-slate-500">Volume Pricing Tiers</span>
+                             <span className="text-[10px] text-emerald-600 font-bold">Live Data</span>
+                          </div>
+                          <div className="border border-slate-200 rounded-sm overflow-hidden">
+                             {sortedTiers.map((tier, idx) => {
+                                const isActive = activeTier && activeTier.min === tier.min;
+                                return (
+                                   <div key={idx} className={`flex justify-between items-center px-3 py-2 border-b border-slate-100 last:border-0 ${isActive ? 'bg-emerald-50' : 'bg-white'}`}>
+                                      <div className="flex items-center gap-2">
+                                         {isActive && <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></div>}
+                                         <span className={`text-xs font-mono ${isActive ? 'text-slate-900 font-bold' : 'text-slate-500'}`}>≥ {tier.min} units</span>
+                                      </div>
+                                      <span className={`text-xs font-mono ${isActive ? 'text-emerald-700 font-bold' : 'text-slate-700'}`}>
+                                         ${Number(tier.price).toFixed(2)}
+                                      </span>
+                                   </div>
+                                );
+                             })}
+                          </div>
+                       </div>
+                    )}
+
+                    <div className="space-y-4 pt-2">
+                       {product.sizes && product.sizes.length > 0 && (
+                          <div>
+                             <label className="block text-[10px] font-bold text-slate-500 uppercase mb-2">Configuration Variant</label>
+                             <div className="flex flex-wrap gap-2">
+                                {product.sizes.map((s, i) => (
+                                   <button
+                                      key={i}
+                                      onClick={() => setSelectedSize(s.name)}
+                                      className={`px-3 py-2 text-xs font-mono border rounded-sm transition-all ${
+                                         selectedSize === s.name 
+                                         ? 'bg-slate-800 text-white border-slate-800 shadow-md' 
+                                         : 'bg-white text-slate-600 border-slate-200 hover:border-slate-400'
+                                      }`}
+                                   >
+                                      {s.name}
+                                   </button>
+                                ))}
+                             </div>
+                          </div>
+                       )}
+
+                       <div>
+                          <label className="block text-[10px] font-bold text-slate-500 uppercase mb-2">Acquisition Volume</label>
+                          <div className="flex">
+                             <input 
+                                type="text" 
+                                value={quantity}
+                                onChange={handleQuantityChange}
+                                onBlur={handleQuantityBlur}
+                                className="w-full border border-slate-300 px-4 py-2 text-slate-900 font-mono font-bold focus:ring-2 focus:ring-emerald-500 outline-none rounded-l-sm"
+                             />
+                             <div className="bg-slate-100 border border-l-0 border-slate-300 px-4 py-2 text-slate-500 text-xs font-bold rounded-r-sm flex items-center justify-center">PCS</div>
+                          </div>
+                          <div className="text-[10px] text-slate-400 mt-1 flex justify-between">
+                             <span>Min. Order: {calculatedMin} Units</span>
+                             <span>Stock: {product.stock}</span>
+                          </div>
+                       </div>
+                    </div>
+
+                    <div className="bg-slate-50 p-4 rounded-sm border border-slate-200">
+                       <div className="space-y-2 text-xs font-mono">
+                          <div className="flex justify-between text-slate-500">
+                             <span>Market Gross</span>
+                             <span className="line-through">${marketTotal.toFixed(2)}</span>
+                          </div>
+                          
+                          {volumeSavings > 0 && (
+                             <div className="flex justify-between text-emerald-600">
+                                <span>Volume Adjustment</span>
+                                <span>-${volumeSavings.toFixed(2)}</span>
+                             </div>
+                          )}
+
+                          {adminDiscount > 0 && (
+                             <div className="flex justify-between text-emerald-600">
+                                <span>Incentive ({adminDiscount}%)</span>
+                                <span>-${adminDiscountAmount.toFixed(2)}</span>
+                             </div>
+                          )}
+                          
+                          <div className="border-t border-slate-300 my-2"></div>
+                          
+                          <div className="flex justify-between items-end">
+                             <span className="font-bold text-slate-700 uppercase">Settlement Due</span>
+                             <span className="text-xl font-bold text-slate-900">${settlementAmount.toFixed(2)}</span>
+                          </div>
+                          <div className="text-right text-[10px] text-slate-400 mt-1">
+                             (Excl. Logistics & Duties)
+                          </div>
+                       </div>
+                    </div>
+
+                    {isVerified ? (
+                       <button 
+                          onClick={handleOpenTicket}
+                          disabled={executing || isInvalidQuantity}
+                          className={`w-full font-bold py-4 rounded-sm shadow-md transition-all flex justify-center items-center gap-2 text-xs tracking-widest uppercase ${
+                             isInvalidQuantity 
+                             ? "bg-slate-300 text-slate-500 cursor-not-allowed" 
+                             : "bg-emerald-600 hover:bg-emerald-700 text-white hover:shadow-lg"
+                          }`}
+                       >
+                          {executing ? "PROCESSING ORDER..." : <><FaBalanceScale size={14} /> Initiate Procurement</>}
+                       </button>
+                    ) : (
+                       <Link to="/kyc-verification" className="flex items-center justify-center w-full bg-slate-800 text-white font-bold py-4 rounded-sm hover:bg-slate-700 text-xs uppercase tracking-widest transition">
+                          <FaLock className="mr-2" /> Verify Account to Unlock
+                       </Link>
+                    )}
+
+                    {isVerified && (
+                        <div className="text-center">
+                            <span className="text-[10px] text-slate-400 flex items-center justify-center gap-1">
+                                <FaCheckCircle className="text-emerald-500"/> Escrow Secured via Smart Contract
+                            </span>
                         </div>
-                     </div>
-                     <div className="text-right">
-                        <div className="text-[10px] text-slate-500 uppercase tracking-wider">Net Yield</div>
-                        <div className="text-lg font-bold text-emerald-600">+{margin}%</div>
-                     </div>
-                  </div>
+                    )}
+                 </div>
+              </div>
+           </div>
 
-                  {/* PRICE TIERS */}
-                  {sortedTiers.length > 0 && (
-                     <div className="grid grid-cols-2 gap-2">
-                        <div className={`p-2 rounded border text-center transition-colors ${
-                           !activeTier ? 'bg-emerald-50 border-emerald-500' : 'bg-slate-50 border-slate-200 opacity-50'
-                        }`}>
-                           <div className="text-xs text-slate-500">Min. {product.min_order || 1} Pcs</div>
-                           <div className="font-bold text-slate-800">${Number(product.price).toFixed(2)}</div>
-                        </div>
-                        {sortedTiers.map((tier, idx) => {
-                           const isActive = activeTier && activeTier.min === tier.min;
-                           return (
-                              <div key={idx} className={`p-2 rounded border text-center transition-colors ${
-                                 isActive ? 'bg-emerald-50 border-emerald-500 ring-1 ring-emerald-500' : 'bg-slate-50 border-slate-200'
-                              }`}>
-                                 <div className={`text-xs ${isActive ? 'text-emerald-700 font-bold' : 'text-slate-500'}`}>
-                                    ≥ {tier.min} Pcs
-                                 </div>
-                                 <div className={`font-bold ${isActive ? 'text-emerald-800' : 'text-slate-800'}`}>
-                                    ${Number(tier.price).toFixed(2)}
-                                 </div>
-                              </div>
-                           );
-                        })}
-                     </div>
-                  )}
+        </div>
 
-                  {/* SIZE SELECTOR */}
-                  {product.sizes && product.sizes.length > 0 && (
-                     <div>
-                        <label className="block text-xs font-bold text-slate-500 uppercase mb-2">Configuration / Size</label>
-                        <div className="flex flex-wrap gap-2">
-                           {product.sizes.map((s, i) => (
-                              <button
-                                 key={i}
-                                 onClick={() => setSelectedSize(s.name)}
-                                 className={`px-3 py-1.5 text-xs font-bold rounded border transition-all ${
-                                    selectedSize === s.name 
-                                    ? 'bg-slate-800 text-white border-slate-800' 
-                                    : 'bg-white text-slate-600 border-slate-200 hover:border-slate-400'
-                                 }`}
-                              >
-                                 {s.name}
-                              </button>
-                           ))}
-                        </div>
-                     </div>
-                  )}
-
-                  {/* INPUT */}
-                  <div>
-                     <label className="block text-xs font-bold text-slate-500 uppercase mb-2">Allocation Volume (Units)</label>
-                     <div className="flex items-center">
-                        <input 
-                           type="number" 
-                           min={product.min_order || 1}
-                           value={quantity}
-                           onChange={(e) => setQuantity(Number(e.target.value))}
-                           className="w-full border border-slate-300 rounded-l px-3 py-2 text-slate-800 font-mono focus:ring-1 focus:ring-blue-900 outline-none"
-                        />
-                        <div className="bg-slate-100 border border-l-0 border-slate-300 px-3 py-2 text-slate-500 text-xs font-bold rounded-r">PCS</div>
-                     </div>
-                  </div>
-
-                  {/* FINANCIAL BREAKDOWN */}
-                  <div className="bg-slate-50 p-3 rounded border border-slate-200 space-y-2 text-xs font-mono">
-                     <div className="flex justify-between">
-                        <span className="text-slate-500">Market Value</span>
-                        <span className="font-bold text-slate-900">${marketTotal.toFixed(2)}</span>
-                     </div>
-                     
-                     {volumeSavings > 0 && (
-                        <div className="flex justify-between text-blue-600">
-                           <span className="flex items-center gap-1"><FaTag size={10}/> Volume Tier Applied</span>
-                           <span>-${volumeSavings.toFixed(2)}</span>
-                        </div>
-                     )}
-
-                     {adminDiscount > 0 && (
-                        <div className="flex justify-between text-emerald-600">
-                           <span>Less: Batch Incentive ({adminDiscount}%)</span>
-                           <span>-${adminDiscountAmount.toFixed(2)}</span>
-                        </div>
-                     )}
-                     
-                     {vipBonus > 0 && (
-                        <div className="flex justify-between text-emerald-600">
-                           <span>Less: VIP Liquidity ({vipBonus}%)</span>
-                           <span>-${vipBonusAmount.toFixed(2)}</span>
-                        </div>
-                     )}
-
-                     <div className="border-t border-slate-200 pt-2 flex justify-between text-sm">
-                        <span className="font-bold text-slate-700">Settlement Due</span>
-                        <span className="font-bold text-blue-900">${settlementAmount.toFixed(2)}</span>
-                     </div>
-                  </div>
-
-                  {/* Action Button */}
-                  {isVerified ? (
-                     <button 
-                        onClick={handleOpenTicket}
-                        disabled={executing}
-                        className="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-3 rounded shadow transition flex justify-center items-center gap-2"
-                     >
-                        {executing ? "PROCESSING..." : <><FaCheckCircle /> GENERATE PROFORMA</>}
-                     </button>
-                  ) : (
-                     <Link to="/kyc-verification" className="block w-full bg-slate-800 text-white font-bold py-3 rounded text-center hover:bg-slate-700 text-xs uppercase tracking-wide">
-                        Verify ID to Unlock Pricing
-                     </Link>
-                  )}
-                  
-                  {isVerified && (
-                     <div className="flex items-start gap-2 bg-blue-50 p-2 rounded text-[10px] text-blue-800">
-                        <FaInfoCircle className="mt-0.5 shrink-0" />
-                        <span>Funds held in escrow via Smart Contract (USDC/XRP).</span>
-                     </div>
-                  )}
-
-               </div>
-            </div>
-
-            {/* [UPDATED] Use the new Supplier Component */}
-            <SupplierInfoBlock 
-               supplier={product.supplier} 
-               minOrder={product.min_order}
-               factoryUrl={product.factory_url}
-            />
-
-         </div>
+        {showModal && (
+          <OrderPreviewModal
+            product={product}
+            quantity={quantity}
+            priceTiers={product.priceTiers}
+            onClose={() => setShowModal(false)}
+            onConfirm={handleConfirmOrder}
+            isProcessing={executing}
+            successData={successData} 
+            onFinish={handleCloseSuccess} 
+            selectedSize={selectedSize} 
+          />
+        )}
       </div>
-
-      {showModal && (
-        <OrderPreviewModal
-          product={product}
-          quantity={quantity}
-          priceTiers={product.priceTiers}
-          onClose={() => setShowModal(false)}
-          onConfirm={handleConfirmOrder}
-          isProcessing={executing}
-          successData={successData} 
-          onFinish={handleCloseSuccess} 
-          selectedSize={selectedSize} 
-        />
-      )}
-
     </div>
   );
 }

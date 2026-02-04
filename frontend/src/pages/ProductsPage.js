@@ -66,12 +66,23 @@ export default function ProductsPage() {
       });
   }, []);
 
+  // 1. Process data first: Add Batch ID so it is stable and searchable
+  const processedProducts = useMemo(() => {
+    return products.map((p, i) => ({
+      ...p,
+      // We attach the ID here so it doesn't change when filtering
+      batchId: `BATCH-CN-${202600 + i}` 
+    }));
+  }, [products]);
+
+  // 2. Filter using the NEW processed list
   const filteredProducts = useMemo(() => {
-    return products.filter((p) =>
+    return processedProducts.filter((p) =>
       p.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      (p.id && p.id.toString().includes(searchTerm))
+      (p.id && p.id.toString().includes(searchTerm)) ||
+      p.batchId.toLowerCase().includes(searchTerm.toLowerCase()) // Now searchable
     );
-  }, [products, searchTerm]);
+  }, [processedProducts, searchTerm]);
 
   // Total Volume for Header
   const totalVolume = products.reduce((acc, curr) => acc + (curr.stock || 0), 0);
@@ -177,7 +188,7 @@ export default function ProductsPage() {
                       <td className="px-8 py-6 align-middle">
                          <div className="flex flex-col gap-1">
                            <span className="font-mono text-xs text-slate-400 font-semibold tracking-wide">
-                             BATCH-CN-{202600 + index}
+                             {product.batchId}
                            </span>
                            <Link to={`/products/${product.id}`} className="text-lg font-bold text-slate-800 hover:text-blue-700 transition-colors">
                              {product.title}

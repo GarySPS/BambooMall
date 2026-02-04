@@ -34,7 +34,7 @@ const faqs = [
   },
   {
     id: "TX-05",
-    q: "Why use USDC/XRP instead of Bank Transfer?",
+    q: "Why use USDC instead of Bank Transfer?",
     a: "Two reasons: Speed and Tariffs. 1) T+0 Settlement: Digital Assets settle instantly (0-10 mins), whereas SWIFT transfers take 3-5 days. 2) Duty-Free Status: Due to the '2025 Cross-Border Export Tariff,' fiat transfers (USD/EUR/CNY) now incur a 15% Tax Levy. Digital Asset settlements occur within the Free Trade Zone and remain 100% Duty-Free."
   },
   {
