@@ -12,7 +12,15 @@ router.get('/', async (req, res) => {
     .order('created_at', { ascending: false });
     
   if (error) return res.status(400).json({ error: error.message });
-  res.json(data);
+
+  // Inject Batch ID so it is available to the API consumers
+  const enrichedData = data.map(item => ({
+    ...item,
+    // Using ID ensures this number is permanent and unique
+    batchId: `BATCH-CN-${202600 + (item.id || 0)}`
+  }));
+
+  res.json(enrichedData);
 });
 
 // Get a single product (Manifest Detail)
@@ -26,7 +34,14 @@ router.get('/:id', async (req, res) => {
     .single();
     
   if (error || !data) return res.status(404).json({ error: 'Manifest not found' });
-  res.json(data);
+
+  // Inject Batch ID for the details page
+  const enrichedProduct = {
+    ...data,
+    batchId: `BATCH-CN-${202600 + (data.id || 0)}`
+  };
+
+  res.json(enrichedProduct);
 });
 
 // Add product (Admin: Create Manifest)
