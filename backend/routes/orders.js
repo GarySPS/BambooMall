@@ -401,7 +401,8 @@ router.post('/preview', async (req, res) => {
 // Place Order (CREATE)
 router.post('/', async (req, res) => {
   const supabase = req.supabase;
-  const { user_id, product_id, quantity, type } = req.body;
+  // [FIX 1] Added 'details' to extract the Size/Color sent from frontend
+  const { user_id, product_id, quantity, type, details } = req.body;
 
   // 1. Fetch Product
   const product = await getProductData(supabase, product_id);
@@ -441,12 +442,8 @@ router.post('/', async (req, res) => {
   const pay_amount = Math.round(full_price * (1 - total_discount / 100) * 100) / 100;
   
   // E. Profit Calculation
-  // Profit = (Market Price * Qty) - What You Paid
   const resale_price = market_unit_price * quantity; 
   const profit = resale_price - pay_amount;
-
-  console.log(`💰 [FINANCE] Buy Rate: $${unit_price} | Market Rate: $${market_unit_price}`);
-  console.log(`   Pay: $${pay_amount} | Resale: $${resale_price} | Profit: $${profit}`);
 
   if (wallet.balance < pay_amount) {
     return res.status(400).json({ error: "Insufficient wallet balance" });
@@ -479,7 +476,6 @@ router.post('/', async (req, res) => {
     }]);
 
   // C. Create Order
-  // IMPORTANT: We store 'resale_amount' here so we know how much to pay back later!
   const { data: order, error } = await supabase
     .from('orders')
     .insert([{
@@ -493,13 +489,17 @@ router.post('/', async (req, res) => {
       vip_bonus,
       total_discount,
       earn: profit, 
-      resale_amount: resale_price // <--- This fixes the resale logic later
+      resale_amount: resale_price,
+      
+      // [FIX 2] Save the Size/Color JSON to the database!
+      details: details || {} 
     }])
     .select()
     .single();
 
   if (error) {
       console.error("❌ [ORDER] Creation failed:", error);
+      // NOTE: In production, you would refund the wallet here if this fails.
       return res.status(400).json({ error: error.message });
   }
 

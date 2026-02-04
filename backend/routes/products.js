@@ -41,7 +41,8 @@ router.post('/', async (req, res) => {
     gallery, 
     price_tiers,
     stock,
-    supplier
+    supplier,
+    country
   } = req.body;
 
   // Validate JSON fields to prevent DB errors
@@ -69,7 +70,8 @@ router.post('/', async (req, res) => {
       gallery: safeJson(gallery),
       price_tiers: safeJson(price_tiers),
       stock: stock || 5000,
-      supplier: supplier || "Direct Factory"
+      supplier: supplier || "Direct Factory",
+      country: country || "China"
     }])
     .select()
     .single();
