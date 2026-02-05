@@ -17,26 +17,39 @@ import {
   FaIdCard
 } from "react-icons/fa";
 
+// --- TIER LOGIC (Matches New Standards) ---
+function getSyndicateTier(netWorth) {
+  if (netWorth >= 20000) return "Global Syndicate (Tier 1)";
+  if (netWorth >= 13000) return "Regional Partner (Tier 2)";
+  if (netWorth >= 8000)  return "Regional Associate";
+  if (netWorth >= 4000)  return "Wholesale Agent (Tier 3)";
+  if (netWorth >= 2000)  return "Verified Scout";
+  return "Unverified Entity";
+}
+
 // --- Badge Component ---
-function EntityBadge({ tier }) {
-  const isVerified = tier.includes("Verified") || tier.includes("Partner");
+function EntityBadge({ tier, kycStatus }) {
+  const isVerified = kycStatus === 'approved';
+  // If verified, show the actual Calculated Tier. If not, show Unverified.
+  const displayTier = isVerified ? tier : "Unverified Entity";
+  
   return (
     <div className={`flex items-center gap-2 px-3 py-1 rounded text-xs font-bold uppercase tracking-widest border ${
       isVerified ? "bg-emerald-50 text-emerald-700 border-emerald-200" : "bg-amber-50 text-amber-700 border-amber-200"
     }`}>
       {isVerified ? <FaCheckCircle /> : <FaLock />}
-      {tier || "Pending Audit"}
+      {displayTier}
     </div>
   );
 }
 
 export default function ProfilePage() {
-  // REMOVED 'wallet' from destructuring to fix build error
   const { user, updateWallet } = useUser();
   const navigate = useNavigate();
   const [apiKey, setApiKey] = useState("sk_live_************************");
   const [licenseFile, setLicenseFile] = useState(null);
   const [uploadStatus, setUploadStatus] = useState("idle");
+  const [localWallet, setLocalWallet] = useState(null);
 
   // Fetch Wallet Data
   useEffect(() => {
@@ -46,6 +59,7 @@ export default function ProfilePage() {
           const res = await fetch(`${API_BASE_URL}/wallet/${user.id}`);
           if (res.ok) {
             const data = await res.json();
+            setLocalWallet(data.wallet); // Store locally for calculation
             if (data.wallet && updateWallet) updateWallet(data.wallet);
           }
         } catch (error) {
@@ -71,6 +85,13 @@ export default function ProfilePage() {
 
   if (!user) return <div className="p-10 text-center font-mono text-xs">ESTABLISHING SECURE CONNECTION...</div>;
 
+  // --- CALCULATE TIER DYNAMICALLY ---
+  const liquidBalance = Number(localWallet?.balance || 0);
+  const stockValue = Number(localWallet?.stock_value || 0);
+  // Backend usually sends net_worth, but we fallback to manual calc just in case
+  const netWorth = localWallet?.net_worth ? Number(localWallet.net_worth) : (liquidBalance + stockValue);
+  const currentTier = getSyndicateTier(netWorth);
+
   return (
     <div className="max-w-[1400px] mx-auto space-y-8 animate-fade-in pb-20 font-sans text-slate-800">
       
@@ -88,7 +109,8 @@ export default function ProfilePage() {
             </div>
          </div>
          <div className="mt-4 md:mt-0">
-            <EntityBadge tier={user.kyc_status === 'approved' ? "Verified Partner (Tier 2)" : "Unverified Entity"} />
+            {/* Dynamic Badge based on Net Worth */}
+            <EntityBadge tier={currentTier} kycStatus={user.kyc_status} />
          </div>
       </div>
 

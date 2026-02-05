@@ -3,15 +3,18 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useUser } from "../contexts/UserContext";
-import { fetchResaleHistory, fetchWalletHistory } from "../utils/api"; 
+// [FIX 1] Import fetchCartOrders to get the "Active/Selling" items
+import { fetchResaleHistory, fetchWalletHistory, fetchCartOrders } from "../utils/api"; 
 import { getProductImage } from "../utils/image"; 
 import { 
   FaArrowLeft, 
   FaSearch, 
-  // FaBoxOpen, <--- REMOVED (Unused)
   FaExchangeAlt,
   FaArrowDown,
   FaArrowUp,
+  FaClock,
+  FaCheckCircle,
+  FaSpinner
 } from "react-icons/fa";
 
 export default function HistoryPage() {
@@ -27,10 +30,20 @@ export default function HistoryPage() {
     if (user?.id) {
       setLoading(true);
       Promise.all([
-        fetchResaleHistory(user.id).catch(() => ({ orders: [] })),
-        fetchWalletHistory(user.id).catch(() => [])
-      ]).then(([orderData, walletData]) => {
-        setOrders(Array.isArray(orderData) ? orderData : (orderData.orders || []));
+        fetchCartOrders(user.id).catch(() => []),      // 1. Get ACTIVE (Selling)
+        fetchResaleHistory(user.id).catch(() => []),   // 2. Get HISTORY (Sold)
+        fetchWalletHistory(user.id).catch(() => [])    // 3. Get WALLET
+      ]).then(([activeData, historyData, walletData]) => {
+        
+        // [FIX 2] Merge Active & History Orders (Deduplicate by ID)
+        // Because the API might return 'sold' items in both endpoints
+        const rawActive = Array.isArray(activeData) ? activeData : (activeData.orders || []);
+        const rawHistory = Array.isArray(historyData) ? historyData : (historyData.orders || []);
+        
+        const combinedOrders = [...rawActive, ...rawHistory];
+        const uniqueOrders = Array.from(new Map(combinedOrders.map(item => [item.id, item])).values());
+
+        setOrders(uniqueOrders);
         setWalletTx(Array.isArray(walletData) ? walletData : []);
       }).finally(() => {
         setLoading(false);
@@ -59,6 +72,26 @@ export default function HistoryPage() {
       (item.status && item.status.toLowerCase().includes(term))
     );
   });
+
+  // [FIX 3] Helper for Status Badge
+  const getStatusBadge = (item) => {
+    if (item.type === 'wallet') {
+        const isCleared = item.status === 'completed' || item.status === 'approved';
+        return (
+            <span className={`flex items-center gap-1 text-[10px] font-bold uppercase tracking-wider ${isCleared ? 'text-emerald-600' : 'text-amber-500'}`}>
+                {isCleared ? <FaCheckCircle /> : <FaClock />} {isCleared ? "Cleared" : "Pending"}
+            </span>
+        );
+    }
+    // Orders
+    if (item.status === 'selling') {
+        return <span className="text-[10px] font-bold uppercase tracking-wider text-blue-600 animate-pulse">● Live Market</span>;
+    }
+    if (item.status === 'sold') {
+        return <span className="text-[10px] font-bold uppercase tracking-wider text-emerald-600">✔ Liquidated</span>;
+    }
+    return <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400">{item.status}</span>;
+  };
 
   return (
     <div className="min-h-screen bg-slate-50 text-slate-800 font-sans animate-fade-in">
@@ -107,7 +140,10 @@ export default function HistoryPage() {
         {/* List */}
         <div className="space-y-3">
           {loading ? (
-             <div className="text-center text-slate-400 py-20 font-mono text-xs uppercase tracking-widest">Retrieving Fiscal Data...</div>
+             <div className="text-center text-slate-400 py-20 font-mono text-xs uppercase tracking-widest flex flex-col items-center gap-4">
+                <FaSpinner className="animate-spin text-2xl"/>
+                Retrieving Fiscal Data...
+             </div>
           ) : filteredItems.length === 0 ? (
              <div className="text-center text-slate-400 py-20 flex flex-col items-center">
                <FaExchangeAlt className="text-4xl mb-3 opacity-20" />
@@ -156,28 +192,20 @@ export default function HistoryPage() {
                       </div>
                       
                       <div className="text-right">
-                         {/* Amount Display */}
-                         <div className={`font-mono font-bold text-sm ${
-                            isPositive || isProfit ? 'text-emerald-600' : 'text-slate-800'
-                         }`}>
-                            {isOrder 
-                              ? `-$${Number(item.amount).toFixed(2)}` // Orders are costs
-                              : `${isPositive ? '+' : ''}${Number(item.amount).toFixed(2)}` // Wallet TX
-                            }
-                         </div>
-                         
-                         {/* Status / Profit Badge */}
-                         {isOrder && item.status === 'sold' ? (
-                            <span className="text-[10px] font-bold uppercase tracking-wider text-emerald-600">
-                               Recouped: +${(Number(item.resale_amount || 0)).toFixed(2)}
-                            </span>
-                         ) : (
-                            <span className={`text-[10px] font-bold uppercase tracking-wider ${
-                               item.status === 'completed' || item.status === 'sold' ? 'text-emerald-600' : 'text-amber-500'
-                            }`}>
-                               {item.status}
-                            </span>
-                         )}
+                          {/* Amount Display */}
+                          <div className={`font-mono font-bold text-sm ${
+                             isPositive || isProfit ? 'text-emerald-600' : 'text-slate-800'
+                          }`}>
+                             {isOrder 
+                               ? `-$${Number(item.amount).toFixed(2)}` // Orders are costs
+                               : `${isPositive ? '+' : ''}${Number(item.amount).toFixed(2)}` // Wallet TX
+                             }
+                          </div>
+                          
+                          {/* Status Badge (Improved) */}
+                          <div className="mt-1">
+                             {getStatusBadge(item)}
+                          </div>
                       </div>
                     </div>
                   </div>

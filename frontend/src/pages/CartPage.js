@@ -60,13 +60,17 @@ export default function CartPage() {
 
   useEffect(() => { loadData(); }, [loadData]); 
 
-  // --- METRICS ---
+  // --- METRICS (UPDATED: Only count Active/Selling items) ---
   const portfolioStats = useMemo(() => {
-    return orders.reduce((acc, order) => {
+  return orders.reduce((acc, order) => {
+    // ONLY count active stock towards "Capital Deployed"
+    if (order.status !== 'selling') return acc;
+
       const qty = Number(order.qty || order.quantity || 0);
       const cost = Number(order.amount);
       const unitPrice = Number(order.product?.price || 0);
       const marketVal = unitPrice > 0 ? (unitPrice * qty) : (cost * 1.5);
+      
       return {
         totalCost: acc.totalCost + cost,
         totalValue: acc.totalValue + marketVal,
@@ -162,12 +166,15 @@ export default function CartPage() {
 
          {/* Metrics (Big & Bold) */}
          <div className="flex gap-4">
-            <div className="bg-white px-6 py-3 rounded-xl border border-slate-200 shadow-sm min-w-[180px]">
-               <div className="text-xs uppercase text-slate-400 font-bold tracking-wider mb-1 flex items-center gap-2"><FaWallet /> Capital Deployed</div>
-               <div className="text-2xl font-mono font-bold text-slate-800">
-                   {formatCurrency(portfolioStats.totalCost)}
-               </div>
-            </div>
+            // ... inside the return statement ...
+<div className="bg-white px-6 py-3 rounded-xl border border-slate-200 shadow-sm min-w-[180px]">
+    <div className="text-xs uppercase text-slate-400 font-bold tracking-wider mb-1 flex items-center gap-2">
+    <FaWallet /> Active Inventory
+</div>
+    <div className="text-2xl font-mono font-bold text-slate-800">
+        {formatCurrency(portfolioStats.totalCost)}
+    </div>
+</div>
             <div className="bg-white px-6 py-3 rounded-xl border border-slate-200 shadow-sm min-w-[180px]">
                <div className="text-xs uppercase text-slate-400 font-bold tracking-wider mb-1 flex items-center gap-2"><FaChartPie /> Projected NAV</div>
                <div className="text-2xl font-mono font-bold text-blue-600">

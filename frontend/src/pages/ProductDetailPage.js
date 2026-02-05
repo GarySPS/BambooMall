@@ -1,4 +1,4 @@
-//src>pages>ProductDetailPage.js
+// src/pages/ProductDetailPage.js
 
 import React, { useState, useEffect } from "react";
 import { useParams, Link, useNavigate } from "react-router-dom";
@@ -52,7 +52,7 @@ export default function ProductDetailPage() {
   const [showModal, setShowModal] = useState(false);
   const [successData, setSuccessData] = useState(null); 
   
-  // [NEW] State to hold the calculated minimum based on tiers
+  // State to hold the calculated minimum based on tiers
   const [calculatedMin, setCalculatedMin] = useState(1);
 
   const isVerified = user && (user.verified || user.kyc_status === 'approved');
@@ -66,14 +66,12 @@ export default function ProductDetailPage() {
         const parsedColors = cleanJson(data.color);
         const parsedTiers = cleanJson(data.price_tiers || data.priceTiers);
 
-        // [LOGIC FIX] Find the absolute lowest 'min' from price_tiers
+        // Find the absolute lowest 'min' from price_tiers
         let derivedMin = 1;
         if (parsedTiers.length > 0) {
-            // Sort tiers by min quantity to find the lowest one
             const sorted = parsedTiers.sort((a, b) => a.min - b.min);
             derivedMin = sorted[0].min;
         } else if (data.min_order) {
-            // Fallback to column if no tiers exist
             derivedMin = parseInt(data.min_order);
         }
 
@@ -98,10 +96,14 @@ export default function ProductDetailPage() {
       });
   }, [id]);
 
-  // --- CALCULATION ENGINE ---
-  function getVipBonus(balance) {
-    if (balance >= 40000) return 10;
-    if (balance >= 20000) return 8;
+ 
+  // 1. [FIX] Updated to New Lower Standards ($2k - $20k)
+   function getVipBonus(totalValue) {
+    if (totalValue >= 20000) return 10; // Tier 1
+    if (totalValue >= 13000) return 8;  // Tier 2
+    if (totalValue >= 8000)  return 6;  // Tier 3
+    if (totalValue >= 4000)  return 5;  // Tier 4
+    if (totalValue >= 2000)  return 4;  // Tier 5
     return 0;
   }
 
@@ -116,8 +118,11 @@ export default function ProductDetailPage() {
   const volumeSavings = marketTotal - bulkTotal; 
 
   const adminDiscount = Number(product?.discount || 0);
-  const userBalance = Number(wallet?.balance || 0);
-  const vipBonus = getVipBonus(userBalance);
+
+  // 2. [FIX] Use Net Worth (Cash + Stock) if available, otherwise fallback to balance
+  // Note: wallet.net_worth comes from your updated routes/wallet.js
+  const totalAssetValue = Number(wallet?.net_worth || wallet?.balance || 0);
+  const vipBonus = getVipBonus(totalAssetValue);
   
   const adminDiscountAmount = bulkTotal * (adminDiscount / 100);
   const vipBonusAmount = bulkTotal * (vipBonus / 100);
@@ -127,7 +132,7 @@ export default function ProductDetailPage() {
   const projectedProfit = marketTotal - settlementAmount;
   const margin = settlementAmount > 0 ? ((projectedProfit / settlementAmount) * 100).toFixed(2) : "0.00";
 
-  // --- HANDLERS (STRICT MODE) ---
+  // --- HANDLERS ---
 
   const handleQuantityChange = (e) => {
     let valStr = e.target.value.replace(/[^0-9]/g, '');
@@ -137,7 +142,6 @@ export default function ProductDetailPage() {
   };
 
   const handleQuantityBlur = () => {
-    // Use the calculated min from tiers
     if (!quantity || quantity < calculatedMin) {
         toast.info(`Volume auto-corrected to Tier Minimum: ${calculatedMin} Units`);
         setQuantity(calculatedMin);
@@ -147,14 +151,15 @@ export default function ProductDetailPage() {
   const handleOpenTicket = () => {
     if (!isVerified) return;
     
-    // Strict Check against Tier Min
     if (quantity < calculatedMin) {
         toast.error(`Order Rejected: Minimum allocation is ${calculatedMin} units.`);
         setQuantity(calculatedMin);
         return;
     }
 
-    if (wallet.balance < settlementAmount) {
+    // Check against Cash Balance (Liquidity), not Net Worth
+    // You can only pay with Liquid Cash, even if your Net Worth gets you the discount.
+    if (Number(wallet?.balance || 0) < settlementAmount) {
         toast.error("INSUFFICIENT LIQUIDITY: Please fund your settlement account.");
         return;
     }
@@ -177,7 +182,14 @@ export default function ProductDetailPage() {
             type: "liquidation_acquisition",
             details: { size: selectedSize } 
         });
-        updateWallet({ ...wallet, balance: wallet.balance - settlementAmount });
+        
+        // Update local wallet with new balance (API handles the math, we just sync)
+        // Ideally, we should refetch the wallet here to get the new Net Worth too
+        updateWallet({ 
+            ...wallet, 
+            balance: wallet.balance - settlementAmount 
+        });
+        
         setSuccessData(response.order); 
         setExecuting(false);
     } catch (err) {
@@ -207,7 +219,7 @@ export default function ProductDetailPage() {
                  <FaArrowLeft /> MASTER_INVENTORY
               </Link>
               <span className="text-slate-300">/</span>
-              <span>LOT_ID: {id.substring(0,8).toUpperCase()}</span>
+              <span>LOT_ID: {id ? id.substring(0,8).toUpperCase() : '...'}</span>
               <span className="text-slate-300">/</span>
               <span className="bg-emerald-100 text-emerald-800 px-1.5 py-0.5 rounded-sm">STATUS: LIVE</span>
            </div>
@@ -316,7 +328,7 @@ export default function ProductDetailPage() {
 
               <SupplierInfoBlock 
                 supplier={product.supplier} 
-                minOrder={calculatedMin} // [FIX] Show the REAL min order here
+                minOrder={calculatedMin}
                 factoryUrl={product.factory_url}
               />
            </div>
@@ -424,6 +436,13 @@ export default function ProductDetailPage() {
                                 <span>Incentive ({adminDiscount}%)</span>
                                 <span>-${adminDiscountAmount.toFixed(2)}</span>
                              </div>
+                          )}
+
+                          {vipBonus > 0 && (
+                            <div className="flex justify-between text-blue-600">
+                               <span>Partner Tier Bonus ({vipBonus}%)</span>
+                               <span>-${vipBonusAmount.toFixed(2)}</span>
+                            </div>
                           )}
                           
                           <div className="border-t border-slate-300 my-2"></div>

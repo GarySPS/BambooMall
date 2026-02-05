@@ -1,4 +1,4 @@
-//src>pages>HomePage.js
+// src/pages/HomePage.js
 
 import React, { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
@@ -18,6 +18,16 @@ import {
   CreditCard,
   FileText
 } from "lucide-react";
+
+// --- TIER LOGIC (Matches New Standards: $2k - $20k) ---
+function getSyndicateTier(netWorth) {
+  if (netWorth >= 20000) return "Global Syndicate"; // Tier 1
+  if (netWorth >= 13000) return "Regional Partner"; // Tier 2
+  if (netWorth >= 8000)  return "Regional Associate"; // Tier 3
+  if (netWorth >= 4000)  return "Wholesale Agent"; // Tier 4
+  if (netWorth >= 2000)  return "Verified Scout"; // Tier 5
+  return "Standard";
+}
 
 // --- UTILS: Fake Data Generator ---
 const generateFakeTx = () => {
@@ -48,17 +58,22 @@ export default function HomePage() {
     { id: "TX-9905", buyer: "US Retail Co...", amount: "$12,500", status: "PROCESSING", timestamp: "10:02:15 AM" },
   ]);
 
+  // [UPDATED] Fetch Financials using Wallet Logic (Net Worth)
   useEffect(() => {
     const fetchFinancials = async () => {
-      if (!user?.short_id) return;
+      if (!user?.id) return;
       try {
-        const res = await fetch(`${API_BASE_URL}/users/profile?short_id=${user.short_id}`);
+        // Fetch from Wallet endpoint to get Calculated Net Worth
+        const res = await fetch(`${API_BASE_URL}/wallet/${user.id}`);
         const data = await res.json();
         
         if (data.wallet) {
            setBalance(data.wallet.balance || 0);
-           setCreditLimit(data.wallet.credit_limit || 0);
-           setTier(data.wallet.tier || "Standard");
+           setCreditLimit(data.wallet.credit_limit || 50000); // Default credit line
+           
+           // Calculate Tier based on Net Worth (Cash + Stock)
+           const netWorth = data.wallet.net_worth || 0;
+           setTier(getSyndicateTier(netWorth));
         }
       } catch (err) {
         console.error("Financial Data Stream Interrupted");
@@ -82,10 +97,8 @@ export default function HomePage() {
     <div className="space-y-6 animate-fade-in font-sans pb-12 w-full">
       
       {/* --- HEADER --- */}
-      {/* lg:pb-8 adds more space below header on desktop */}
       <div className="flex flex-col md:flex-row justify-between items-start md:items-end border-b-2 border-slate-800 pb-4 lg:pb-6">
         <div>
-           {/* lg:text-4xl makes the title much bigger on desktop */}
            <h1 className="text-3xl lg:text-4xl font-extrabold text-slate-900 tracking-tight">
              Procurement Console
            </h1>
@@ -107,26 +120,22 @@ export default function HomePage() {
              to="/products"
              className="text-sm lg:text-base font-bold text-blue-600 hover:text-blue-800 flex items-center gap-1 group"
            >
-              Browse Master Manifest <ChevronRight className="group-hover:translate-x-1 transition-transform" size={16} />
+             Browse Master Manifest <ChevronRight className="group-hover:translate-x-1 transition-transform" size={16} />
            </Link>
         </div>
       </div>
 
       {/* --- KPI GRID --- */}
-      {/* lg:gap-6 increases gap between cards on desktop */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 lg:gap-6">
         
         {/* Card A: Liquidity */}
-        {/* lg:p-8 makes the card feel roomier on desktop */}
         <div className="bg-white p-5 lg:p-8 rounded-lg shadow-sm border border-slate-200 relative overflow-hidden group">
            <div className="absolute top-0 right-0 w-16 h-16 bg-blue-50 rounded-bl-full -mr-8 -mt-8 z-0 transition-transform group-hover:scale-110"></div>
            <div className="relative z-10">
              <div className="flex justify-between items-center mb-2 lg:mb-4">
-               {/* lg:text-xs makes label readable */}
                <span className="text-[10px] lg:text-xs font-bold text-slate-400 uppercase tracking-widest">Available Liquidity</span>
                <DollarSign className="text-blue-500" size={24} />
              </div>
-             {/* lg:text-4xl makes the money HUGE on desktop */}
              <div className="text-2xl lg:text-4xl font-bold text-slate-900 font-mono tracking-tight">
                {balance.toLocaleString('en-US', { style: 'currency', currency: 'USD' })}
              </div>
@@ -168,7 +177,6 @@ export default function HomePage() {
                     <div className="text-sm lg:text-xl font-bold text-slate-800 leading-snug">
                     New Tariff Policy (2026)
                     </div>
-                    {/* lg:text-base makes body text readable */}
                     <p className="text-xs lg:text-base text-slate-600 mt-1 lg:mt-2 max-w-lg leading-relaxed">
                         All fiat transfers (SWIFT) are now subject to a 15% pre-clearance holding period. Use USDC for instant release.
                     </p>
@@ -182,7 +190,6 @@ export default function HomePage() {
       </div>
 
       {/* --- MAIN DASHBOARD SPLIT --- */}
-      {/* lg:gap-8 puts more space between the Table and the Ticker */}
       <div className="grid grid-cols-1 xl:grid-cols-4 gap-6 lg:gap-8 min-h-[500px]">
          
          {/* LEFT: MANIFEST FEED */}
@@ -221,7 +228,7 @@ export default function HomePage() {
                        {id: "CN-YIWU-8821", origin: "Yiwu, CN", cat: "Home Appliances", val: "$8,500", grade: "B", status: "PROCESSING"},
                        {id: "JP-TOK-1102", origin: "Tokyo, JP", cat: "Gaming Consoles", val: "$125,000", grade: "A+", status: "PENDING"},
                        {id: "KR-BUS-3391", origin: "Busan, KR", cat: "Cosmetics Lot", val: "$32,100", grade: "A", status: "LIVE"},
-                       {id: "US-LA-1029", origin: "Los Angeles, US", cat: "Vintage Apparel", val: "$18,500", grade: "B+", status: "LIVE"}, // Added extra row for desktop fullness
+                       {id: "US-LA-1029", origin: "Los Angeles, US", cat: "Vintage Apparel", val: "$18,500", grade: "B+", status: "LIVE"},
                      ].map((item, i) => (
                        <tr key={i} className="hover:bg-blue-50/30 transition-colors group cursor-pointer">
                           <td className="px-5 py-3 lg:px-6 lg:py-5 font-mono text-blue-600 font-bold group-hover:underline">{item.id}</td>
@@ -259,7 +266,6 @@ export default function HomePage() {
 
          {/* RIGHT: DARK MODE TICKER (Global Feed) */}
          <div className="xl:col-span-1 flex flex-col gap-4">
-             {/* lg:min-h-[600px] makes the ticker taller on desktop */}
              <div className="bg-slate-900 rounded-lg shadow-lg border border-slate-700 overflow-hidden flex flex-col h-full min-h-[400px] lg:min-h-[500px]">
                 <div className="p-4 border-b border-slate-800 bg-slate-950 flex justify-between items-center">
                    <h3 className="font-bold text-white text-xs lg:text-sm uppercase tracking-widest flex items-center gap-2">
@@ -297,20 +303,16 @@ export default function HomePage() {
 
       {/* --- FOOTER ACTIONS --- */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4 lg:gap-6 pt-4">
-         
-         {/* 1. Browse Manifests - SOLID BLUE */}
          <Link to="/products" className="bg-blue-700 hover:bg-blue-600 text-white p-4 lg:p-6 rounded-lg flex flex-col items-center justify-center gap-2 text-center shadow-lg shadow-blue-900/20 transform hover:-translate-y-1 transition-all">
             <Package className="text-3xl lg:text-4xl text-blue-100" />
             <span className="text-sm lg:text-base font-bold uppercase tracking-wide">Browse Manifests</span>
          </Link>
 
-         {/* 2. Add Funds - SOLID EMERALD */}
          <Link to="/balance" className="bg-emerald-700 hover:bg-emerald-600 text-white p-4 lg:p-6 rounded-lg flex flex-col items-center justify-center gap-2 text-center shadow-lg shadow-emerald-900/20 transform hover:-translate-y-1 transition-all">
             <DollarSign className="text-3xl lg:text-4xl text-emerald-100" />
             <span className="text-sm lg:text-base font-bold uppercase tracking-wide">Add Funds</span>
          </Link>
 
-         {/* 3. Secondary Actions - White Cards */}
          <Link to="/compliance" className="bg-white border border-slate-200 hover:border-slate-300 hover:bg-slate-50 text-slate-700 p-4 lg:p-6 rounded-lg flex flex-col items-center justify-center gap-2 text-center transition-all">
             <FileText className="text-3xl lg:text-4xl text-slate-400" />
             <span className="text-sm lg:text-base font-bold uppercase tracking-wide">Shipping Policy</span>

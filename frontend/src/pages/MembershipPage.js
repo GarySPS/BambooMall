@@ -12,14 +12,20 @@ import {
 
 export default function MembershipPage() {
   const { wallet } = useUser();
-  const currentBalance = Number(wallet?.balance || 0);
+  
+  // --- WEALTH CALCULATION (UPDATED) ---
+  const liquidBalance = Number(wallet?.balance || 0);
+  const stockValue = Number(wallet?.stock_value || 0);
+  
+  // Use the Net Worth for Tier Calculation
+  const netWorth = wallet?.net_worth ? Number(wallet.net_worth) : (liquidBalance + stockValue);
 
-  // --- CONFIG: Must match 'getVipBonus' in orders.js ---
+ // --- CONFIG: Must match 'getVipBonus' in orders.js ---
   const TIERS = [
     {
       id: "T1",
       name: "Global Syndicate (Tier 1)",
-      minBalance: 40000,
+      minBalance: 20000, // [UPDATED]
       bonus: "10%",
       benefits: ["Instant Settlement (T+0)", "Pre-Market Access"],
       credit: "Unlimited"
@@ -27,7 +33,7 @@ export default function MembershipPage() {
     {
       id: "T2",
       name: "Regional Partner (Tier 2)",
-      minBalance: 20000,
+      minBalance: 13000, // [UPDATED]
       bonus: "8%",
       benefits: ["Expedited Settlement (T+1)", "Priority Allocation"],
       credit: "$50,000 / mo"
@@ -35,7 +41,7 @@ export default function MembershipPage() {
     {
       id: "T2_SUB",
       name: "Regional Associate",
-      minBalance: 15000,
+      minBalance: 8000, // [UPDATED]
       bonus: "6%",
       benefits: ["Standard Settlement (T+2)", "Regional Access"],
       credit: "$25,000 / mo"
@@ -43,7 +49,7 @@ export default function MembershipPage() {
     {
       id: "T3",
       name: "Wholesale Agent (Tier 3)",
-      minBalance: 10000,
+      minBalance: 4000, // [UPDATED]
       bonus: "5%",
       benefits: ["Standard Settlement (T+2)", "Master Manifest"],
       credit: "$10,000 / mo"
@@ -51,16 +57,16 @@ export default function MembershipPage() {
     {
       id: "T3_SUB",
       name: "Verified Scout",
-      minBalance: 5000,
+      minBalance: 2000, // [UPDATED]
       bonus: "4%",
       benefits: ["Standard Settlement (T+3)", "Public Manifest"],
       credit: "Prepaid Only"
     }
   ];
 
-  // Logic to find current active tier
-  const currentTier = TIERS.slice().sort((a,b) => a.minBalance - b.minBalance).reverse().find(t => currentBalance >= t.minBalance) || { 
-    name: "Unverified Account", 
+  // Logic to find current active tier based on NET WORTH
+  const currentTier = TIERS.slice().sort((a,b) => a.minBalance - b.minBalance).reverse().find(t => netWorth >= t.minBalance) || { 
+    name: "Unverified Entity", 
     bonus: "0%",
     minBalance: 0
   };
@@ -85,10 +91,18 @@ export default function MembershipPage() {
       <div className="bg-slate-900 text-white p-8 rounded shadow-lg relative overflow-hidden">
          <div className="relative z-10 flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
             <div>
-               <div className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-1">Liquidity Requirement Met</div>
+               <div className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-1">Total Account Value (Net Worth)</div>
                <div className="text-4xl font-mono font-bold text-white">
-                  ${currentBalance.toLocaleString('en-US', { minimumFractionDigits: 2 })}
+                  ${netWorth.toLocaleString('en-US', { minimumFractionDigits: 2 })}
                </div>
+               
+               {/* Breakdown so user knows why */}
+               <div className="text-[10px] text-slate-400 mt-2 font-mono flex gap-3">
+                  <span>LIQUID: ${liquidBalance.toLocaleString()}</span>
+                  <span className="text-slate-600">|</span>
+                  <span>STOCK: ${stockValue.toLocaleString()}</span>
+               </div>
+
                <div className="mt-4 flex gap-2">
                   <span className="px-3 py-1 bg-emerald-500/20 text-emerald-400 border border-emerald-500/50 rounded text-[10px] font-bold uppercase flex items-center gap-1">
                      <FaCheckCircle /> Active Status
@@ -125,7 +139,7 @@ export default function MembershipPage() {
             <thead className="bg-white text-slate-500 font-mono text-xs uppercase border-b border-slate-100">
                <tr>
                   <th className="px-6 py-4">Tier Designation</th>
-                  <th className="px-6 py-4">Min. Liquidity (USDC)</th>
+                  <th className="px-6 py-4">Min. Net Worth (USDC)</th>
                   <th className="px-6 py-4 text-emerald-600 font-bold">VIP Discount</th>
                   <th className="px-6 py-4">Settlement Speed</th>
                   <th className="px-6 py-4 text-right">Credit Line</th>
@@ -163,8 +177,8 @@ export default function MembershipPage() {
       <div className="bg-slate-50 p-4 border border-slate-200 rounded text-[10px] text-slate-400 flex items-start gap-2">
          <FaLock className="text-slate-500 mt-0.5" />
          <div>
-            <strong>Tier Adjustment Protocol:</strong> Partner status is evaluated instantly based on wallet balance. 
-            VIP Discounts are applied automatically to Proforma Invoices generated after status upgrade.
+           <strong>Tier Adjustment Protocol:</strong> Partner status is evaluated based on Total Net Worth (Liquid Balance + Active Inventory). 
+           VIP Discounts are applied automatically to Proforma Invoices generated after status upgrade.
          </div>
       </div>
 

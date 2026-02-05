@@ -45,16 +45,21 @@ export default function OrderPreviewModal({
 
   // C. Discount Logic
   const adminDiscount = Number(product.discount || 0);
-  const getVipBonus = (balance) => {
-    if (balance >= 40000) return 10;
-    if (balance >= 20000) return 8;
-    if (balance >= 15000) return 6;
-    if (balance >= 10000) return 5;
-    if (balance >= 5000) return 4;
+  
+  // New Lower Standards ($2k - $20k)
+  const getVipBonus = (totalValue) => {
+    if (totalValue >= 20000) return 10; // Tier 1
+    if (totalValue >= 13000) return 8;  // Tier 2
+    if (totalValue >= 8000)  return 6;  // Tier 3
+    if (totalValue >= 4000)  return 5;  // Tier 4
+    if (totalValue >= 2000)  return 4;  // Tier 5
     return 0;
   };
-  const vipBonus = getVipBonus(wallet?.balance || 0);
-  
+
+  // Use Net Worth (Cash + Stock) for the discount check
+  // Fallback to balance if net_worth is missing
+  const totalAssetValue = Number(wallet?.net_worth || wallet?.balance || 0);
+  const vipBonus = getVipBonus(totalAssetValue);
   // Calculate Amounts
   const adminDiscountAmount = bulkTotal * (adminDiscount / 100);
   const vipBonusAmount = bulkTotal * (vipBonus / 100);
