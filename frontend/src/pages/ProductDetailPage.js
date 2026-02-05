@@ -7,11 +7,12 @@ import OrderPreviewModal from "../components/OrderPreviewModal";
 import ProductGallery from "../components/ProductGallery"; 
 import SupplierInfoBlock from "../components/SupplierInfoBlock"; 
 import { toast } from "react-toastify"; 
+import { API_BASE_URL } from "../config"; // 1. Added Import
 
 import { 
-  FaArrowLeft, FaFilePdf, FaBoxOpen, FaWarehouse,
+  FaArrowLeft, FaFilePdf, 
   FaCheckCircle, FaLock, FaStar,
-  FaStarHalfAlt, FaInfoCircle, FaTag, FaPalette,
+  FaStarHalfAlt, FaPalette,
   FaTrademark, FaBalanceScale, FaGlobeAmericas, FaShieldAlt
 } from "react-icons/fa";
 import { useUser } from "../contexts/UserContext"; 
@@ -43,6 +44,7 @@ export default function ProductDetailPage() {
   const { user, wallet, updateWallet } = useUser();
   const navigate = useNavigate();
 
+  // --- STATE DEFINITIONS (Must be at top level) ---
   const [product, setProduct] = useState(null);
   const [loading, setLoading] = useState(true);
   const [selectedSize, setSelectedSize] = useState(null);
@@ -57,22 +59,45 @@ export default function ProductDetailPage() {
 
   const isVerified = user && (user.verified || user.kyc_status === 'approved');
 
+  // --- HELPER: Silent Wallet Refresh ---
+  const refreshWallet = async () => {
+    if (!user?.id) return;
+    try {
+      const res = await fetch(`${API_BASE_URL}/wallet/${user.id}`);
+      const data = await res.json();
+      if (data.wallet) {
+        // Only update if balance actually changed to avoid re-renders (optional optimization)
+        if (JSON.stringify(data.wallet) !== JSON.stringify(wallet)) {
+            updateWallet(data.wallet); 
+        }
+      }
+    } catch (err) {
+      console.error("Silent wallet sync failed", err);
+    }
+  };
+
+  // --- EFFECT: Load Data & Refresh Wallet ---
   useEffect(() => {
     window.scrollTo(0, 0);
     setLoading(true);
+
+    // 2. Call refreshWallet immediately on mount
+    refreshWallet(); 
+
     fetchProductById(id)
       .then((data) => {
         const parsedSizes = cleanJson(data.size);
         const parsedColors = cleanJson(data.color);
         const parsedTiers = cleanJson(data.price_tiers || data.priceTiers);
 
-        // Find the absolute lowest 'min' from price_tiers
+        // [LOGIC] Prioritize DB 'min_order' as the strict quantity lock
         let derivedMin = 1;
-        if (parsedTiers.length > 0) {
+        if (data.min_order) {
+            derivedMin = parseInt(data.min_order);
+        } else if (parsedTiers.length > 0) {
+            // Fallback to lowest tier only if min_order is missing
             const sorted = parsedTiers.sort((a, b) => a.min - b.min);
             derivedMin = sorted[0].min;
-        } else if (data.min_order) {
-            derivedMin = parseInt(data.min_order);
         }
 
         setCalculatedMin(derivedMin);
@@ -94,11 +119,11 @@ export default function ProductDetailPage() {
         setError("Manifest Retrieve Failed: " + err.message);
         setLoading(false);
       });
-  }, [id]);
+  }, [id]); // Removed 'user.id' from dependency to prevent infinite loop if user object changes slightly
 
- 
-  // 1. [FIX] Updated to New Lower Standards ($2k - $20k)
-   function getVipBonus(totalValue) {
+  // --- CALCULATIONS ---
+
+  function getVipBonus(totalValue) {
     if (totalValue >= 20000) return 10; // Tier 1
     if (totalValue >= 13000) return 8;  // Tier 2
     if (totalValue >= 8000)  return 6;  // Tier 3
@@ -119,8 +144,7 @@ export default function ProductDetailPage() {
 
   const adminDiscount = Number(product?.discount || 0);
 
-  // 2. [FIX] Use Net Worth (Cash + Stock) if available, otherwise fallback to balance
-  // Note: wallet.net_worth comes from your updated routes/wallet.js
+  // Use Net Worth if available, otherwise fallback to balance
   const totalAssetValue = Number(wallet?.net_worth || wallet?.balance || 0);
   const vipBonus = getVipBonus(totalAssetValue);
   
@@ -157,10 +181,16 @@ export default function ProductDetailPage() {
         return;
     }
 
-    // Check against Cash Balance (Liquidity), not Net Worth
-    // You can only pay with Liquid Cash, even if your Net Worth gets you the discount.
+    // Check against Cash Balance (Liquidity)
     if (Number(wallet?.balance || 0) < settlementAmount) {
-        toast.error("INSUFFICIENT LIQUIDITY: Please fund your settlement account.");
+        // Try one last refresh before failing, just in case they just topped up in another tab
+        refreshWallet().then(() => {
+             if (Number(wallet?.balance || 0) < settlementAmount) {
+                 toast.error("INSUFFICIENT LIQUIDITY: Please fund your settlement account.");
+             } else {
+                 setShowModal(true); // Logic saved them!
+             }
+        });
         return;
     }
     setShowModal(true); 
@@ -183,8 +213,6 @@ export default function ProductDetailPage() {
             details: { size: selectedSize } 
         });
         
-        // Update local wallet with new balance (API handles the math, we just sync)
-        // Ideally, we should refetch the wallet here to get the new Net Worth too
         updateWallet({ 
             ...wallet, 
             balance: wallet.balance - settlementAmount 

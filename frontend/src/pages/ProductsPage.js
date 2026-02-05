@@ -161,7 +161,7 @@ export default function ProductsPage() {
                   <th className="px-8 py-5 font-bold">Grade</th>
                   <th className="px-8 py-5 font-bold text-right">Volume</th>
                   <th className="px-8 py-5 font-bold text-right">Ask Price (FOB)</th>
-                  <th className="px-8 py-5 font-bold text-center">Docs</th>
+                  <th className="px-8 py-5 font-bold text-center">Discount</th>
                   <th className="px-8 py-5 font-bold text-right">Action</th>
                 </tr>
               </thead>
@@ -224,11 +224,14 @@ export default function ProductsPage() {
                          <div className="text-[10px] text-slate-400 uppercase font-bold mt-0.5">Per Unit</div>
                       </td>
 
-                      {/* Docs */}
                       <td className="px-8 py-6 align-middle text-center">
-                         <button className="p-3 text-slate-300 hover:text-red-500 hover:bg-red-50 rounded-full transition-all" title="Download PDF">
-                            <FaFilePdf size={20} />
-                         </button>
+                         {product.discount ? (
+                           <span className="inline-block bg-rose-100 text-rose-700 border border-rose-200 px-3 py-1 rounded-lg text-xs font-bold whitespace-nowrap">
+                              {product.discount}% OFF
+                           </span>
+                         ) : (
+                           <span className="text-slate-300 font-mono text-xs">-</span>
+                         )}
                       </td>
 
                       {/* Action */}

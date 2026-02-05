@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
-import { fetchProducts } from "../../utils/api"; // Make sure this exports all products
+import { fetchProducts } from "../../utils/api"; 
 import { getProductImage } from "../../utils/image";
 import { 
   FaPlus, 
@@ -10,7 +10,8 @@ import {
   FaEdit, 
   FaTrash, 
   FaBox, 
-  FaExclamationTriangle 
+  FaExclamationTriangle,
+  FaLock // Added Lock icon for visual cue
 } from "react-icons/fa";
 
 export default function AdminProductsPage() {
@@ -82,7 +83,8 @@ export default function AdminProductsPage() {
              <tr>
                <th className="px-6 py-3 w-16">Img</th>
                <th className="px-6 py-3">Lot Details</th>
-               <th className="px-6 py-3">Cost Basis</th>
+               <th className="px-6 py-3">Unit Price</th>
+               <th className="px-6 py-3 text-center">Min Order</th> {/* NEW COLUMN */}
                <th className="px-6 py-3 text-center">Stock Level</th>
                <th className="px-6 py-3">Supplier</th>
                <th className="px-6 py-3 text-right">Actions</th>
@@ -90,7 +92,7 @@ export default function AdminProductsPage() {
            </thead>
            <tbody className="divide-y divide-slate-100">
              {loading ? (
-                <tr><td colSpan="6" className="p-10 text-center text-slate-400">Loading Manifest...</td></tr>
+                <tr><td colSpan="7" className="p-10 text-center text-slate-400">Loading Manifest...</td></tr>
              ) : filteredProducts.map(product => (
                <tr key={product.id} className="hover:bg-slate-50 group transition-colors">
                  {/* Image */}
@@ -104,13 +106,21 @@ export default function AdminProductsPage() {
                  <td className="px-6 py-3">
                     <div className="font-bold text-slate-700 truncate max-w-md">{product.title}</div>
                     <div className="text-[10px] text-slate-400 font-mono">
-                       ID: {product.id.substring(0,8).toUpperCase()}
+                       ID: {product.id ? product.id.substring(0,8).toUpperCase() : '...'}
                     </div>
                  </td>
 
                  {/* Price */}
                  <td className="px-6 py-3 font-mono">
                     ${Number(product.price).toFixed(2)}
+                 </td>
+
+                 {/* Min Order - NEW DATA */}
+                 <td className="px-6 py-3 text-center">
+                    <div className="inline-flex items-center gap-1 px-2 py-1 bg-slate-100 border border-slate-200 rounded text-xs font-mono font-bold text-slate-600">
+                        <FaLock size={10} className="text-slate-400" />
+                        {product.min_order || 1}
+                    </div>
                  </td>
 
                  {/* Stock Status */}
@@ -120,7 +130,7 @@ export default function AdminProductsPage() {
                           <FaExclamationTriangle /> Low: {product.stock}
                        </span>
                     ) : (
-                       <span className="bg-slate-100 text-slate-600 px-2 py-1 rounded text-[10px] font-bold font-mono">
+                       <span className="bg-emerald-50 text-emerald-600 px-2 py-1 rounded text-[10px] font-bold font-mono border border-emerald-100">
                           {product.stock} Units
                        </span>
                     )}
