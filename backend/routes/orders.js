@@ -7,14 +7,32 @@ const router = express.Router();
 // 0. HELPER FUNCTIONS
 // ==========================================
 
-// Calculate VIP Bonus based on wallet balance
-function getVipBonus(balance) {
-  if (balance >= 40000) return 10;
-  if (balance >= 20000) return 8;
-  if (balance >= 15000) return 6;
-  if (balance >= 10000) return 5;
-  if (balance >= 5000) return 4;
+// Calculate VIP Bonus based on NET WORTH (Cash + Stock)
+function getVipBonus(totalValue) {
+  if (totalValue >= 20000) return 10; // Tier 1 (Global)
+  if (totalValue >= 13000) return 8;  // Tier 2 (Regional)
+  if (totalValue >= 8000)  return 6;  // Tier 2 Associate
+  if (totalValue >= 4000)  return 5;  // Tier 3 (Wholesale)
+  if (totalValue >= 2000)  return 4;  // Tier 3 Scout
   return 0;
+}
+
+// Helper to Calculate Net Worth (Cash + Active Stock)
+async function getNetWorth(supabase, user_id, liquidBalance) {
+  // 1. Fetch sum of all 'selling' (active) orders cost
+  const { data: stockData } = await supabase
+    .from('orders')
+    .select('amount')
+    .eq('user_id', user_id)
+    .eq('status', 'selling');
+
+  let stockValue = 0;
+  if (stockData && stockData.length > 0) {
+    stockValue = stockData.reduce((sum, order) => sum + Number(order.amount || 0), 0);
+  }
+
+  // 2. Return Total (Cash + Stock)
+  return Number(liquidBalance) + stockValue;
 }
 
 // Helper to parse JSON safely (Handles Database Text or JSON types)
@@ -368,11 +386,13 @@ router.post('/preview', async (req, res) => {
   const unitPrice = activeTier ? Number(activeTier.price) : Number(product.price);
   
   // This is the market value (What they will sell it for later)
-  // FIXED: Always use original price for resale value calculation
   const marketPrice = Number(product.price); 
 
-  // B. Discounts
-  const vipBonus = getVipBonus(wallet?.balance || 0);
+  // B. Discounts [UPDATED: Uses Net Worth]
+  const liquidBalance = Number(wallet?.balance || 0);
+  const netWorth = await getNetWorth(supabase, user_id, liquidBalance); // <--- NEW CALCULATION
+  const vipBonus = getVipBonus(netWorth); // <--- Uses Net Worth, not just balance
+  
   const adminDiscount = Number(product.discount || 0);
   const totalDiscount = adminDiscount + vipBonus;
 
@@ -393,7 +413,7 @@ router.post('/preview', async (req, res) => {
     vip_bonus: vipBonus,
     total_discount: totalDiscount,
     pay_amount: payAmount,
-    resale_price: resalePrice, // Return the fixed market value
+    resale_price: resalePrice,
     profit: profit
   });
 });
@@ -401,7 +421,6 @@ router.post('/preview', async (req, res) => {
 // Place Order (CREATE)
 router.post('/', async (req, res) => {
   const supabase = req.supabase;
-  // [FIX 1] Added 'details' to extract the Size/Color sent from frontend
   const { user_id, product_id, quantity, type, details } = req.body;
 
   // 1. Fetch Product
@@ -419,7 +438,7 @@ router.post('/', async (req, res) => {
   if (!wallet) return res.status(404).json({ error: "Wallet not found" });
 
   // ============================================================
-  // MATH ENGINE FIX (Bulk Profit)
+  // MATH ENGINE [UPDATED: Net Worth Logic]
   // ============================================================
   const tiers = parseJson(product.price_tiers);
   const activeTier = Array.isArray(tiers) 
@@ -434,7 +453,11 @@ router.post('/', async (req, res) => {
 
   // C. Discounts
   const admin_discount = Number(product.discount || 0);
-  const vip_bonus = getVipBonus(wallet.balance || 0);
+
+  const liquidBalance = Number(wallet.balance || 0);
+  const netWorth = await getNetWorth(supabase, user_id, liquidBalance); // <--- NEW CALCULATION
+  const vip_bonus = getVipBonus(netWorth); // <--- Uses Net Worth
+  
   const total_discount = admin_discount + vip_bonus;
 
   // D. Totals
@@ -445,7 +468,8 @@ router.post('/', async (req, res) => {
   const resale_price = market_unit_price * quantity; 
   const profit = resale_price - pay_amount;
 
-  if (wallet.balance < pay_amount) {
+  // CRITICAL: Must still have enough LIQUID cash to pay
+  if (liquidBalance < pay_amount) {
     return res.status(400).json({ error: "Insufficient wallet balance" });
   }
 
@@ -456,7 +480,7 @@ router.post('/', async (req, res) => {
   // A. Deduct Money
   const { error: walletError } = await supabase
     .from('wallets')
-    .update({ balance: wallet.balance - pay_amount })
+    .update({ balance: liquidBalance - pay_amount })
     .eq('id', wallet.id);
 
   if (walletError) {
@@ -490,8 +514,6 @@ router.post('/', async (req, res) => {
       total_discount,
       earn: profit, 
       resale_amount: resale_price,
-      
-      // [FIX 2] Save the Size/Color JSON to the database!
       details: details || {} 
     }])
     .select()

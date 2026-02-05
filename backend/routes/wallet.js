@@ -3,12 +3,12 @@
 const express = require('express');
 const router = express.Router();
 
-// -------- Get Wallet by User ID --------
+// -------- Get Wallet & Net Worth (TIER CALCULATION UPDATE) --------
 router.get('/:user_id', async (req, res) => {
   const supabase = req.supabase;
   const user_id = req.params.user_id;
 
-  // Try to get wallet
+  // 1. Get Liquid Wallet (Cash)
   let { data: wallet, error } = await supabase
     .from('wallets')
     .select('*')
@@ -26,7 +26,32 @@ router.get('/:user_id', async (req, res) => {
     wallet = data;
   }
 
-  res.json({ wallet });
+  // 2. [NEW] Calculate Stock Value (Capital locked in 'selling' items)
+  // We sum the 'amount' (cost) of all items currently owned by the user
+  const { data: stockData, error: stockError } = await supabase
+    .from('orders')
+    .select('amount')
+    .eq('user_id', user_id)
+    .eq('status', 'selling'); // Only count active stock
+
+  let stockValue = 0;
+  if (stockData && stockData.length > 0) {
+    // Sum up the amounts
+    stockValue = stockData.reduce((sum, order) => sum + Number(order.amount || 0), 0);
+  }
+
+  // 3. Combine for Frontend
+  const liquidBalance = Number(wallet.balance || 0);
+  const totalNetWorth = liquidBalance + stockValue;
+
+  // Send everything back so the frontend can show the breakdown
+  res.json({ 
+    wallet: {
+      ...wallet,
+      stock_value: stockValue,      // Active Inventory Value
+      net_worth: totalNetWorth      // The NEW number used for Tiers
+    }
+  });
 });
 
 // -------- Submit Deposit (user) --------
@@ -112,8 +137,6 @@ router.post('/withdraw', async (req, res) => {
     .single();
 
   if (error) {
-     // CRITICAL: If TX insert fails, we should technically refund the wallet here.
-     // For this simulation, we will just return the error, but in production, use a SQL Transaction.
      return res.status(400).json({ error: error.message });
   }
 
