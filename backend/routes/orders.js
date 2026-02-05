@@ -48,7 +48,8 @@ async function getProductData(supabase, product_id) {
   
   const { data, error } = await supabase
     .from('products')
-    .select('id, price, discount, stock, title, price_tiers') 
+    // [UPDATE] Added 'min_order' to the select list
+    .select('id, price, discount, stock, title, price_tiers, min_order') 
     .eq('id', product_id)
     .single();
 
@@ -376,6 +377,12 @@ router.post('/preview', async (req, res) => {
   
   if (!product) return res.status(404).json({ error: "Product not found" });
 
+  // [NEW] Min Order Check
+  const minOrder = parseInt(product.min_order || 1);
+  if (quantity < minOrder) {
+      return res.status(400).json({ error: `Minimum order quantity is ${minOrder} units.` });
+  }
+
   // A. Determine Base Price (Check Tiers)
   const tiers = parseJson(product.price_tiers);
   const activeTier = Array.isArray(tiers) 
@@ -426,6 +433,12 @@ router.post('/', async (req, res) => {
   // 1. Fetch Product
   const product = await getProductData(supabase, product_id);
   if (!product) return res.status(404).json({ error: "Product not found" });
+
+  // [NEW] Min Order Check (Strict Enforcement)
+  const minOrder = parseInt(product.min_order || 1);
+  if (quantity < minOrder) {
+      return res.status(400).json({ error: `Order Rejected: Minimum quantity is ${minOrder} units.` });
+  }
 
   // 2. Stock Check
   const currentStock = parseInt(product.stock || 0);

@@ -72,7 +72,7 @@ router.post('/', async (req, res) => {
       title,
       description,
       price,
-      min_order,
+      min_order: parseInt(min_order || 1),
       color: safeJson(color),
       size: safeJson(size),
       brand,
