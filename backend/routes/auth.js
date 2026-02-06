@@ -354,4 +354,39 @@ router.post('/forgot-password/reset', async (req, res) => {
   res.json({ message: 'Access Key Rotated Successfully.' });
 });
 
+// [D] Authenticated Key Rotation (Change Password)
+router.post('/change-password', async (req, res) => {
+  const supabase = req.supabase;
+  const { userId, currentPassword, newPassword } = req.body;
+
+  // 1. Verify Current Access Key
+  const { data: user, error: fetchError } = await supabase
+    .from('users')
+    .select('*')
+    .eq('id', userId)
+    .single();
+
+  if (fetchError || !user) {
+    return res.status(404).json({ error: 'Identity validation failed.' });
+  }
+
+  // NOTE: In production, compare hashed passwords (e.g., bcrypt.compare)
+  // Since your current login logic uses plain text, we compare directly here:
+  if (user.password !== currentPassword) {
+    return res.status(401).json({ error: 'Invalid current password.' });
+  }
+
+  // 2. Update to New Key
+  const { error: updateError } = await supabase
+    .from('users')
+    .update({ password: newPassword })
+    .eq('id', userId);
+
+  if (updateError) {
+    return res.status(500).json({ error: 'System Write Error: ' + updateError.message });
+  }
+
+  res.json({ message: 'Credentials successfully updated.' });
+});
+
 module.exports = router;
