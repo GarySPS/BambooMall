@@ -1,6 +1,6 @@
 // src/utils/api.js
 
-// [CHANGE] Import from the config file we created earlier so the port is always the same
+//Import from the config file we created earlier so the port is always the same
 import { API_BASE_URL } from "../config"; 
 
 // --- HELPER: Generic Fetch Wrapper ---

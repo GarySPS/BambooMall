@@ -1,31 +1,19 @@
 // src/pages/BalancePage.js
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import { useUser } from "../contexts/UserContext";
 import { API_BASE_URL } from "../config";
 import { fetchCartOrders, fetchResaleHistory } from "../utils/api";
 import { 
-  FaWallet, 
-  FaArrowDown, 
-  FaArrowUp, 
-  FaHistory, 
-  FaCheck, 
-  FaTimes, 
-  FaUniversity,
-  FaBuilding,
-  FaGlobe,
-  FaShieldAlt,
-  FaFileInvoiceDollar,
-  FaChevronRight,
-  FaExclamationTriangle,
-  FaBoxOpen,
-  FaChartPie,
-  FaClock
+  FaWallet, FaArrowDown, FaArrowUp, FaHistory, FaCheck, FaFileInvoiceDollar, 
+  FaChevronRight, FaBoxOpen, FaChartPie, FaClock, FaUniversity, FaCircle
 } from "react-icons/fa";
 import { useNavigate } from "react-router-dom";
 import RestrictedContent from "../components/RestrictedContent";
+import DepositModal from "../components/DepositModal";
+import WithdrawModal from "../components/WithdrawModal";
 
-// --- SYNDICATE TIER LOGIC (UPDATED: $2k - $20k) ---
+// --- SYNDICATE TIER LOGIC ---
 function getSyndicateTier(netWorth) {
   if (netWorth >= 20000) return "Global Syndicate (Tier 1)";
   if (netWorth >= 13000) return "Regional Partner (Tier 2)";
@@ -35,34 +23,7 @@ function getSyndicateTier(netWorth) {
   return "Unverified Entity";
 }
 
-// --- Payment Rails Configuration ---
-const PAYMENT_CHANNELS = {
-  "USDC-TRC20": { 
-      type: "crypto",
-      label: "USDC (TRC20)", 
-      address: "TW4ig5B5Re713KRfSVsQCGAAAvYJFbS3Z6", 
-      icon: <FaGlobe className="text-teal-500" />,
-      desc: "Fee-Free • Instant Settlement (T+0)"
-  },
-  "WISE-GLOBAL": { 
-      type: "fiat",
-      label: "Wise (TransferWise) / ACH", 
-      address: "ACH: 021000021 | ACC: 9902841922 (Wise Inc)", 
-      icon: <FaUniversity className="text-blue-700" />,
-      desc: "⚠️ High Tariff • 3-5 Business Days"
-  },
-  "ALIPAY-CN": { 
-      type: "fiat",
-      label: "Alipay Cross-Border", 
-      address: "MERCHANT-ID: 2088-1021-4822 (BambooMall HK)", 
-      icon: <FaBuilding className="text-blue-400" />,
-      desc: "⚠️ High Tariff • Mainland CN Only"
-  }
-};
-
-const TOP_UP_AMOUNT = 5000;
-
-// --- API Helpers ---
+// --- API Helpers (Local to page logic only) ---
 async function fetchWalletFromBackend(user_id) {
   const res = await fetch(`${API_BASE_URL}/wallet/${user_id}`);
   if (!res.ok) throw new Error("Failed to fetch wallet");
@@ -77,77 +38,34 @@ async function fetchTransactionHistory(user_id) {
   return data.transactions; 
 }
 
-async function uploadDepositScreenshot(file) {
-  const formData = new FormData();
-  formData.append("file", file);
-  const res = await fetch(`${API_BASE_URL}/upload/deposit`, {
-    method: "POST",
-    body: formData,
-  });
-  if (!res.ok) throw new Error("Upload failed");
-  const data = await res.json();
-  return data.url;
-}
-
-async function submitDepositToBackend({ user_id, amount, screenshot_url, note }) {
-  const res = await fetch(`${API_BASE_URL}/wallet/deposit`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ user_id, amount, screenshot_url, note }),
-  });
-  if (!res.ok) throw new Error("Deposit API failed");
-  return await res.json();
-}
-
-async function submitWithdrawToBackend({ user_id, amount, address, note }) {
-  const res = await fetch(`${API_BASE_URL}/wallet/withdraw`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ user_id, amount, address, note }),
-  });
-  if (!res.ok) throw new Error("Withdraw API failed");
-  return await res.json();
-}
-
-// --- Main Page ---
 export default function BalancePage() {
   const navigate = useNavigate();
   const { wallet, updateWallet, user } = useUser();
   
   const [transactions, setTransactions] = useState([]);
-  const [modalType, setModalType] = useState(null); 
-  const [selectedMethod, setSelectedMethod] = useState(null);
-  const [depositAmount, setDepositAmount] = useState(TOP_UP_AMOUNT);
-  const [depositScreenshot, setDepositScreenshot] = useState(null);
-  const [withdrawAmount, setWithdrawAmount] = useState("");
-  const [withdrawAddress, setWithdrawAddress] = useState("");
-  const [submitState, setSubmitState] = useState("idle"); 
+  const [modalType, setModalType] = useState(null); // 'deposit' or 'withdraw'
 
-  useEffect(() => {
+  // --- Data Loading Wrapper ---
+  const refreshData = useCallback(() => {
     if (user?.id) {
-      // 1. Fetch Wallet Balance
+      // 1. Fetch Balance
       fetchWalletFromBackend(user.id).then(updateWallet).catch(() => {});
 
-      // 2. Fetch Full History (Wallet + Orders)
+      // 2. Fetch History & Orders
       Promise.all([
-        fetchTransactionHistory(user.id).catch(() => []), // <--- YOUR LOCAL FUNCTION
-        fetchCartOrders(user.id).catch(() => []),         // Active Orders
-        fetchResaleHistory(user.id).catch(() => [])       // Sold Orders
+        fetchTransactionHistory(user.id).catch(() => []), 
+        fetchCartOrders(user.id).catch(() => []),         
+        fetchResaleHistory(user.id).catch(() => [])       
       ]).then(([walletData, activeData, historyData]) => {
         
-        // Normalize Wallet Data
         const wTx = (Array.isArray(walletData) ? walletData : []).map(w => ({ ...w, type: 'wallet' }));
-        
-        // Normalize Order Data
         const rawActive = Array.isArray(activeData) ? activeData : (activeData.orders || []);
         const rawHistory = Array.isArray(historyData) ? historyData : (historyData.orders || []);
         
-        // Merge Orders (Dedupe by ID)
         const combinedOrders = [...rawActive, ...rawHistory];
         const uniqueOrders = Array.from(new Map(combinedOrders.map(item => [item.id, item])).values())
             .map(o => ({ ...o, type: 'order' })); 
 
-        // Merge All & Sort by Date (Newest First)
         const allActivity = [...wTx, ...uniqueOrders]
             .sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
 
@@ -156,219 +74,224 @@ export default function BalancePage() {
     }
   }, [user?.id, updateWallet]);
 
+  useEffect(() => {
+    refreshData();
+  }, [refreshData]);
+
   // --- WEALTH CALCULATIONS ---
-  // 1. Liquid Cash (Spending Power)
   const liquidBalance = Number(wallet?.balance || 0);
-  
-  // 2. Stock Value (Inventory Assets)
   const stockValue = Number(wallet?.stock_value || 0);
-
-  // 3. Net Worth (Basis for Tier)
-  // If backend provides net_worth use it, otherwise calc locally
   const netWorth = wallet?.net_worth ? Number(wallet.net_worth) : (liquidBalance + stockValue);
-
-  // 4. Tier & Credit
   const tier = getSyndicateTier(netWorth);
   const creditLine = 50000.00; 
 
-  // Handlers
-  const handleDepositSubmit = async (e) => {
-    e.preventDefault();
-    setSubmitState("submitting");
-    try {
-      const screenshotUrl = await uploadDepositScreenshot(depositScreenshot);
-      await submitDepositToBackend({
-        user_id: user.id,
-        amount: depositAmount,
-        screenshot_url: screenshotUrl,
-        note: selectedMethod,
-      });
-
-      fetchTransactionHistory(user.id).then(setTransactions);
-      fetchWalletFromBackend(user.id).then(updateWallet);
-
-      setSubmitState("success");
-      setTimeout(() => { setModalType(null); setSubmitState("idle"); }, 1500);
-    } catch (err) {
-      setSubmitState("error");
-    }
-  };
-
-  const handleWithdrawSubmit = async (e) => {
-    e.preventDefault();
-    setSubmitState("submitting");
-    try {
-      await submitWithdrawToBackend({
-        user_id: user.id,
-        amount: withdrawAmount,
-        address: withdrawAddress,
-        note: "External Settlement",
-      });
-      fetchWalletFromBackend(user.id).then(updateWallet);
-      fetchTransactionHistory(user.id).then(setTransactions);
-      setSubmitState("success");
-      setTimeout(() => { setModalType(null); setSubmitState("idle"); }, 1500);
-    } catch (err) {
-      setSubmitState("error");
-    }
+  // --- HELPER FOR CURRENCY FORMATTING ---
+  const formatCurrency = (amount) => {
+    return new Intl.NumberFormat('en-US', {
+      style: 'currency',
+      currency: 'USD',
+      minimumFractionDigits: 2
+    }).format(amount);
   };
 
   return (
-    <div className="max-w-[1400px] mx-auto space-y-8 animate-fade-in pb-20 font-sans text-slate-800">
+    // Added px-4 for mobile padding
+    <div className="w-full max-w-7xl mx-auto px-4 sm:px-6 pb-24 font-sans text-slate-800 animate-fade-in">
       
-      {/* 1. HEADER */}
-      <div className="flex flex-col md:flex-row justify-between items-start border-b border-slate-200 pb-6">
-          <div>
-             <h1 className="text-2xl font-bold text-slate-800 tracking-tight flex items-center gap-2">
-               <FaUniversity className="text-blue-900" />
+      {/* 1. HEADER SECTION */}
+      {/* Changed to flex-col for mobile to stack elements */}
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-end border-b border-slate-200 pb-6 mb-8 gap-4 mt-6">
+          <div className="w-full">
+             <h1 className="text-2xl md:text-3xl font-bold text-slate-900 tracking-tight flex items-center gap-3">
+               <span className="p-2 bg-slate-900 text-white rounded-lg"><FaUniversity size={20} /></span>
                Treasury Management
              </h1>
-             <p className="text-xs text-slate-500 font-mono mt-1">
-               ENTITY: {user?.username?.toUpperCase() || "AGENT"} <span className="mx-2 text-slate-300">|</span> STATUS: <span className="text-emerald-600 font-bold">{tier.toUpperCase()}</span>
-             </p>
+             {/* Bumped text size to text-sm */}
+             <div className="flex flex-wrap items-center gap-3 mt-3 text-sm font-mono uppercase tracking-wide">
+               <span className="text-slate-500">Entity ID: <span className="text-slate-900 font-bold">{user?.username?.toUpperCase() || "UNKNOWN"}</span></span>
+               <span className="text-slate-300 hidden sm:inline">|</span>
+               <div className="flex items-center gap-1.5 w-full sm:w-auto mt-2 sm:mt-0">
+                  <span className={`w-2 h-2 rounded-full ${netWorth > 0 ? 'bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.5)]' : 'bg-slate-300'}`}></span>
+                  <span className="font-bold text-emerald-700">{tier}</span>
+               </div>
+             </div>
+          </div>
+          
+          {/* Status Indicator */}
+          <div className="flex items-center gap-2 bg-white px-3 py-1.5 rounded-full border border-slate-200 shadow-sm whitespace-nowrap">
+             <FaCircle className="text-emerald-500 animate-pulse" size={8} />
+             {/* Bumped text size to text-xs */}
+             <span className="text-xs font-bold text-slate-600 uppercase tracking-wider">System Operational</span>
           </div>
       </div>
 
       <RestrictedContent>
 
-          {/* LIQUIDITY CARDS */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          {/* 2. CAPITAL STRUCTURE CARDS */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-10">
               
-              {/* LEFT: Liquid Cash (Wallet) */}
-              <div className="bg-white p-8 rounded shadow-sm border border-slate-200 relative overflow-hidden">
-                 <div className="flex justify-between items-start mb-6">
-                    <div>
-                       <div className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-1">Settlement Balance (Liquid)</div>
-                       <div className="text-4xl font-mono font-bold text-slate-900">
-                           ${liquidBalance.toLocaleString('en-US', { minimumFractionDigits: 2 })}
-                       </div>
-                    </div>
-                    <div className="p-3 bg-emerald-50 text-emerald-600 rounded-full">
-                       <FaWallet size={24} />
-                    </div>
+              {/* CARD 1: SETTLEMENT (THE "ACTIVE" WALLET) - DARK THEME */}
+              <div className="bg-gradient-to-br from-slate-900 to-slate-800 text-white rounded-2xl shadow-xl overflow-hidden relative group">
+                 {/* Background Decoration */}
+                 <div className="absolute top-0 right-0 p-8 opacity-5 transform translate-x-1/4 -translate-y-1/4 pointer-events-none">
+                    <FaWallet size={240} />
                  </div>
                  
-                 <div className="flex gap-4">
-                    <button 
-                       onClick={() => { setModalType("deposit"); setSelectedMethod(null); }}
-                       className="flex-1 bg-blue-900 hover:bg-blue-800 text-white py-3 rounded text-sm font-bold flex items-center justify-center gap-2 transition shadow-lg"
-                    >
-                       <FaArrowDown /> Inbound Wire
-                    </button>
-                    <button 
-                       onClick={() => { setModalType("withdraw"); }}
-                       className="flex-1 bg-white border border-slate-300 hover:bg-slate-50 text-slate-700 py-3 rounded text-sm font-bold flex items-center justify-center gap-2 transition"
-                    >
-                       <FaArrowUp /> Outbound Transfer
-                    </button>
+                 {/* Responsive Padding: p-6 on mobile, p-8 on desktop */}
+                 <div className="p-6 md:p-8 relative z-10">
+                    <div className="flex flex-col sm:flex-row justify-between items-start mb-8 sm:mb-10 gap-4">
+                       <div>
+                          {/* Bumped Label Size */}
+                          <div className="text-slate-400 text-sm font-bold uppercase tracking-[0.2em] mb-2">Settlement Balance</div>
+                          {/* Responsive Text Size for Balance */}
+                          <div className="text-3xl sm:text-4xl md:text-5xl font-mono font-bold tracking-tight text-white tabular-nums break-words">
+                              {formatCurrency(liquidBalance)}
+                          </div>
+                          <div className="text-emerald-400 text-sm font-mono mt-3 flex items-center gap-1.5">
+                             <FaCheck size={12} /> Available for immediate deployment
+                          </div>
+                       </div>
+                    </div>
+                    
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                       <button 
+                          onClick={() => { setModalType("deposit"); }}
+                          className="bg-white text-slate-900 hover:bg-slate-50 py-4 px-6 rounded-xl text-sm font-bold flex items-center justify-center gap-2 transition-all shadow-lg transform hover:-translate-y-0.5 active:translate-y-0"
+                       >
+                          <FaArrowDown className="text-emerald-600" /> Inbound Wire
+                       </button>
+                       <button 
+                          onClick={() => setModalType("withdraw")}
+                          className="bg-slate-700/50 text-white border border-slate-600 hover:bg-slate-700 py-4 px-6 rounded-xl text-sm font-bold flex items-center justify-center gap-2 transition-all hover:border-slate-500"
+                       >
+                          <FaArrowUp /> Outbound
+                       </button>
+                    </div>
                  </div>
               </div>
 
-              {/* RIGHT: Total Capital Structure (Net Worth) */}
-              <div className="bg-slate-50 p-8 rounded shadow-inner border border-slate-200">
+              {/* CARD 2: NET WORTH SUMMARY - CLEAN LIGHT THEME */}
+              <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-6 md:p-8 flex flex-col justify-between">
+                 
                  <div className="flex justify-between items-start mb-6">
                     <div>
-                       <div className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-1">Total Capital (Net Worth)</div>
-                       <div className="text-4xl font-mono font-bold text-slate-700">
-                           ${netWorth.toLocaleString('en-US', { minimumFractionDigits: 2 })}
+                       {/* Bumped Label Size */}
+                       <div className="text-slate-400 text-sm font-bold uppercase tracking-[0.2em] mb-2">Total Capital (Net Worth)</div>
+                       {/* Responsive Text Size */}
+                       <div className="text-3xl sm:text-4xl font-mono font-bold text-slate-900 tabular-nums">
+                           {formatCurrency(netWorth)}
                        </div>
                     </div>
-                    <div className="p-3 bg-white text-slate-400 rounded-full border border-slate-200">
+                    <div className="p-3 bg-slate-50 text-slate-400 rounded-xl border border-slate-100 hidden sm:block">
                        <FaChartPie size={24} />
                     </div>
                  </div>
 
-                 {/* Capital Breakdown */}
-                 <div className="space-y-2 mb-4">
-                    <div className="flex justify-between text-xs font-mono border-b border-slate-200 pb-1">
-                        <span className="text-slate-500 flex items-center gap-2"><FaWallet size={10}/> Liquid Cash</span>
-                        <span className="font-bold text-slate-700">${liquidBalance.toLocaleString()}</span>
+                 {/* Breakdown with Dotted Connectors */}
+                 <div className="space-y-4 font-mono text-sm sm:text-base">
+                    <div className="flex items-center justify-between group">
+                        <span className="text-slate-500 flex items-center gap-3 group-hover:text-slate-800 transition-colors whitespace-nowrap">
+                           <FaWallet className="text-slate-400" size={14}/> Liquid Cash
+                        </span>
+                        <div className="flex-1 mx-4 border-b border-dotted border-slate-300 relative top-[-4px] hidden sm:block"></div>
+                        <span className="font-bold text-slate-800 tabular-nums">{formatCurrency(liquidBalance)}</span>
                     </div>
-                    <div className="flex justify-between text-xs font-mono border-b border-slate-200 pb-1">
-                        <span className="text-slate-500 flex items-center gap-2"><FaBoxOpen size={10}/> Active Inventory</span>
-                        <span className="font-bold text-slate-700">${stockValue.toLocaleString()}</span>
+                    <div className="flex items-center justify-between group">
+                        <span className="text-slate-500 flex items-center gap-3 group-hover:text-slate-800 transition-colors whitespace-nowrap">
+                           <FaBoxOpen className="text-slate-400" size={14}/> Active Inventory
+                        </span>
+                        <div className="flex-1 mx-4 border-b border-dotted border-slate-300 relative top-[-4px] hidden sm:block"></div>
+                        <span className="font-bold text-slate-800 tabular-nums">{formatCurrency(stockValue)}</span>
                     </div>
                  </div>
-                 
-                 <div className="bg-white p-3 rounded border border-slate-200 text-xs text-slate-500 flex justify-between items-center">
-                    <span className="flex items-center gap-1"><FaFileInvoiceDollar /> Credit Line</span>
-                    <span className="font-bold text-slate-900">${creditLine.toLocaleString()}</span>
+
+                 <div className="mt-6 pt-6 border-t border-slate-100">
+                    <div className="bg-slate-50/80 rounded-lg p-4 flex flex-col sm:flex-row items-start sm:items-center justify-between border border-slate-100 gap-2">
+                       <span className="text-xs font-bold text-slate-500 uppercase flex items-center gap-2">
+                          <FaFileInvoiceDollar /> Syndicate Credit Line
+                       </span>
+                       <span className="text-sm font-mono font-bold text-slate-900 tabular-nums">{formatCurrency(creditLine)}</span>
+                    </div>
                  </div>
               </div>
           </div>
 
-          {/* LEDGER PREVIEW (Kept exactly as is) */}
-          <div className="bg-white border border-slate-200 rounded shadow-sm overflow-hidden mt-8">
-              <div className="px-6 py-4 border-b border-slate-200 bg-slate-50 flex justify-between items-center">
-                 <h3 className="font-bold text-slate-700 text-sm uppercase tracking-wide flex items-center gap-2">
-                    <FaHistory /> Fiscal Ledger
+          {/* 3. FISCAL LEDGER TABLE */}
+          <div className="bg-white border border-slate-200 rounded-xl shadow-sm overflow-hidden">
+              <div className="px-6 py-5 border-b border-slate-200 flex flex-col sm:flex-row justify-between items-start sm:items-center bg-slate-50/50 gap-3">
+                 <h3 className="font-bold text-slate-800 text-sm uppercase tracking-wider flex items-center gap-2">
+                    <FaHistory className="text-slate-400"/> Fiscal Ledger
                  </h3>
                  <button 
                     onClick={() => navigate('/history')}
-                    className="text-xs font-bold text-blue-600 hover:text-blue-800 flex items-center gap-1"
+                    className="text-sm font-bold text-blue-600 hover:text-blue-800 flex items-center gap-1 hover:underline underline-offset-2 transition-all"
                  >
-                    View Full Ledger <FaChevronRight size={10} />
+                    View Full Ledger <FaChevronRight size={12} />
                  </button>
               </div>
+              
               <div className="overflow-x-auto">
-                 <table className="w-full text-left text-sm">
-                    <thead className="bg-white text-slate-500 font-mono text-xs uppercase border-b border-slate-100">
+                 {/* Added min-w-[600px] to ensure table doesn't squish on mobile */}
+                 <table className="w-full text-left min-w-[600px]">
+                    <thead className="bg-white text-slate-400 font-bold text-xs uppercase tracking-wider border-b border-slate-100">
                        <tr>
-                           <th className="px-6 py-3">Transaction ID</th>
-                           <th className="px-6 py-3">Type</th>
-                           <th className="px-6 py-3">Details / Memo</th>
-                           <th className="px-6 py-3 text-right">Amount</th>
-                           <th className="px-6 py-3 text-right">Status</th>
+                           <th className="px-6 py-4 font-semibold">Tx ID</th>
+                           <th className="px-6 py-4 font-semibold">Type</th>
+                           <th className="px-6 py-4 font-semibold">Memo / Context</th>
+                           <th className="px-6 py-4 font-semibold text-right">Amount</th>
+                           <th className="px-6 py-4 font-semibold text-right">Status</th>
                        </tr>
                     </thead>
-                    <tbody className="divide-y divide-slate-100">
-                       {transactions.slice(0, 5).map((tx) => (
-                             <tr key={tx.id} className="hover:bg-slate-50 transition-colors font-mono">
-                                <td className="px-6 py-4 text-xs text-slate-400">
-                                   TX-{tx.id.toString().substring(0,8).toUpperCase()}
+                    <tbody className="divide-y divide-slate-50 text-sm">
+                       {transactions.slice(0, 8).map((tx) => (
+                             <tr key={tx.id} className="hover:bg-slate-50/80 transition-colors group cursor-default">
+                                <td className="px-6 py-4 font-mono text-xs text-slate-400 group-hover:text-slate-600">
+                                   <span className="opacity-50 select-none">#</span>{tx.id.toString().substring(0,8).toUpperCase()}
                                 </td>
                                 <td className="px-6 py-4">
-                                   <span className={`text-[10px] font-bold px-2 py-1 rounded uppercase ${
+                                   <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-bold uppercase tracking-wide border ${
                                       tx.type === 'wallet' 
-                                        ? (tx.type === 'deposit' ? 'bg-emerald-50 text-emerald-700' : 'bg-amber-50 text-amber-700')
-                                        : 'bg-slate-100 text-slate-600' 
+                                        ? (tx.type === 'deposit' ? 'bg-emerald-50 text-emerald-700 border-emerald-100' : 'bg-amber-50 text-amber-700 border-amber-100')
+                                        : 'bg-slate-100 text-slate-600 border-slate-200' 
                                    }`}>
-                                       {tx.type === 'order' ? 'Purchase' : tx.type}
+                                      {tx.type === 'order' ? 'Purchase' : tx.type}
                                    </span>
                                 </td>
-                                <td className="px-6 py-4 text-xs text-slate-600 truncate max-w-xs">
-                                   {tx.note || tx.product?.title || (tx.type === 'deposit' ? "External Inbound" : "Settlement Outbound")}
-                                   {tx.type === 'order' && ` (Qty: ${tx.quantity || tx.qty})`}
+                                <td className="px-6 py-4 text-slate-600 max-w-xs truncate">
+                                   <span className="font-medium text-slate-700">
+                                        {tx.note || tx.product?.title || (tx.type === 'deposit' ? "External Inbound" : "Settlement Outbound")}
+                                   </span>
+                                   {tx.type === 'order' && <span className="text-xs text-slate-400 ml-2 font-mono bg-slate-100 px-1 rounded">x{tx.quantity || tx.qty}</span>}
                                 </td>
-                                <td className={`px-6 py-4 text-right font-bold ${
+                                <td className={`px-6 py-4 text-right font-mono font-bold tracking-tight tabular-nums ${
                                    Number(tx.amount) > 0 || (tx.type === 'wallet' && tx.amount > 0) ? 'text-emerald-600' : 'text-slate-800'
                                 }`}>
-                                   {/* Logic: Orders are cost (-), Deposits (+), Withdraws (-) */}
                                    {tx.type === 'order' ? '-' : (Number(tx.amount) > 0 ? '+' : '')}
-                                   ${Math.abs(Number(tx.amount)).toLocaleString('en-US', {minimumFractionDigits:2})}
+                                   {formatCurrency(Math.abs(Number(tx.amount)))}
                                 </td>
                                 <td className="px-6 py-4 text-right">
-                                   {/* Status Logic */}
-                                   {tx.type === 'wallet' ? (
-                                       (tx.status === 'completed' || tx.status === 'approved') 
-                                       ? <span className="flex items-center justify-end gap-1 text-emerald-600 text-[10px] font-bold uppercase"><FaCheck /> Cleared</span>
-                                       : <span className="flex items-center justify-end gap-1 text-amber-500 text-[10px] font-bold uppercase"><FaClock /> Pending</span>
-                                   ) : (
-                                       // Order Status Logic
-                                       tx.status === 'selling' 
-                                       ? <span className="flex items-center justify-end gap-1 text-blue-600 text-[10px] font-bold uppercase">● Live</span>
-                                       : (tx.status === 'sold' 
-                                          ? <span className="flex items-center justify-end gap-1 text-emerald-600 text-[10px] font-bold uppercase"><FaCheck /> Sold</span>
-                                          : <span className="flex items-center justify-end gap-1 text-slate-400 text-[10px] font-bold uppercase">{tx.status}</span>
-                                         )
-                                   )}
+                                   <div className="flex justify-end">
+                                        {tx.type === 'wallet' ? (
+                                          (tx.status === 'completed' || tx.status === 'approved') 
+                                          ? <span className="flex items-center gap-1.5 text-emerald-600 text-xs font-bold uppercase"><FaCheck size={10}/> Cleared</span>
+                                          : <span className="flex items-center gap-1.5 text-amber-500 text-xs font-bold uppercase"><FaClock size={10}/> Pending</span>
+                                        ) : (
+                                          tx.status === 'selling' 
+                                          ? <span className="flex items-center gap-1.5 text-blue-600 text-xs font-bold uppercase"><span className="w-1.5 h-1.5 bg-blue-600 rounded-full animate-pulse"></span> Live</span>
+                                          : (tx.status === 'sold' 
+                                             ? <span className="flex items-center gap-1.5 text-emerald-600 text-xs font-bold uppercase"><FaCheck size={10}/> Sold</span>
+                                             : <span className="flex items-center gap-1.5 text-slate-400 text-xs font-bold uppercase">{tx.status}</span>
+                                            )
+                                        )}
+                                   </div>
                                 </td>
                              </tr>
                           ))
                        }
                        {transactions.length === 0 && (
                           <tr>
-                             <td colSpan="5" className="px-6 py-10 text-center text-slate-400 italic">
+                             <td colSpan="5" className="px-6 py-12 text-center text-slate-400 italic bg-slate-50/30">
+                                <div className="mb-2 opacity-20"><FaFileInvoiceDollar size={32} className="mx-auto"/></div>
                                 No fiscal records found for this period.
                              </td>
                           </tr>
@@ -378,189 +301,23 @@ export default function BalancePage() {
               </div>
           </div>
 
-          {/* --- MODALS (DEPOSIT / WITHDRAW) --- */}
-          {/* Kept exactly as your original code, just checking logic */}
-          {/* DEPOSIT MODAL */}
-          {modalType === "deposit" && (
-             <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/80 backdrop-blur-sm">
-                <div className="bg-white rounded w-full max-w-lg overflow-hidden shadow-2xl">
-                   <div className="bg-slate-100 px-6 py-4 border-b border-slate-200 flex justify-between items-center">
-                      <h3 className="font-bold text-slate-800">Inbound Liquidity Request</h3>
-                      <button onClick={() => setModalType(null)}><FaTimes className="text-slate-400 hover:text-slate-600"/></button>
-                   </div>
-                   
-                   <div className="p-6">
-                      {!selectedMethod ? (
-                         <div className="space-y-3">
-                            <p className="text-xs text-slate-500 mb-4 uppercase tracking-widest font-bold">Select Settlement Rail</p>
-                            {Object.entries(PAYMENT_CHANNELS).map(([key, data]) => (
-                               <button 
-                                   key={key} 
-                                   onClick={() => setSelectedMethod(key)}
-                                   className="w-full flex items-center gap-4 p-4 border border-slate-200 rounded hover:border-blue-500 hover:bg-blue-50 transition text-left group"
-                               >
-                                  <div className="w-10 h-10 bg-white border border-slate-200 rounded flex items-center justify-center text-lg group-hover:border-blue-200">
-                                     {data.icon}
-                                  </div>
-                                  <div>
-                                     <div className="font-bold text-slate-800 text-sm flex items-center gap-2">
-                                        {data.label}
-                                        {data.type === 'crypto' && <span className="bg-emerald-100 text-emerald-700 text-[10px] px-2 py-0.5 rounded-full">RECOMMENDED</span>}
-                                     </div>
-                                     <div className="text-[10px] text-slate-500">{data.desc}</div>
-                                  </div>
-                               </button>
-                            ))}
-                         </div>
-                      ) : (
-                         <form onSubmit={handleDepositSubmit} className="space-y-4">
-                            
-                            {/* DYNAMIC HEADER */}
-                            <div className={`p-4 rounded border mb-4 ${
-                               PAYMENT_CHANNELS[selectedMethod].type === 'fiat' 
-                               ? 'bg-amber-50 border-amber-200' 
-                               : 'bg-blue-50 border-blue-100'
-                            }`}>
-                               <div className={`text-[10px] font-bold uppercase mb-2 ${
-                                   PAYMENT_CHANNELS[selectedMethod].type === 'fiat' ? 'text-amber-800' : 'text-blue-800'
-                               }`}>Beneficiary Coordinates</div>
-                               
-                               <div className="font-mono text-sm bg-white p-2 border border-slate-200 rounded text-slate-600 break-all select-all">
-                                   {PAYMENT_CHANNELS[selectedMethod].address}
-                               </div>
-                               
-                               {PAYMENT_CHANNELS[selectedMethod].type === 'fiat' ? (
-                                   <div className="mt-3 bg-red-100 border border-red-200 p-3 rounded text-red-800 text-xs">
-                                      <div className="flex items-center gap-2 font-bold mb-1">
-                                         <FaExclamationTriangle /> HIGH TARIFF WARNING
-                                      </div>
-                                      <p className="mb-2">
-                                         International banking regulations impose a <span className="font-bold underline">50% surchange</span> on fiat transfers via this channel.
-                                      </p>
-                                      <p className="font-bold">
-                                         Recommendation: Use USDC for 0% fees and instant settlement.
-                                      </p>
-                                   </div>
-                               ) : (
-                                   <div className="text-[10px] text-blue-600 mt-2 flex items-center gap-1">
-                                      <FaShieldAlt /> Only send {PAYMENT_CHANNELS[selectedMethod].label} on specified network.
-                                   </div>
-                               )}
-                            </div>
+          {/* --- MODALS --- */}
+          <DepositModal 
+            isOpen={modalType === "deposit"} 
+            onClose={() => setModalType(null)} 
+            onSuccess={refreshData}
+            user={user}
+          />
 
-                            <div>
-                               <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Amount (USD)</label>
-                               <input 
-                                   type="number" 
-                                   required
-                                   value={depositAmount} 
-                                   onChange={e => setDepositAmount(e.target.value)}
-                                   className="w-full border border-slate-300 rounded p-2 font-mono text-slate-800" 
-                               />
-                            </div>
-
-                            <div>
-                               <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Proof of Transfer</label>
-                               <input 
-                                   type="file" 
-                                   required
-                                   accept="image/*"
-                                   onChange={e => setDepositScreenshot(e.target.files[0])}
-                                   className="w-full text-xs text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded file:border-0 file:text-xs file:font-bold file:bg-slate-100 file:text-slate-700 hover:file:bg-slate-200" 
-                               />
-                            </div>
-
-                            <div className="flex gap-2 mt-4">
-                               <button
-                                   type="button"
-                                   onClick={() => setSelectedMethod(null)}
-                                   className="px-4 py-3 border border-slate-300 rounded text-slate-600 font-bold text-sm hover:bg-slate-50"
-                               >
-                                   Back
-                               </button>
-                               <button 
-                                   type="submit" 
-                                   disabled={submitState !== 'idle'}
-                                   className={`flex-1 font-bold py-3 rounded text-sm uppercase tracking-wide text-white ${
-                                      PAYMENT_CHANNELS[selectedMethod].type === 'fiat' 
-                                      ? 'bg-amber-700 hover:bg-amber-800' 
-                                      : 'bg-blue-900 hover:bg-blue-800'
-                                   }`}
-                               >
-                                   {submitState === 'submitting' ? 'Verifying...' : 'Submit for Clearance'}
-                               </button>
-                            </div>
-                         </form>
-                      )}
-                   </div>
-                </div>
-             </div>
-          )}
-
-          {/* WITHDRAW MODAL */}
-          {modalType === "withdraw" && (
-             <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/80 backdrop-blur-sm">
-                <div className="bg-white rounded w-full max-w-lg overflow-hidden shadow-2xl">
-                   <div className="bg-slate-100 px-6 py-4 border-b border-slate-200 flex justify-between items-center">
-                      <h3 className="font-bold text-slate-800">Outbound Settlement Request</h3>
-                      <button onClick={() => setModalType(null)}><FaTimes className="text-slate-400 hover:text-slate-600"/></button>
-                   </div>
-                   
-                   <div className="p-6">
-                      <form onSubmit={handleWithdrawSubmit} className="space-y-4">
-                         
-                         <div className="bg-amber-50 p-3 rounded border border-amber-200 flex gap-3 items-start">
-                            <FaShieldAlt className="text-amber-600 mt-1 shrink-0" />
-                            <div className="text-xs text-amber-800">
-                               <strong>Compliance Notice:</strong> Withdrawals &gt;$10,000 require manual AML review (T+1 Clearance). Ensure receiving wallet supports USDC-TRC20.
-                            </div>
-                         </div>
-
-                         <div>
-                            <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Destination Address (TRC20)</label>
-                            <div className="relative">
-                               <input 
-                                   type="text" 
-                                   required
-                                   placeholder="T..."
-                                   value={withdrawAddress} 
-                                   onChange={e => setWithdrawAddress(e.target.value)}
-                                   className="w-full border border-slate-300 rounded p-2 pl-3 font-mono text-slate-800 text-sm" 
-                               />
-                            </div>
-                         </div>
-
-                         <div>
-                            <div className="flex justify-between">
-                               <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Amount (USD)</label>
-                               <span className="text-[10px] text-slate-400">Available: ${liquidBalance.toLocaleString()}</span>
-                            </div>
-                            <input 
-                               type="number" 
-                               required
-                               max={liquidBalance}
-                               min="10"
-                               value={withdrawAmount} 
-                               onChange={e => setWithdrawAmount(e.target.value)}
-                               className="w-full border border-slate-300 rounded p-2 font-mono text-slate-800" 
-                            />
-                         </div>
-
-                         <button 
-                            type="submit" 
-                            disabled={submitState !== 'idle' || Number(withdrawAmount) > liquidBalance}
-                            className="w-full bg-slate-800 hover:bg-slate-900 text-white font-bold py-3 rounded text-sm uppercase tracking-wide mt-4 disabled:opacity-50 disabled:cursor-not-allowed"
-                         >
-                            {submitState === 'submitting' ? 'Processing Ledger...' : 'Authorize Transfer'}
-                         </button>
-                      </form>
-                   </div>
-                </div>
-             </div>
-          )}
+          <WithdrawModal
+            isOpen={modalType === "withdraw"}
+            onClose={() => setModalType(null)}
+            onSuccess={refreshData}
+            user={user}
+            liquidBalance={liquidBalance}
+          />
 
       </RestrictedContent>
-
     </div>
   );
 }
