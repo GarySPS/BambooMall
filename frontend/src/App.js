@@ -29,6 +29,8 @@ const BalancePage = lazy(() => import("./pages/BalancePage"));
 const HistoryPage = lazy(() => import("./pages/HistoryPage"));
 const KYCVerificationPage = lazy(() => import("./pages/KYCVerificationPage"));
 const ProfilePage = lazy(() => import("./pages/ProfilePage"));
+// NEW IMPORT:
+const ChangePasswordPage = lazy(() => import("./pages/ChangePasswordPage")); 
 const MembershipPage = lazy(() => import("./pages/MembershipPage"));
 const NewsPage = lazy(() => import("./pages/NewsPage"));
 const AboutUsPage = lazy(() => import("./pages/AboutUsPage")); 
@@ -84,19 +86,17 @@ function AppContent() {
           <Route path="/login" element={<LoginPage />} />
           <Route path="/signup" element={<SignupPage />} />
           <Route path="/otp" element={<OTPPage />} />
-          {/* FIXED: Changed from "/forgot" to "/forgot-password" to match Login Page link */}
           <Route path="/forgot-password" element={<ForgotPasswordPage />} />
 
           {/* --- 2. ADMIN ROUTES (God Mode) --- */}
-          {/* Requires user.role === 'admin' check inside AdminLayout */}
           <Route path="/admin" element={<AdminLayout />}>
-             <Route index element={<AdminOverviewPage />} />
-             <Route path="users" element={<AdminUserPage />} />
-             <Route path="orders" element={<AdminOrderPage />} />
-             <Route path="deposits" element={<AdminDepositPage />} />
-             <Route path="withdrawals" element={<AdminWithdrawPage />} />
-             <Route path="kyc" element={<AdminKYCPage />} />
-             <Route path="create-product" element={<AdminProductCreate />} />
+              <Route index element={<AdminOverviewPage />} />
+              <Route path="users" element={<AdminUserPage />} />
+              <Route path="orders" element={<AdminOrderPage />} />
+              <Route path="deposits" element={<AdminDepositPage />} />
+              <Route path="withdrawals" element={<AdminWithdrawPage />} />
+              <Route path="kyc" element={<AdminKYCPage />} />
+              <Route path="create-product" element={<AdminProductCreate />} />
           </Route>
 
           {/* --- 3. AGENT DASHBOARD (Sidebar Layout) --- */}
@@ -119,6 +119,10 @@ function AppContent() {
                <Route path="/balance" element={<BalancePage />} />
                <Route path="/history" element={<HistoryPage />} />
                <Route path="/profile" element={<ProfilePage />} />
+               
+               {/* NEW ROUTE ADDED HERE */}
+               <Route path="/change-password" element={<ChangePasswordPage />} />
+               
                <Route path="/kyc-verification" element={<KYCVerificationPage />} />
                <Route path="/membership" element={<MembershipPage />} />
             </Route>

@@ -5,51 +5,136 @@ import { useUser } from "../contexts/UserContext";
 import { useNavigate } from "react-router-dom";
 import { API_BASE_URL } from "../config"; 
 import { 
-  FaBuilding, 
-  FaCheckCircle, 
-  FaGlobe, 
-  FaServer, 
-  FaLock, 
-  FaFileUpload,
-  FaFingerprint,
-  FaCopy,
-  FaUserShield,
-  FaIdCard
-} from "react-icons/fa";
+  Building2, 
+  CheckCircle2, 
+  Globe, 
+  Server, 
+  Lock, 
+  UploadCloud,
+  Fingerprint,
+  Copy,
+  ShieldCheck,
+  CreditCard,
+  Briefcase,
+  AlertTriangle,
+  TrendingUp,
+  Activity,
+  FileText,
+  Landmark,
+  ArrowRight
+} from "lucide-react";
 
-// --- TIER LOGIC (Matches New Standards) ---
+// --- HELPER: CURRENCY FORMATTER ---
+const fmt = (n) => new Intl.NumberFormat('en-US', { 
+  style: 'currency', 
+  currency: 'USD', 
+  minimumFractionDigits: 2 
+}).format(n);
+
+// --- BUSINESS LOGIC ---
 function getSyndicateTier(netWorth) {
-  if (netWorth >= 20000) return "Global Syndicate (Tier 1)";
+  if (netWorth >= 20000) return "Titanium Syndicate (Tier 1)";
   if (netWorth >= 13000) return "Regional Partner (Tier 2)";
   if (netWorth >= 8000)  return "Regional Associate";
   if (netWorth >= 4000)  return "Wholesale Agent (Tier 3)";
   if (netWorth >= 2000)  return "Verified Scout";
-  return "Unverified Entity";
+  return "Standard Entity";
 }
 
-// --- Badge Component ---
-function EntityBadge({ tier, kycStatus }) {
+// --- SUB-COMPONENTS (UPGRADED UI) ---
+
+// 1. Premium Tier Badge (Larger, Bolder)
+function TierBadge({ tier, kycStatus }) {
   const isVerified = kycStatus === 'approved';
-  // If verified, show the actual Calculated Tier. If not, show Unverified.
-  const displayTier = isVerified ? tier : "Unverified Entity";
+  const isHighTier = tier.includes("Titanium") || tier.includes("Partner");
   
   return (
-    <div className={`flex items-center gap-2 px-3 py-1 rounded text-xs font-bold uppercase tracking-widest border ${
-      isVerified ? "bg-emerald-50 text-emerald-700 border-emerald-200" : "bg-amber-50 text-amber-700 border-amber-200"
+    <div className={`flex items-center gap-2 px-4 py-2 rounded-md text-xs font-black uppercase tracking-widest border-2 shadow-sm ${
+      isVerified 
+        ? (isHighTier ? "bg-amber-50 text-amber-900 border-amber-200" : "bg-emerald-50 text-emerald-900 border-emerald-200")
+        : "bg-slate-100 text-slate-500 border-slate-200"
     }`}>
-      {isVerified ? <FaCheckCircle /> : <FaLock />}
-      {displayTier}
+      {isVerified ? <ShieldCheck size={16} strokeWidth={2.5} /> : <Lock size={16} />}
+      <span className="truncate max-w-[140px] md:max-w-none">
+        {isVerified ? tier : "PENDING CLEARANCE"}
+      </span>
     </div>
   );
 }
 
+// 2. Stat Card (Heavier Fonts, Terminal Look)
+function StatCard({ label, value, subtext, icon: Icon }) {
+  return (
+    <div className="bg-white p-5 md:p-6 flex items-start justify-between group transition-colors hover:bg-slate-50 border-r border-slate-100 last:border-0">
+      <div>
+        <div className="text-[11px] font-bold text-slate-500 uppercase tracking-widest mb-2 flex items-center gap-2">
+            {label}
+        </div>
+        <div className="text-2xl md:text-3xl font-mono font-semibold text-slate-900 tracking-tight">
+            {value}
+        </div>
+        {subtext && (
+            <div className="text-[11px] font-bold text-emerald-700 mt-2 flex items-center gap-1 bg-emerald-50 w-fit px-2 py-0.5 rounded">
+                <TrendingUp size={12} strokeWidth={3}/> {subtext}
+            </div>
+        )}
+      </div>
+      <div className="p-3 bg-slate-100 text-slate-500 rounded-lg group-hover:bg-white group-hover:shadow-md group-hover:text-slate-900 transition-all border border-slate-200">
+        <Icon size={20} strokeWidth={2} />
+      </div>
+    </div>
+  );
+}
+
+// 3. Info Field (The "Ledger" Look)
+function InfoField({ label, value, statusColor, isMono, icon }) {
+  return (
+    <div className="w-full">
+      <label className="block text-[11px] font-bold text-slate-500 uppercase tracking-widest mb-2 ml-1">{label}</label>
+      {statusColor ? (
+        <div className={`w-full md:w-auto text-sm font-bold px-4 py-3 rounded border-2 inline-flex items-center gap-2 ${statusColor}`}>
+           {icon} {value}
+        </div>
+      ) : (
+        <div className={`w-full bg-slate-50 border-b-2 border-slate-200 hover:border-slate-300 text-slate-900 px-4 py-3 rounded-t-sm text-sm ${isMono ? 'font-mono text-sm tracking-tight' : 'font-semibold'} flex items-center justify-between transition-colors`}>
+           <span className="truncate">{value}</span>
+           {icon && <span className="text-slate-400 ml-2 shrink-0">{icon}</span>}
+        </div>
+      )}
+    </div>
+  );
+}
+
+// 4. Security Action (Larger Touch Targets)
+function SecurityAction({ label, status, isGood, onClick, icon: Icon }) {
+  return (
+    <div 
+       onClick={onClick}
+       className={`flex justify-between items-center p-4 border rounded-md cursor-pointer transition-all active:scale-[0.99] hover:shadow-sm ${isGood ? 'bg-white border-slate-200' : 'bg-amber-50 border-amber-200'}`}
+    >
+       <div className="flex items-center gap-4">
+         <div className={`p-2 rounded-full ${isGood ? 'bg-slate-100 text-slate-600' : 'bg-amber-100 text-amber-700'}`}>
+            <Icon size={18} strokeWidth={2.5}/>
+         </div>
+         <span className="text-xs md:text-sm font-bold text-slate-700 uppercase tracking-wide">{label}</span>
+       </div>
+       <span className={`text-[10px] font-black px-2 py-1 rounded-md uppercase tracking-widest ${isGood ? 'text-emerald-800 bg-emerald-100' : 'text-amber-800 bg-amber-100'}`}>
+          {status}
+       </span>
+    </div>
+  );
+}
+
+// --- MAIN PAGE COMPONENT ---
 export default function ProfilePage() {
   const { user, updateWallet } = useUser();
   const navigate = useNavigate();
+  
+  // State
+  const [localWallet, setLocalWallet] = useState(null);
   const [apiKey, setApiKey] = useState("sk_live_************************");
   const [licenseFile, setLicenseFile] = useState(null);
   const [uploadStatus, setUploadStatus] = useState("idle");
-  const [localWallet, setLocalWallet] = useState(null);
 
   // Fetch Wallet Data
   useEffect(() => {
@@ -59,7 +144,7 @@ export default function ProfilePage() {
           const res = await fetch(`${API_BASE_URL}/wallet/${user.id}`);
           if (res.ok) {
             const data = await res.json();
-            setLocalWallet(data.wallet); // Store locally for calculation
+            setLocalWallet(data.wallet); 
             if (data.wallet && updateWallet) updateWallet(data.wallet);
           }
         } catch (error) {
@@ -71,7 +156,7 @@ export default function ProfilePage() {
   }, [user?.id, updateWallet]);
 
   const revealKey = () => {
-    setApiKey(`sk_live_${Math.random().toString(36).substring(2, 18).toUpperCase()}`);
+    setApiKey(`sk_live_${Math.random().toString(36).substring(2, 24).toUpperCase()}`);
   };
 
   const handleUpload = (e) => {
@@ -83,191 +168,236 @@ export default function ProfilePage() {
     }, 2000);
   };
 
-  if (!user) return <div className="p-10 text-center font-mono text-xs">ESTABLISHING SECURE CONNECTION...</div>;
+  if (!user) return <div className="flex h-screen items-center justify-center text-xs uppercase tracking-widest font-bold text-slate-400">Secure Handshake...</div>;
 
-  // --- CALCULATE TIER DYNAMICALLY ---
+  // --- METRICS ---
   const liquidBalance = Number(localWallet?.balance || 0);
   const stockValue = Number(localWallet?.stock_value || 0);
-  // Backend usually sends net_worth, but we fallback to manual calc just in case
   const netWorth = localWallet?.net_worth ? Number(localWallet.net_worth) : (liquidBalance + stockValue);
   const currentTier = getSyndicateTier(netWorth);
 
   return (
-    <div className="max-w-[1400px] mx-auto space-y-8 animate-fade-in pb-20 font-sans text-slate-800">
+    <div className="min-h-screen w-full bg-[#F1F5F9] text-slate-900 font-sans pb-32">
       
-      {/* 1. HEADER: Entity Context */}
-      <div className="flex flex-col md:flex-row justify-between items-start border-b border-slate-200 pb-6">
-         <div>
-            <h1 className="text-2xl font-bold text-slate-800 tracking-tight flex items-center gap-2">
-              <FaBuilding className="text-blue-900" />
-              Corporate Entity Profile
-            </h1>
-            <div className="flex items-center gap-3 mt-2 text-xs font-mono text-slate-500">
-              <span>ENTITY ID: {user.id.substring(0, 8).toUpperCase()}</span>
-              <span>|</span>
-              <span>JURISDICTION: NON-DOMICILED (INTL)</span>
-            </div>
-         </div>
-         <div className="mt-4 md:mt-0">
-            {/* Dynamic Badge based on Net Worth */}
-            <EntityBadge tier={currentTier} kycStatus={user.kyc_status} />
-         </div>
+      {/* 1. HEADER (Larger & Cleaner) */}
+      <div className="bg-white border-b border-slate-200 sticky top-0 z-30 shadow-sm">
+          <div className="max-w-7xl mx-auto px-4 sm:px-8 h-auto min-h-[5rem] py-4 md:py-0 md:h-24 flex flex-col md:flex-row md:items-center justify-between gap-4">
+              <div className="flex justify-between items-center w-full md:w-auto">
+                 <div className="flex flex-col gap-1">
+                    <div className="flex items-center gap-3">
+                       <h1 className="text-xl md:text-2xl font-black text-slate-900 uppercase tracking-tighter flex items-center gap-3">
+                          <Briefcase className="text-slate-900" size={24} strokeWidth={3}/> 
+                          Entity Dossier
+                       </h1>
+                       <span className="px-2 py-0.5 rounded bg-slate-900 text-white text-[10px] font-bold uppercase tracking-widest hidden md:block">
+                          Confidential
+                       </span>
+                    </div>
+                    {/* Status Line */}
+                    <div className="flex items-center gap-4 text-xs text-slate-500 font-mono">
+                       <span className="hidden md:inline font-semibold">REF: {user.id.substring(0, 8).toUpperCase()}</span>
+                       <span className="flex items-center gap-2 text-emerald-700 font-bold bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-100">
+                           <div className="w-2 h-2 bg-emerald-500 rounded-full animate-pulse"></div>
+                           SYSTEM ONLINE
+                       </span>
+                    </div>
+                 </div>
+                 {/* Mobile Badge */}
+                 <div className="md:hidden">
+                    <TierBadge tier={currentTier} kycStatus={user.kyc_status} />
+                 </div>
+              </div>
+              
+              {/* Desktop Badge */}
+              <div className="hidden md:block">
+                <TierBadge tier={currentTier} kycStatus={user.kyc_status} />
+              </div>
+          </div>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+      <div className="max-w-7xl mx-auto px-4 sm:px-8 pt-8 space-y-8">
          
-         {/* 2. LEFT COL: Identity & Docs */}
-         <div className="lg:col-span-2 space-y-6">
-            
-            {/* Identity Card */}
-            <div className="bg-white p-6 rounded shadow-sm border border-slate-200">
-               <h3 className="text-sm font-bold text-slate-700 uppercase tracking-wide mb-4 flex items-center gap-2">
-                  <FaFingerprint /> Account Identity
-               </h3>
-               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  <div>
-                     <label className="block text-xs font-bold text-slate-400 uppercase mb-1">Registered Agent</label>
-                     <div className="font-mono text-slate-800 bg-slate-50 p-2 rounded border border-slate-200">
-                        {user.username || user.email}
-                     </div>
-                  </div>
-                  <div>
-                     <label className="block text-xs font-bold text-slate-400 uppercase mb-1">Contact Email</label>
-                     <div className="font-mono text-slate-800 bg-slate-50 p-2 rounded border border-slate-200">
-                        {user.email}
-                     </div>
-                  </div>
-                  <div>
-                     <label className="block text-xs font-bold text-slate-400 uppercase mb-1">Settlement Currency</label>
-                     <div className="font-mono text-slate-800 bg-slate-50 p-2 rounded border border-slate-200 flex items-center justify-between">
-                        <span>USDC (ERC20 / TRC20)</span>
-                        <FaGlobe className="text-slate-400" />
-                     </div>
-                  </div>
-                  <div>
-                     <label className="block text-xs font-bold text-slate-400 uppercase mb-1">Tax Status</label>
-                     <div className="font-mono text-emerald-700 bg-emerald-50 p-2 rounded border border-emerald-100 font-bold">
-                        EXEMPT (Free Trade Zone)
-                     </div>
-                  </div>
+         {/* 2. FINANCIAL DASHBOARD (High Impact) */}
+         <div className="grid grid-cols-1 md:grid-cols-3 gap-0 rounded-xl overflow-hidden border border-slate-200 shadow-sm bg-white divide-y md:divide-y-0 md:divide-x divide-slate-100">
+            <StatCard 
+              label="Total Liquidity Position" 
+              value={fmt(netWorth)} 
+              subtext="Real-time Valuation"
+              icon={Landmark}
+            />
+            <StatCard 
+              label="Buying Power" 
+              value={fmt(liquidBalance)} 
+              icon={Activity}
+            />
+            <div className="bg-white p-5 md:p-6 flex flex-col justify-between">
+               <div className="flex justify-between items-start mb-4">
+                 <span className="text-[11px] font-bold text-slate-500 uppercase tracking-widest">Daily Limit</span>
+                 <span className="text-[11px] font-mono font-bold text-slate-700 bg-slate-100 px-2 py-1 rounded">TIER 2 CAP</span>
+               </div>
+               <div className="w-full bg-slate-100 h-3 rounded-full mb-3 overflow-hidden border border-slate-200">
+                 <div className="bg-slate-900 h-full w-[45%] rounded-full"></div>
+               </div>
+               <div className="flex justify-between text-xs font-mono font-semibold text-slate-600">
+                 <span>$12,400.00</span>
+                 <span>$50,000.00 MAX</span>
                </div>
             </div>
-
-            {/* Officer Verification (The Link to KYC Page) */}
-            <div className="bg-white p-6 rounded shadow-sm border border-slate-200">
-               <div className="flex justify-between items-start">
-                  <h3 className="text-sm font-bold text-slate-700 uppercase tracking-wide mb-4 flex items-center gap-2">
-                     <FaUserShield /> Designated Officer Verification
-                  </h3>
-                  {user.kyc_status === 'approved' ? (
-                     <span className="bg-emerald-100 text-emerald-700 px-2 py-1 rounded text-[10px] font-bold uppercase">Cleared</span>
-                  ) : (
-                     <span className="bg-amber-100 text-amber-700 px-2 py-1 rounded text-[10px] font-bold uppercase animate-pulse">Action Required</span>
-                  )}
-               </div>
-               
-               <div className="flex items-center gap-4">
-                  <div className="p-3 bg-slate-100 rounded text-slate-400">
-                     <FaIdCard size={24} />
-                  </div>
-                  <div className="flex-1">
-                     <p className="text-xs text-slate-500 leading-relaxed mb-2">
-                        To activate high-volume purchasing (Tier 2+), the designated account officer must complete biometric verification.
-                     </p>
-                     {user.kyc_status === 'approved' ? (
-                        <div className="text-sm font-bold text-emerald-600 flex items-center gap-2">
-                           <FaCheckCircle /> Biometric Data on File
-                        </div>
-                     ) : (
-                        <button 
-                           onClick={() => navigate('/kyc-verification')}
-                           className="bg-blue-900 text-white px-6 py-2 rounded text-xs font-bold uppercase hover:bg-blue-800 shadow-md transition-transform active:scale-95"
-                        >
-                           Launch Biometric Clearance
-                        </button>
-                     )}
-                  </div>
-               </div>
-            </div>
-
-            {/* Corporate Docs Upload */}
-            <div className="bg-white p-6 rounded shadow-sm border border-slate-200">
-               <h3 className="text-sm font-bold text-slate-700 uppercase tracking-wide mb-4 flex items-center gap-2">
-                  <FaFileUpload /> Corporate Documents
-               </h3>
-               <div className="bg-blue-50 border border-blue-100 p-4 rounded mb-4 text-xs text-blue-800 leading-relaxed">
-                  <strong>Requirement:</strong> To increase daily settlement limits above $50,000, please upload a valid Business License or Certificate of Incorporation.
-               </div>
-               
-               <form onSubmit={handleUpload} className="flex items-center gap-4">
-                  <div className="flex-1">
-                     <input 
-                        type="file" 
-                        accept=".pdf,.jpg,.png"
-                        onChange={(e) => setLicenseFile(e.target.files[0])}
-                        className="w-full text-xs text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded file:border-0 file:text-xs file:font-bold file:bg-slate-100 file:text-slate-700 hover:file:bg-slate-200"
-                     />
-                  </div>
-                  <button 
-                     type="submit" 
-                     disabled={!licenseFile || uploadStatus !== 'idle'}
-                     className="bg-slate-800 text-white px-6 py-2 rounded text-xs font-bold uppercase hover:bg-slate-900 disabled:opacity-50"
-                  >
-                     {uploadStatus === 'uploading' ? 'Transmitting...' : uploadStatus === 'success' ? 'Submitted' : 'Upload Proof'}
-                  </button>
-               </form>
-            </div>
-
          </div>
 
-         {/* 3. RIGHT COL: Developer & Security */}
-         <div className="space-y-6">
-            
-            {/* API Access */}
-            <div className="bg-slate-900 text-slate-400 p-6 rounded shadow-lg">
-               <h3 className="text-sm font-bold text-white uppercase tracking-wide mb-4 flex items-center gap-2">
-                  <FaServer /> API Credentials
-               </h3>
-               <p className="text-xs mb-4 leading-relaxed">
-                  Use this key to access the <strong>BambooMall Settlement API</strong> for automated high-frequency purchasing.
-               </p>
-               <div className="bg-black/50 p-3 rounded border border-slate-700 font-mono text-xs break-all relative group">
-                  {apiKey}
-                  <button 
-                     onClick={revealKey}
-                     className="absolute top-2 right-2 text-slate-500 hover:text-white"
-                     title="Generate Key"
-                  >
-                     <FaCopy />
-                  </button>
-               </div>
-               <button 
-                  onClick={revealKey}
-                  className="mt-4 w-full bg-slate-800 hover:bg-slate-700 text-white py-2 rounded text-xs font-bold uppercase border border-slate-700 transition"
-               >
-                  Generate Production Key
-               </button>
-            </div>
+         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+             
+             {/* 3. LEFT COL: Identity & Docs */}
+             <div className="lg:col-span-2 space-y-8">
+               
+                {/* Identity Card */}
+                <div className="bg-white shadow-sm border border-slate-200 rounded-xl overflow-hidden">
+                    <div className="px-6 py-5 border-b border-slate-100 flex justify-between items-center bg-slate-50">
+                        <h3 className="text-sm font-black text-slate-800 uppercase tracking-widest flex items-center gap-3">
+                           <Building2 size={18} className="text-slate-400"/> Corporate Identity
+                        </h3>
+                        <span className="text-[10px] font-bold text-slate-500 flex items-center gap-1 bg-white px-2 py-1 rounded border border-slate-200 shadow-sm">
+                          <Globe size={12}/> OFFSHORE (INTL)
+                        </span>
+                    </div>
+                    
+                    <div className="p-6 md:p-8 grid grid-cols-1 md:grid-cols-2 gap-6 md:gap-x-10 md:gap-y-8">
+                       <InfoField label="Registered Agent" value={user.username || user.email.split('@')[0]} />
+                       <InfoField label="Settlement Currency" value="USDC (TRC20)" icon={<Globe size={14}/>} />
+                       <InfoField label="Primary Contact" value={user.email} isMono />
+                       <InfoField 
+                          label="Tax Classification" 
+                          value="EXEMPT (Free Trade)" 
+                          statusColor="text-emerald-800 bg-emerald-50 border-emerald-200" 
+                          icon={<CheckCircle2 size={16}/>}
+                       />
+                       
+                       <div className="md:col-span-2 pt-6 border-t border-slate-100 mt-2">
+                          <label className="block text-[11px] font-bold text-slate-500 uppercase mb-3 tracking-widest">Registration Compliance</label>
+                          <div className="flex items-center gap-4">
+                             <div className="h-4 flex-1 bg-slate-100 rounded-full overflow-hidden border border-slate-200">
+                                <div className={`h-full ${user.kyc_status === 'approved' ? 'bg-emerald-500 w-full' : 'bg-amber-400 w-2/3'}`}></div>
+                             </div>
+                             <span className="text-xs font-black text-slate-700 uppercase">
+                                {user.kyc_status === 'approved' ? '100% Compliant' : '66% Verified'}
+                             </span>
+                          </div>
+                       </div>
+                    </div>
+                </div>
 
-            {/* Account Actions */}
-            <div className="bg-white p-6 rounded shadow-sm border border-slate-200">
-               <h3 className="text-sm font-bold text-slate-700 uppercase tracking-wide mb-4">
-                  Security Settings
-               </h3>
-               <div className="space-y-3">
-                  <button className="w-full text-left px-4 py-3 bg-slate-50 hover:bg-slate-100 rounded border border-slate-200 text-xs font-bold text-slate-600 flex justify-between items-center">
-                     <span>Change Access Password</span>
-                     <FaLock className="text-slate-400" />
-                  </button>
-                  <button className="w-full text-left px-4 py-3 bg-slate-50 hover:bg-slate-100 rounded border border-slate-200 text-xs font-bold text-slate-600 flex justify-between items-center">
-                     <span>Two-Factor Authentication (2FA)</span>
-                     <span className="text-emerald-600">ENABLED</span>
-                  </button>
-               </div>
-            </div>
+                {/* Compliance / Docs Section */}
+                <div className="bg-white shadow-sm border border-slate-200 rounded-xl overflow-hidden">
+                    <div className="px-6 py-5 border-b border-slate-100 flex justify-between items-center bg-slate-50">
+                        <h3 className="text-sm font-black text-slate-800 uppercase tracking-widest flex items-center gap-3">
+                           <FileText size={18} className="text-slate-400"/> Documents
+                        </h3>
+                    </div>
+                    <div className="p-6 md:p-8">
+                       {!licenseFile && uploadStatus !== 'success' && (
+                         <div className="mb-6 flex items-start gap-4 p-4 bg-amber-50 border-l-4 border-amber-400 rounded-r-md text-amber-900 shadow-sm">
+                            <AlertTriangle size={20} className="mt-0.5 shrink-0"/>
+                            <div className="text-sm font-medium leading-relaxed">
+                               <strong>Requirement:</strong> Upload Certificate of Incorporation to unlock Tier 2.
+                            </div>
+                         </div>
+                       )}
+
+                       <div className="flex flex-col md:flex-row items-center gap-4 bg-slate-50 p-6 rounded-lg border-2 border-slate-200 border-dashed hover:border-slate-300 transition-colors">
+                          <div className="flex-1 w-full">
+                             <input 
+                                type="file" 
+                                accept=".pdf,.jpg,.png"
+                                onChange={(e) => setLicenseFile(e.target.files[0])}
+                                className="w-full text-sm text-slate-500 file:mr-4 file:py-2.5 file:px-5 file:rounded-md file:border-0 file:text-xs file:font-black file:uppercase file:bg-slate-800 file:text-white hover:file:bg-slate-700 transition-all cursor-pointer"
+                              />
+                          </div>
+                          <button 
+                             onClick={handleUpload}
+                             disabled={!licenseFile || uploadStatus !== 'idle'}
+                             className="w-full md:w-auto bg-slate-900 text-white px-8 py-3 rounded-md text-xs font-black uppercase tracking-wider hover:bg-slate-800 disabled:opacity-50 transition-all shadow-md flex items-center justify-center gap-3"
+                          >
+                             {uploadStatus === 'uploading' ? 'Transmitting...' : uploadStatus === 'success' ? 'Verified' : <><UploadCloud size={16}/> Submit Docs</>}
+                          </button>
+                       </div>
+                    </div>
+                </div>
+             </div>
+
+             {/* 4. RIGHT COL: Developer & Security */}
+             <div className="space-y-8">
+                
+                {/* Developer Console (Dark UI - Upgraded) */}
+                <div className="bg-[#0B1120] text-slate-400 rounded-xl shadow-2xl overflow-hidden border border-slate-800">
+                   <div className="bg-[#151F32] px-6 py-4 border-b border-slate-800 flex justify-between items-center">
+                      <h3 className="text-xs font-bold text-white uppercase tracking-widest flex items-center gap-2">
+                         <Server size={14} className="text-emerald-500"/> API Gateway
+                      </h3>
+                      <div className="flex gap-2">
+                         <div className="w-2.5 h-2.5 rounded-full bg-slate-700"></div>
+                         <div className="w-2.5 h-2.5 rounded-full bg-slate-700"></div>
+                      </div>
+                   </div>
+                   
+                   <div className="p-6">
+                      <p className="text-xs font-mono mb-6 text-slate-400 border-l-2 border-emerald-500 pl-4 leading-relaxed">
+                         High-frequency settlement keys. Rotation recommended every <span className="text-white font-bold">90 days</span>.
+                      </p>
+                      
+                      <div className="group relative mb-6">
+                         <label className="text-[10px] font-bold uppercase text-slate-500 mb-2 block tracking-widest">Secret Key</label>
+                         <div className="bg-black/50 p-4 rounded-md border border-slate-700 font-mono text-xs text-emerald-400 break-all shadow-inner tracking-wide">
+                            {apiKey}
+                         </div>
+                         <button 
+                            onClick={revealKey} 
+                            className="absolute bottom-3 right-3 text-slate-500 hover:text-white transition-colors"
+                         >
+                            <Copy size={16}/>
+                         </button>
+                      </div>
+                      
+                      <button 
+                         onClick={revealKey}
+                         className="w-full bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 py-3 rounded-md text-xs font-bold uppercase tracking-widest transition-all"
+                      >
+                         Generate New Keys
+                      </button>
+                   </div>
+                </div>
+
+                {/* Security Protocols */}
+                <div className="bg-white p-6 md:p-8 rounded-xl border border-slate-200 shadow-sm">
+                   <h3 className="text-xs font-black text-slate-900 uppercase tracking-widest mb-6 flex items-center gap-3">
+                      <ShieldCheck size={16} className="text-slate-400"/> Security Level 3
+                   </h3>
+                   <div className="space-y-3">
+                      <SecurityAction 
+                         label="Biometrics" 
+                         status={user.kyc_status === 'approved' ? 'VERIFIED' : 'REQUIRED'} 
+                         isGood={user.kyc_status === 'approved'}
+                         onClick={() => user.kyc_status !== 'approved' && navigate('/kyc-verification')}
+                         icon={Fingerprint}
+                      />
+                      <SecurityAction 
+                         label="2FA Auth" 
+                         status="ACTIVE" 
+                         isGood={true}
+                         icon={Lock}
+                      />
+                      <button 
+                         onClick={() => navigate('/change-password')} 
+                         className="w-full mt-4 text-left px-4 py-3 bg-slate-50 hover:bg-slate-100 border border-slate-200 text-xs font-bold text-slate-700 flex justify-between items-center transition-colors group rounded-md"
+                      >
+                          <span className="flex items-center gap-3 uppercase tracking-wide"><CreditCard size={16}/> Change PIN</span>
+                          <ArrowRight size={16} className="text-slate-400 group-hover:text-slate-900"/>
+                      </button>
+                   </div>
+                </div>
+
+             </div>
 
          </div>
-
       </div>
     </div>
   );

@@ -1,6 +1,5 @@
 // src/utils/api.js
 
-//Import from the config file we created earlier so the port is always the same
 import { API_BASE_URL } from "../config"; 
 
 // --- HELPER: Generic Fetch Wrapper ---
@@ -58,20 +57,38 @@ export function createOrder(orderData) {
 
 // --- WALLET & TREASURY ---
 
-// 1. Get Balance (Banker Illusion)
+// 1. Get Balance & Financial Position
 export async function fetchWalletBalance(userId) {
   try {
     const data = await fetchJson(`/wallet/${userId}`);
-    const realWallet = data.wallet || { balance: 0 };
+    const realWallet = data.wallet || {};
+
+    // Ensure numeric safety for the UI calculations
+    const balance = Number(realWallet.balance || 0);
+    const stock_value = Number(realWallet.stock_value || 0);
+    
+    // If backend doesn't calculate net_worth, we calculate it here
+    // Net Worth = Liquid Cash + Inventory Value
+    const net_worth = realWallet.net_worth 
+      ? Number(realWallet.net_worth) 
+      : (balance + stock_value);
 
     return {
       ...realWallet,
-      credit_limit: 50000.00, // The fake $50k credit line
-      tier: "Wholesale (Level 2)",
+      balance,
+      stock_value,
+      net_worth,
+      credit_limit: 50000.00, // Static Institutional Cap (The "Illusion")
     };
   } catch (err) {
     console.error("Wallet Fetch Error", err);
-    return { balance: 0, credit_limit: 0 };
+    // Return safe defaults so the UI doesn't crash
+    return { 
+      balance: 0, 
+      stock_value: 0, 
+      net_worth: 0, 
+      credit_limit: 0 
+    };
   }
 }
 
