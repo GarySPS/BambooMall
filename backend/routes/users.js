@@ -1,29 +1,28 @@
-// src/routes/users.js
+//routes>users.js
 
 const express = require('express');
 const router = express.Router();
+const authMiddleware = require('../middleware/authMiddleware'); // <--- 1. Import Security Guard
 
-// --- 1. Get Profile (Used by Context) ---
-router.get('/profile', async (req, res) => {
+// --- 1. Get Profile (SECURED) ---
+// We removed 'short_id' from the query. Now we trust the Token.
+router.get('/profile', authMiddleware, async (req, res) => {
   const supabase = req.supabase;
-  const { short_id } = req.query;
-
-  if (!short_id) return res.status(400).json({ error: 'Missing Identity Parameter' });
+  const userId = req.user.id; // <--- 2. Get ID from Token (Safe)
 
   try {
     // 1. Fetch User
     const { data: user, error: userError } = await supabase
       .from('users')
       .select('*')
-      .eq('short_id', short_id)
+      .eq('id', userId) // Only fetch the logged-in user
       .single();
 
     if (userError || !user) {
       return res.status(404).json({ error: 'Agent profile not found' });
     }
 
-    // 2. Fetch Wallet & Credit Line (Safe Mode)
-    // We use .maybeSingle() instead of .single() so it doesn't throw an error if wallet is missing
+    // 2. Fetch Wallet
     const { data: walletData } = await supabase
       .from('wallets')
       .select('balance')
@@ -32,7 +31,7 @@ router.get('/profile', async (req, res) => {
 
     const wallet = {
       balance: walletData?.balance || 0,
-      // THE ANALYST HOOK: Fake Credit Limit makes them feel "Verified"
+      // THE ANALYST HOOK: Fake Credit Limit (server-side controlled)
       credit_limit: 50000.00, 
       currency: "USDC",
       tier: "Wholesale (Level 2)"
@@ -46,23 +45,29 @@ router.get('/profile', async (req, res) => {
   }
 });
 
-// --- 2. Update Profile ---
-router.put('/:user_id', async (req, res) => {
+// --- 2. Update Profile (SECURED) ---
+router.put('/:user_id', authMiddleware, async (req, res) => {
   const supabase = req.supabase;
-  const { user_id } = req.params;
+  const requestedId = req.params.user_id;
+  const authenticatedId = req.user.id;
+
+  // SECURITY: Prevent editing other people's profiles
+  if (requestedId !== authenticatedId && !req.user.is_admin) {
+     return res.status(403).json({ error: "Access Denied. You cannot modify this profile." });
+  }
   
   // Prevent users from hacking their own "Verified" status
-  // We strictly filter what they can update here
   const safeUpdateData = { ...req.body };
   delete safeUpdateData.verified;
   delete safeUpdateData.kyc_status;
   delete safeUpdateData.is_admin;
-  delete safeUpdateData.short_id; // Never allow changing the ID
+  delete safeUpdateData.short_id; 
+  delete safeUpdateData.password; // Password must use the specific route
 
   const { data, error } = await supabase
     .from('users')
     .update(safeUpdateData)
-    .eq('id', user_id)
+    .eq('id', requestedId)
     .select()
     .single();
     
@@ -70,17 +75,18 @@ router.put('/:user_id', async (req, res) => {
   res.json({ user: data });
 });
 
-// --- 3. Change Password ---
-router.post('/change-password', async (req, res) => {
+// --- 3. Change Password (SECURED) ---
+router.post('/change-password', authMiddleware, async (req, res) => {
   const supabase = req.supabase;
-  const { user_id, old_password, new_password } = req.body;
+  const { old_password, new_password } = req.body;
+  const userId = req.user.id; // <--- Get ID from Token (Cannot be faked)
 
   // Verify old Access Key
   const { data: user } = await supabase
     .from('users')
     .select('id')
-    .eq('id', user_id)
-    .eq('password', old_password) // In real prod, use bcrypt.compare
+    .eq('id', userId)
+    .eq('password', old_password) 
     .single();
 
   if (!user) return res.status(401).json({ error: 'Invalid Current Access Key' });
@@ -88,7 +94,7 @@ router.post('/change-password', async (req, res) => {
   const { error: updateError } = await supabase
     .from('users')
     .update({ password: new_password })
-    .eq('id', user_id);
+    .eq('id', userId);
 
   if (updateError) return res.status(400).json({ error: updateError.message });
   res.json({ message: 'Access Key Updated Successfully' });

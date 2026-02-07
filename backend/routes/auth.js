@@ -1,8 +1,7 @@
-// src/routes/auth.js
-
 const express = require('express');
 const router = express.Router();
 const nodemailer = require('nodemailer');
+const jwt = require('jsonwebtoken'); // <--- 1. NEW IMPORT
 
 // --- 1. ENTERPRISE EMAIL CONFIGURATION ---
 const transporter = nodemailer.createTransport({
@@ -220,7 +219,7 @@ router.post('/resend-otp', async (req, res) => {
   res.json({ message: 'Token regenerated and dispatched.' });
 });
 
-// -------- Login Terminal --------
+// -------- Login Terminal (SECURED WITH JWT) --------
 router.post('/login', async (req, res) => {
   console.log(">> SYSTEM: Login Attempt Initiated"); 
   const supabase = req.supabase;
@@ -255,8 +254,26 @@ router.post('/login', async (req, res) => {
     });
   }
 
-  console.log(`>> SYSTEM: Access Granted for [${user.username}]`);
-  res.json({ user });
+  // --- 2. GENERATE JWT TOKEN ---
+  // This is the "Badge" the frontend is waiting for.
+  const payload = {
+    user: {
+      id: user.id,
+      is_admin: user.is_admin
+    }
+  };
+
+  jwt.sign(
+    payload,
+    process.env.JWT_SECRET || 'fallback_secret_key', // Make sure to set JWT_SECRET in your .env
+    { expiresIn: '24h' }, // Token lasts 24 hours
+    (err, token) => {
+      if (err) throw err;
+      console.log(`>> SYSTEM: Access Granted for [${user.username}]`);
+      // Send both User info AND the Token
+      res.json({ user, token });
+    }
+  );
 });
 
 // 3. SECURITY RECOVERY PROTOCOLS (Forgot Password)
@@ -370,8 +387,6 @@ router.post('/change-password', async (req, res) => {
     return res.status(404).json({ error: 'Identity validation failed.' });
   }
 
-  // NOTE: In production, compare hashed passwords (e.g., bcrypt.compare)
-  // Since your current login logic uses plain text, we compare directly here:
   if (user.password !== currentPassword) {
     return res.status(401).json({ error: 'Invalid current password.' });
   }

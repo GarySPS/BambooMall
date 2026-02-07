@@ -1,9 +1,10 @@
-// src/routes/upload.js
+//routes>upload.js
 
 const express = require('express');
 const multer = require('multer');
-const path = require('path'); // Import path
+const path = require('path');
 const router = express.Router();
+const authMiddleware = require('../middleware/authMiddleware');
 
 const upload = multer({ storage: multer.memoryStorage() });
 
@@ -13,104 +14,53 @@ const getSafeFilename = (originalName) => {
   return `${Date.now()}-${Math.floor(Math.random() * 1000)}${ext}`;
 };
 
-// ---- Product Image Upload ----
+// APPLY SECURITY GUARD
+// All uploads require a valid token now.
+router.use(authMiddleware);
+
+// Helper function to handle Supabase upload
+const handleUpload = async (req, res, bucket) => {
+    const supabase = req.supabase;
+    const file = req.file;
+    if (!file) return res.status(400).json({ error: 'No file uploaded' });
+
+    const filename = getSafeFilename(file.originalname);
+
+    const { error } = await supabase.storage
+      .from(bucket)
+      .upload(filename, file.buffer, {
+        contentType: file.mimetype,
+        upsert: true,
+      });
+
+    if (error) return res.status(400).json({ error: error.message });
+
+    const { data: publicUrl } = supabase
+      .storage
+      .from(bucket)
+      .getPublicUrl(filename);
+
+    res.json({ url: (publicUrl?.publicUrl || '') });
+};
+
+// ---- Routes ----
+
 router.post('/product-image', upload.single('file'), async (req, res) => {
-  const supabase = req.supabase;
-  const file = req.file;
-  if (!file) return res.status(400).json({ error: 'No file uploaded' });
-
-  const filename = getSafeFilename(file.originalname);
-
-  const { error } = await supabase.storage
-    .from('products')
-    .upload(filename, file.buffer, {
-      contentType: file.mimetype,
-      upsert: true,
-    });
-
-  if (error) return res.status(400).json({ error: error.message });
-
-  const { data: publicUrl } = supabase
-    .storage
-    .from('products')
-    .getPublicUrl(filename);
-
-  res.json({ url: (publicUrl?.publicUrl || '') });
+    // Optional: Add admin check here if only admins should upload products
+    if (!req.user.is_admin) return res.status(403).json({ error: "Admin only" });
+    await handleUpload(req, res, 'products');
 });
 
-// ---- Avatar Upload ----
 router.post('/avatar', upload.single('file'), async (req, res) => {
-  const supabase = req.supabase;
-  const file = req.file;
-  if (!file) return res.status(400).json({ error: 'No file uploaded' });
-
-  const filename = getSafeFilename(file.originalname);
-
-  const { error } = await supabase.storage
-    .from('avatars')
-    .upload(filename, file.buffer, {
-      contentType: file.mimetype,
-      upsert: true,
-    });
-
-  if (error) return res.status(400).json({ error: error.message });
-
-  const { data: publicUrl } = supabase
-    .storage
-    .from('avatars')
-    .getPublicUrl(filename);
-
-  res.json({ url: (publicUrl?.publicUrl || '') });
+    await handleUpload(req, res, 'avatars');
 });
 
-// ---- KYC Document Upload ----
 router.post('/kyc', upload.single('file'), async (req, res) => {
-  const supabase = req.supabase;
-  const file = req.file;
-  if (!file) return res.status(400).json({ error: 'No file uploaded' });
-
-  const filename = getSafeFilename(file.originalname);
-
-  const { error } = await supabase.storage
-    .from('kyc') // <--- Make sure this bucket exists!
-    .upload(filename, file.buffer, {
-      contentType: file.mimetype,
-      upsert: true,
-    });
-
-  if (error) return res.status(400).json({ error: error.message });
-
-  const { data: publicUrl } = supabase
-    .storage
-    .from('kyc')
-    .getPublicUrl(filename);
-
-  res.json({ url: (publicUrl?.publicUrl || '') });
+    await handleUpload(req, res, 'kyc');
 });
 
-// ---- Deposit Screenshot Upload ----
 router.post('/deposit', upload.single('file'), async (req, res) => {
-  const supabase = req.supabase;
-  const file = req.file;
-  if (!file) return res.status(400).json({ error: 'No file uploaded' });
-
-  const filename = getSafeFilename(file.originalname);
-
-  const { error } = await supabase.storage
-    .from('deposit')
-    .upload(filename, file.buffer, {
-      contentType: file.mimetype,
-      upsert: true,
-    });
-
-  if (error) return res.status(400).json({ error: error.message });
-
-  const { data: publicUrl } = supabase
-    .storage
-    .from('deposit')
-    .getPublicUrl(filename);
-
-  res.json({ url: (publicUrl?.publicUrl || '') });
+    await handleUpload(req, res, 'deposit');
 });
 
 module.exports = router;

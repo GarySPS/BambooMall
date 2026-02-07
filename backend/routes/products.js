@@ -1,7 +1,15 @@
-// routes/products.js
+//routes>products.js
 
 const express = require('express');
 const router = express.Router();
+
+// --- SECURITY GUARDS ---
+const authMiddleware = require('../middleware/authMiddleware');
+const adminMiddleware = require('../middleware/adminMiddleware');
+
+// ==========================================
+// 1. PUBLIC ROUTES (View Only)
+// ==========================================
 
 // Get all products (Manifest List)
 router.get('/', async (req, res) => {
@@ -44,8 +52,13 @@ router.get('/:id', async (req, res) => {
   res.json(enrichedProduct);
 });
 
+// ==========================================
+// 2. ADMIN ROUTES (Protected)
+// ==========================================
+
 // Add product (Admin: Create Manifest)
-router.post('/', async (req, res) => {
+// LOCKED: Only Admins can create products
+router.post('/', authMiddleware, adminMiddleware, async (req, res) => {
   const supabase = req.supabase;
   const {
     title, description, price, min_order,
@@ -93,6 +106,15 @@ router.post('/', async (req, res) => {
 
   if (error) return res.status(400).json({ error: error.message });
   res.json({ product: data });
+});
+
+// Optional: DELETE product (Admin Only)
+router.delete('/:id', authMiddleware, adminMiddleware, async (req, res) => {
+    const supabase = req.supabase;
+    const { id } = req.params;
+    const { error } = await supabase.from('products').delete().eq('id', id);
+    if (error) return res.status(400).json({ error: error.message });
+    res.json({ message: "Product deleted successfully" });
 });
 
 module.exports = router;

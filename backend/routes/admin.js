@@ -3,6 +3,14 @@
 const express = require('express');
 const router = express.Router();
 
+// --- SECURITY GUARDS ---
+const authMiddleware = require('../middleware/authMiddleware');
+const adminMiddleware = require('../middleware/adminMiddleware');
+
+// APPLY GUARDS: All routes below this line require (Token + Admin Status)
+router.use(authMiddleware, adminMiddleware); 
+// -----------------------
+
 // 1. Admin: Approve/Reject deposit or withdraw
 router.post('/tx-approve', async (req, res) => {
   const supabase = req.supabase;
@@ -37,7 +45,7 @@ router.post('/tx-approve', async (req, res) => {
     .eq('user_id', tx.user_id)
     .single();
 
-  // [FIX] If wallet doesn't exist yet, create it immediately
+  // If wallet doesn't exist yet, create it immediately
   if (!wallet) {
     const { data: newWallet, error: createError } = await supabase
       .from('wallets')
@@ -77,7 +85,6 @@ router.post('/tx-approve', async (req, res) => {
       .update({ balance: newBalance })
       .eq('user_id', tx.user_id);
 
-    // [FIX] explicit error check
     if (balanceError) {
        console.error("Balance Update Failed:", balanceError);
        return res.status(500).json({ error: "Transaction approved but balance update failed." });
@@ -329,7 +336,7 @@ router.get('/users', async (req, res) => {
       username: u.username,
       email: u.email,
       created_at: u.created_at,
-      kyc_status: u.kyc_status, // <--- FIXED: Changed from kycStatus to match Frontend
+      kyc_status: u.kyc_status,
       full_name: u.full_name,
       phone: u.phone,
       id_number: u.id_number,
@@ -386,7 +393,7 @@ router.get('/users', async (req, res) => {
   res.json(mapped);
 });
 
-// DELETE (Unchanged)
+// DELETE
 router.delete('/users/:id', async (req, res) => {
   const supabase = req.supabase;
   const id = req.params.id; 
