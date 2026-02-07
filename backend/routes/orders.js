@@ -1,10 +1,21 @@
+// routes/orders.js
+
 const express = require('express');
 const router = express.Router();
-const authMiddleware = require('../middleware/authMiddleware'); // <--- 1. Import Guard
+const authMiddleware = require('../middleware/authMiddleware'); 
 
 // ==========================================
 // 0. HELPER FUNCTIONS
 // ==========================================
+
+// --- SECURITY FIX: Safely extract User ID from Token ---
+function getAuthUserId(req) {
+  if (!req.user) return null;
+  // Check nested structure (fix for your 403/400 errors)
+  if (req.user.user && req.user.user.id) return req.user.user.id;
+  // Check standard structures
+  return req.user.id || req.user.sub || req.user.uid;
+}
 
 function getVipBonus(totalValue) {
   if (totalValue >= 20000) return 10; 
@@ -61,17 +72,26 @@ router.use(authMiddleware);
 // GET History (Sold/Refunded items)
 router.get('/history/:user_id', async (req, res) => {
   const supabase = req.supabase;
-  const user_id = req.params.user_id;
+  let requestedId = req.params.user_id;
 
-  // SECURITY CHECK: You can only see your own history
-  if (user_id !== req.user.id && !req.user.is_admin) {
+  // 1. ROBUST ID CHECK
+  const authenticatedId = getAuthUserId(req);
+  if (!authenticatedId) return res.status(500).json({ error: "User ID missing." });
+
+  // 2. Handle 'me' alias
+  if (requestedId === 'me') {
+    requestedId = authenticatedId;
+  }
+
+  // 3. SECURITY CHECK: You can only see your own history
+  if (requestedId !== authenticatedId && !req.user.is_admin) {
       return res.status(403).json({ error: "Access Denied" });
   }
   
   const { data, error } = await supabase
     .from('orders')
     .select(`*, product:products (title, images, gallery, price)`)
-    .eq('user_id', user_id)
+    .eq('user_id', requestedId)
     .in('status', ['sold', 'refunded', 'refund_pending']) 
     .order('created_at', { ascending: false });
 
@@ -84,17 +104,26 @@ router.get('/history/:user_id', async (req, res) => {
 // GET Active Orders for User (Selling/Pending)
 router.get('/user/:user_id', async (req, res) => {
   const supabase = req.supabase;
-  const user_id = req.params.user_id;
+  let requestedId = req.params.user_id;
 
-  // SECURITY CHECK
-  if (user_id !== req.user.id && !req.user.is_admin) {
+  // 1. ROBUST ID CHECK
+  const authenticatedId = getAuthUserId(req);
+  if (!authenticatedId) return res.status(500).json({ error: "User ID missing." });
+
+  // 2. Handle 'me' alias
+  if (requestedId === 'me') {
+    requestedId = authenticatedId;
+  }
+
+  // 3. SECURITY CHECK
+  if (requestedId !== authenticatedId && !req.user.is_admin) {
       return res.status(403).json({ error: "Access Denied" });
   }
 
   const { data, error } = await supabase
     .from('orders')
     .select(`*, product:products (title, images, gallery, price)`)
-    .eq('user_id', user_id)
+    .eq('user_id', requestedId)
     .in('status', ['selling', '_pending', 'refund_pending', 'sold']) 
     .order('created_at', { ascending: false });
 
@@ -137,8 +166,11 @@ function mapOrderData(order) {
 // Order Preview (Calculations only)
 router.post('/preview', async (req, res) => {
   const supabase = req.supabase;
-  // SECURITY: Ignore user_id from body, use token
-  const user_id = req.user.id; 
+  
+  // SECURITY FIX
+  const user_id = getAuthUserId(req);
+  if (!user_id) return res.status(500).json({ error: "User ID missing." });
+
   const { product_id, quantity } = req.body;
   
   const { data: wallet } = await supabase.from('wallets').select('balance').eq('user_id', user_id).single();
@@ -179,8 +211,11 @@ router.post('/preview', async (req, res) => {
 // Place Order (CREATE)
 router.post('/', async (req, res) => {
   const supabase = req.supabase;
-  // SECURITY: Use token ID
-  const user_id = req.user.id;
+  
+  // SECURITY FIX
+  const user_id = getAuthUserId(req);
+  if (!user_id) return res.status(500).json({ error: "User ID missing." });
+
   const { product_id, quantity, type, details } = req.body;
 
   const product = await getProductData(supabase, product_id);
@@ -261,7 +296,10 @@ router.post('/', async (req, res) => {
 router.post('/refund', async (req, res) => {
   const supabase = req.supabase;
   const { order_id } = req.body;
-  const user_id = req.user.id;
+  
+  // SECURITY FIX
+  const user_id = getAuthUserId(req);
+  if (!user_id) return res.status(500).json({ error: "User ID missing." });
 
   if (!order_id) return res.status(400).json({ error: "Missing Order ID" });
 
@@ -291,11 +329,16 @@ router.post('/refund', async (req, res) => {
 router.get('/:id', async (req, res) => {
   const supabase = req.supabase;
   const { id } = req.params;
+  
+  // SECURITY FIX
+  const user_id = getAuthUserId(req);
+  if (!user_id) return res.status(500).json({ error: "User ID missing." });
+
   const { data, error } = await supabase
     .from('orders')
     .select('*')
     .eq('id', id)
-    .eq('user_id', req.user.id) // <--- CRITICAL SECURITY CHECK
+    .eq('user_id', user_id) // <--- CRITICAL SECURITY CHECK
     .single();
 
   if (error || !data) return res.status(404).json({ error: 'Order not found' });

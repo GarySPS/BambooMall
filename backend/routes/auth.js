@@ -1,7 +1,9 @@
+//routes>auth.js
+
 const express = require('express');
 const router = express.Router();
 const nodemailer = require('nodemailer');
-const jwt = require('jsonwebtoken'); // <--- 1. NEW IMPORT
+const jwt = require('jsonwebtoken');
 
 // --- 1. ENTERPRISE EMAIL CONFIGURATION ---
 const transporter = nodemailer.createTransport({
@@ -255,7 +257,7 @@ router.post('/login', async (req, res) => {
   }
 
   // --- 2. GENERATE JWT TOKEN ---
-  // This is the "Badge" the frontend is waiting for.
+  // This matches the Nested ID structure (req.user.user.id) we fixed in other files.
   const payload = {
     user: {
       id: user.id,
@@ -265,12 +267,14 @@ router.post('/login', async (req, res) => {
 
   jwt.sign(
     payload,
-    process.env.JWT_SECRET || 'fallback_secret_key', // Make sure to set JWT_SECRET in your .env
-    { expiresIn: '24h' }, // Token lasts 24 hours
+    process.env.JWT_SECRET || 'fallback_secret_key', 
+    { expiresIn: '24h' }, 
     (err, token) => {
-      if (err) throw err;
+      if (err) {
+          console.error("Token Generation Error:", err);
+          return res.status(500).json({ error: "System Error: Token generation failed." });
+      }
       console.log(`>> SYSTEM: Access Granted for [${user.username}]`);
-      // Send both User info AND the Token
       res.json({ user, token });
     }
   );
@@ -371,37 +375,7 @@ router.post('/forgot-password/reset', async (req, res) => {
   res.json({ message: 'Access Key Rotated Successfully.' });
 });
 
-// [D] Authenticated Key Rotation (Change Password)
-router.post('/change-password', async (req, res) => {
-  const supabase = req.supabase;
-  const { userId, currentPassword, newPassword } = req.body;
-
-  // 1. Verify Current Access Key
-  const { data: user, error: fetchError } = await supabase
-    .from('users')
-    .select('*')
-    .eq('id', userId)
-    .single();
-
-  if (fetchError || !user) {
-    return res.status(404).json({ error: 'Identity validation failed.' });
-  }
-
-  if (user.password !== currentPassword) {
-    return res.status(401).json({ error: 'Invalid current password.' });
-  }
-
-  // 2. Update to New Key
-  const { error: updateError } = await supabase
-    .from('users')
-    .update({ password: newPassword })
-    .eq('id', userId);
-
-  if (updateError) {
-    return res.status(500).json({ error: 'System Write Error: ' + updateError.message });
-  }
-
-  res.json({ message: 'Credentials successfully updated.' });
-});
+// NOTE: The 'change-password' route was removed from here because
+// it is now safely handled in 'routes/users.js' with full security checks.
 
 module.exports = router;
