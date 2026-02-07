@@ -11,9 +11,7 @@ const authMiddleware = require('../middleware/authMiddleware');
 // --- SECURITY FIX: Safely extract User ID from Token ---
 function getAuthUserId(req) {
   if (!req.user) return null;
-  // Check nested structure (fix for your 403/400 errors)
   if (req.user.user && req.user.user.id) return req.user.user.id;
-  // Check standard structures
   return req.user.id || req.user.sub || req.user.uid;
 }
 
@@ -69,24 +67,14 @@ router.use(authMiddleware);
 // 2. USER ROUTES (SECURED)
 // ==========================================
 
-// GET History (Sold/Refunded items)
 router.get('/history/:user_id', async (req, res) => {
   const supabase = req.supabase;
   let requestedId = req.params.user_id;
-
-  // 1. ROBUST ID CHECK
   const authenticatedId = getAuthUserId(req);
   if (!authenticatedId) return res.status(500).json({ error: "User ID missing." });
 
-  // 2. Handle 'me' alias
-  if (requestedId === 'me') {
-    requestedId = authenticatedId;
-  }
-
-  // 3. SECURITY CHECK: You can only see your own history
-  if (requestedId !== authenticatedId && !req.user.is_admin) {
-      return res.status(403).json({ error: "Access Denied" });
-  }
+  if (requestedId === 'me') requestedId = authenticatedId;
+  if (requestedId !== authenticatedId && !req.user.is_admin) return res.status(403).json({ error: "Access Denied" });
   
   const { data, error } = await supabase
     .from('orders')
@@ -96,29 +84,17 @@ router.get('/history/:user_id', async (req, res) => {
     .order('created_at', { ascending: false });
 
   if (error) return res.status(400).json({ error: error.message });
-
-  const mappedOrders = (data || []).map(order => mapOrderData(order));
-  res.json({ orders: mappedOrders });
+  res.json({ orders: (data || []).map(order => mapOrderData(order)) });
 });
 
-// GET Active Orders for User (Selling/Pending)
 router.get('/user/:user_id', async (req, res) => {
   const supabase = req.supabase;
   let requestedId = req.params.user_id;
-
-  // 1. ROBUST ID CHECK
   const authenticatedId = getAuthUserId(req);
   if (!authenticatedId) return res.status(500).json({ error: "User ID missing." });
 
-  // 2. Handle 'me' alias
-  if (requestedId === 'me') {
-    requestedId = authenticatedId;
-  }
-
-  // 3. SECURITY CHECK
-  if (requestedId !== authenticatedId && !req.user.is_admin) {
-      return res.status(403).json({ error: "Access Denied" });
-  }
+  if (requestedId === 'me') requestedId = authenticatedId;
+  if (requestedId !== authenticatedId && !req.user.is_admin) return res.status(403).json({ error: "Access Denied" });
 
   const { data, error } = await supabase
     .from('orders')
@@ -128,12 +104,9 @@ router.get('/user/:user_id', async (req, res) => {
     .order('created_at', { ascending: false });
 
   if (error) return res.status(400).json({ error: error.message });
-
-  const mappedOrders = (data || []).map(order => mapOrderData(order));
-  res.json({ orders: mappedOrders });
+  res.json({ orders: (data || []).map(order => mapOrderData(order)) });
 });
 
-// Helper for mapping order data
 function mapOrderData(order) {
     return {
         id: order.id,
@@ -163,11 +136,9 @@ function mapOrderData(order) {
     };
 }
 
-// Order Preview (Calculations only)
+// Order Preview
 router.post('/preview', async (req, res) => {
   const supabase = req.supabase;
-  
-  // SECURITY FIX
   const user_id = getAuthUserId(req);
   if (!user_id) return res.status(500).json({ error: "User ID missing." });
 
@@ -179,11 +150,8 @@ router.post('/preview', async (req, res) => {
   if (!product) return res.status(404).json({ error: "Product not found" });
 
   const minOrder = parseInt(product.min_order || 1);
-  if (quantity < minOrder) {
-      return res.status(400).json({ error: `Minimum order quantity is ${minOrder} units.` });
-  }
+  if (quantity < minOrder) return res.status(400).json({ error: `Minimum order quantity is ${minOrder} units.` });
 
-  // Logic Matrix
   const tiers = parseJson(product.price_tiers);
   const activeTier = Array.isArray(tiers) ? tiers.sort((a,b) => b.min - a.min).find(t => quantity >= t.min) : null;
   const unitPrice = activeTier ? Number(activeTier.price) : Number(product.price);
@@ -211,8 +179,6 @@ router.post('/preview', async (req, res) => {
 // Place Order (CREATE)
 router.post('/', async (req, res) => {
   const supabase = req.supabase;
-  
-  // SECURITY FIX
   const user_id = getAuthUserId(req);
   if (!user_id) return res.status(500).json({ error: "User ID missing." });
 
@@ -230,7 +196,6 @@ router.post('/', async (req, res) => {
   const { data: wallet } = await supabase.from('wallets').select('*').eq('user_id', user_id).single();
   if (!wallet) return res.status(404).json({ error: "Wallet not found" });
 
-  // Calculation (Must match preview)
   const tiers = parseJson(product.price_tiers);
   const activeTier = Array.isArray(tiers) ? tiers.sort((a,b) => b.min - a.min).find(t => quantity >= t.min) : null;
   const unit_price = activeTier ? Number(activeTier.price) : Number(product.price);
@@ -265,6 +230,9 @@ router.post('/', async (req, res) => {
        note: `Acquisition: ${product.title} (Qty: ${quantity})`
   }]);
 
+  // --- DATABASE FIX: Translate type to 'buy' ---
+  const dbType = (type === 'liquidation_acquisition') ? 'buy' : 'buy';
+
   const { data: order, error } = await supabase
     .from('orders')
     .insert([{
@@ -273,7 +241,7 @@ router.post('/', async (req, res) => {
       quantity,
       amount: pay_amount,
       status: 'selling', 
-      type: type || 'buy',
+      type: dbType, // <--- FIXED: Now strictly 'buy'
       admin_discount,
       vip_bonus,
       total_discount,
@@ -292,23 +260,18 @@ router.post('/', async (req, res) => {
   res.json({ message: "Order placed", order, pay_amount, unit_price, profit });
 });
 
-// USER REFUND REQUEST (SECURED)
 router.post('/refund', async (req, res) => {
   const supabase = req.supabase;
   const { order_id } = req.body;
-  
-  // SECURITY FIX
   const user_id = getAuthUserId(req);
   if (!user_id) return res.status(500).json({ error: "User ID missing." });
-
   if (!order_id) return res.status(400).json({ error: "Missing Order ID" });
 
-  // 1. Verify Order Exists & Belongs to User
   const { data: order, error: fetchError } = await supabase
     .from('orders')
     .select('*')
     .eq('id', order_id)
-    .eq('user_id', user_id) // <--- CRITICAL SECURITY CHECK
+    .eq('user_id', user_id) 
     .single();
 
   if (fetchError || !order) return res.status(404).json({ error: "Order not found or access denied" });
@@ -321,16 +284,12 @@ router.post('/refund', async (req, res) => {
     .single();
 
   if (error) return res.status(400).json({ error: error.message });
-
   res.json({ message: 'Refund requested successfully', order: data });
 });
 
-// Get a single order by ID (SECURED)
 router.get('/:id', async (req, res) => {
   const supabase = req.supabase;
   const { id } = req.params;
-  
-  // SECURITY FIX
   const user_id = getAuthUserId(req);
   if (!user_id) return res.status(500).json({ error: "User ID missing." });
 
@@ -338,7 +297,7 @@ router.get('/:id', async (req, res) => {
     .from('orders')
     .select('*')
     .eq('id', id)
-    .eq('user_id', user_id) // <--- CRITICAL SECURITY CHECK
+    .eq('user_id', user_id)
     .single();
 
   if (error || !data) return res.status(404).json({ error: 'Order not found' });
