@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from "react";
 import { 
-  FaTimes, FaGlobe, FaBuilding, FaQrcode, FaNetworkWired, FaGasPump, FaExclamationTriangle, FaPaste
+  FaTimes, FaGlobe, FaBuilding, FaQrcode, FaGasPump, FaPaste, FaExclamationTriangle
 } from "react-icons/fa";
 import { submitWithdraw } from "../utils/api";
 
@@ -10,17 +10,21 @@ export default function WithdrawModal({ isOpen, onClose, onSuccess, user, liquid
   const [withdrawMethod, setWithdrawMethod] = useState(null);
   const [amount, setAmount] = useState("");
   const [address, setAddress] = useState("");
-  const [alipayName, setAlipayName] = useState("");
+  const [alipayName, setAlipayName] = useState(""); // Add missing state for Alipay Name
   const [submitState, setSubmitState] = useState("idle");
 
   useEffect(() => {
     if (isOpen) {
+      document.body.style.overflow = 'hidden'; // Lock background scroll
       setWithdrawMethod(null);
       setAmount("");
       setAddress("");
       setAlipayName("");
       setSubmitState("idle");
+    } else {
+      document.body.style.overflow = 'unset';
     }
+    return () => { document.body.style.overflow = 'unset'; };
   }, [isOpen]);
 
   const handleSubmit = async (e) => {
@@ -45,10 +49,7 @@ export default function WithdrawModal({ isOpen, onClose, onSuccess, user, liquid
         note: finalNote,
       });
       setSubmitState("success");
-      setTimeout(() => { 
-        onSuccess(); 
-        onClose(); 
-      }, 1500);
+      setTimeout(() => { onSuccess(); onClose(); }, 1500);
     } catch (err) {
       setSubmitState("error");
     }
@@ -66,27 +67,31 @@ export default function WithdrawModal({ isOpen, onClose, onSuccess, user, liquid
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/90 backdrop-blur-sm animate-fade-in">
+    // WRAPPER: 'items-start' + 'pt-24' positions it at the top, just below the nav bar
+    <div className="fixed inset-0 z-[100] flex items-start justify-center p-4 pt-24 sm:pt-32">
         
-        {/* Modal Container */}
-        <div className="bg-white rounded-xl w-full max-w-md overflow-hidden shadow-2xl relative border border-slate-200 flex flex-col max-h-[90vh]">
+        {/* BACKDROP */}
+        <div className="absolute inset-0 bg-slate-900/80 backdrop-blur-sm transition-opacity" onClick={onClose} />
+
+        {/* MODAL PANEL: Fully rounded corners (rounded-xl), Card style (not bottom sheet) */}
+        <div className="relative w-full max-w-md bg-white rounded-xl shadow-2xl flex flex-col max-h-[85vh] overflow-hidden animate-slide-up">
             
-            {/* Header (Sticky) */}
-            <div className="bg-slate-50 px-6 py-4 border-b border-slate-100 flex justify-between items-center shrink-0">
+            {/* STICKY HEADER */}
+            <div className="flex-shrink-0 bg-slate-50 px-6 py-4 border-b border-slate-100 flex justify-between items-center">
                 <h3 className="font-bold text-slate-800 text-sm md:text-base flex items-center gap-2">
                 {withdrawMethod === "USDC-TRC20" ? "Send USDC" : withdrawMethod === "ALIPAY-CN" ? "Alipay Withdraw" : "Withdraw Assets"}
                 </h3>
                 <button onClick={onClose} className="p-2 -mr-2 text-slate-400 hover:text-slate-600 hover:bg-slate-200 rounded-full transition-colors">
-                   <FaTimes />
+                   <FaTimes size={20} />
                 </button>
             </div>
             
-            {/* Scrollable Content */}
-            <div className="p-6 overflow-y-auto">
+            {/* SCROLLABLE CONTENT */}
+            <div className="flex-1 overflow-y-auto p-6 bg-white">
                 
                 {!withdrawMethod ? (
                     <div className="space-y-4">
-                        <p className="text-xs text-slate-400 mb-2 uppercase tracking-widest font-bold">Select Withdrawal Method</p>
+                        <p className="text-[10px] text-slate-400 mb-2 uppercase tracking-widest font-bold">Select Method</p>
                         
                         <button 
                             onClick={() => setWithdrawMethod("USDC-TRC20")}
@@ -96,7 +101,7 @@ export default function WithdrawModal({ isOpen, onClose, onSuccess, user, liquid
                                 <FaGlobe />
                             </div>
                             <div>
-                                <div className="font-bold text-slate-800 text-sm flex items-center gap-2">
+                                <div className="font-bold text-slate-900 text-sm flex items-center gap-2">
                                     USDC (TRC20)
                                     <span className="bg-emerald-100 text-emerald-700 text-[10px] px-2 py-0.5 rounded-full font-bold whitespace-nowrap">INSTANT</span>
                                 </div>
@@ -112,7 +117,7 @@ export default function WithdrawModal({ isOpen, onClose, onSuccess, user, liquid
                                 <FaBuilding />
                             </div>
                             <div>
-                                <div className="font-bold text-slate-800 text-sm flex items-center gap-2">
+                                <div className="font-bold text-slate-900 text-sm">
                                     Alipay Cross-Border
                                 </div>
                                 <div className="text-xs text-slate-500 mt-1">3-5 Business Days • High Fees</div>
@@ -120,14 +125,14 @@ export default function WithdrawModal({ isOpen, onClose, onSuccess, user, liquid
                         </button>
                     </div>
                 ) : (
-                    <form onSubmit={handleSubmit} className="space-y-6">
+                    <form onSubmit={handleSubmit} className="space-y-5 pb-2">
                     
                     {withdrawMethod === "USDC-TRC20" && (
                         <>
                             <div className="bg-slate-900 p-5 rounded-xl border border-slate-800 flex justify-between items-center shadow-inner">
-                                <div className="text-xs text-slate-400 uppercase font-bold tracking-wider">Available Balance</div>
+                                <div className="text-xs text-slate-400 uppercase font-bold tracking-wider">Available</div>
                                 <div className="font-mono font-bold text-lg md:text-xl text-white">
-                                    {liquidBalance.toLocaleString('en-US', {minimumFractionDigits: 2})} USDC
+                                    {liquidBalance.toLocaleString('en-US', {minimumFractionDigits: 2})} <span className="text-sm text-slate-500">USDC</span>
                                 </div>
                             </div>
 
@@ -153,7 +158,7 @@ export default function WithdrawModal({ isOpen, onClose, onSuccess, user, liquid
                                 </div>
                                 <div className="flex gap-2 mt-2 text-[10px]">
                                     <span className="bg-slate-100 text-slate-500 px-2 py-1 rounded border border-slate-200 flex items-center gap-1 font-medium">
-                                        <FaNetworkWired size={10} /> Network: TRON (TRC20)
+                                        <FaQrcode size={10} /> Network: TRON (TRC20)
                                     </span>
                                 </div>
                             </div>
@@ -179,11 +184,10 @@ export default function WithdrawModal({ isOpen, onClose, onSuccess, user, liquid
                                         MAX
                                     </button>
                                 </div>
-                            </div>
-
-                            <div className="flex justify-between text-xs text-slate-500 border-t border-dashed border-slate-200 pt-4">
-                                <span>Network Fee</span>
-                                <span className="font-bold text-emerald-600 flex items-center gap-1"><FaGasPump size={10}/> 0.00 USDC (Subsidized)</span>
+                                <div className="flex justify-between text-[10px] text-slate-500 pt-2 border-t border-dashed border-slate-100 mt-2">
+                                    <span>Network Fee</span>
+                                    <span className="font-bold text-emerald-600 flex items-center gap-1"><FaGasPump size={10}/> 0.00 USDC (Subsidized)</span>
+                                </div>
                             </div>
                         </>
                     )}
@@ -243,20 +247,21 @@ export default function WithdrawModal({ isOpen, onClose, onSuccess, user, liquid
                         </>
                     )}
 
-                    <div className="flex gap-3 pt-2">
+                    {/* ACTION BUTTONS */}
+                    <div className="flex gap-3 pt-4">
                         <button 
-                            type="button"
-                            onClick={() => setWithdrawMethod(null)}
-                            className="px-6 py-3.5 border border-slate-300 rounded-lg text-slate-600 font-bold text-sm hover:bg-slate-50 transition-colors"
+                            type="button" 
+                            onClick={() => setWithdrawMethod(null)} 
+                            className="px-5 py-3 border border-slate-300 rounded-lg text-slate-600 font-bold text-xs hover:bg-slate-50 transition-colors"
                         >
                             Back
                         </button>
                         <button 
                             type="submit" 
-                            disabled={submitState !== 'idle' || Number(amount) > liquidBalance || !amount}
-                            className={`flex-1 font-bold py-3.5 rounded-lg text-sm uppercase tracking-wide text-white shadow-lg transition-all transform active:scale-95 ${
-                                withdrawMethod === 'ALIPAY-CN' ? 'bg-amber-600 hover:bg-amber-700' : 'bg-emerald-600 hover:bg-emerald-700'
-                            } disabled:opacity-50 disabled:cursor-not-allowed`}
+                            disabled={submitState !== 'idle' || !amount || Number(amount) > liquidBalance} 
+                            className={`flex-1 font-bold py-3 rounded-lg text-xs uppercase tracking-wide text-white shadow-lg transition-all active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed ${
+                                withdrawMethod === 'ALIPAY-CN' ? 'bg-amber-600 hover:bg-amber-700' : 'bg-slate-900 hover:bg-slate-800'
+                            }`}
                         >
                             {submitState === 'submitting' ? 'Processing...' : 'Confirm Withdrawal'}
                         </button>

@@ -7,7 +7,7 @@ import { fetchCartOrders, fetchResaleHistory } from "../utils/api";
 import { 
   FaWallet, FaArrowDown, FaArrowUp, FaHistory, FaCheck, FaFileInvoiceDollar, 
   FaChevronRight, FaBoxOpen, FaChartPie, FaClock, FaUniversity, FaCircle,
-  FaReceipt // Added for mobile cards
+  FaReceipt 
 } from "react-icons/fa";
 import { useNavigate } from "react-router-dom";
 import RestrictedContent from "../components/RestrictedContent";
@@ -45,6 +45,18 @@ export default function BalancePage() {
   
   const [transactions, setTransactions] = useState([]);
   const [modalType, setModalType] = useState(null); 
+
+  // --- Scroll Locking Logic ---
+  useEffect(() => {
+    if (modalType) {
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = 'unset';
+    }
+    return () => {
+      document.body.style.overflow = 'unset';
+    };
+  }, [modalType]);
 
   // --- Data Loading Wrapper ---
   const refreshData = useCallback(() => {

@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from "react";
 import { 
   FaTimes, FaFingerprint, FaGlobe, FaBuilding, 
-  FaExclamationTriangle, FaShieldAlt, FaCopy, FaCloudUploadAlt, FaCheckCircle // <--- Added FaCheckCircle
+  FaExclamationTriangle, FaShieldAlt, FaCopy, FaCloudUploadAlt, FaCheckCircle
 } from "react-icons/fa";
 import { submitDeposit } from "../utils/api";
 import { API_BASE_URL } from "../config";
@@ -51,14 +51,22 @@ export default function DepositModal({ isOpen, onClose, onSuccess, user }) {
   const [isGenerating, setIsGenerating] = useState(false);
 
   useEffect(() => {
-    if (isOpen && user?.id) {
-      const hasWallet = localStorage.getItem(`bamboomall_wallet_${user.id}`);
-      if (hasWallet) setWalletReady(true);
-      setSelectedMethod(null);
-      setAmount(TOP_UP_AMOUNT);
-      setScreenshot(null);
-      setSubmitState("idle");
+    if (isOpen) {
+      // Lock body scroll when modal is open to prevent background scrolling
+      document.body.style.overflow = 'hidden';
+      
+      if (user?.id) {
+        const hasWallet = localStorage.getItem(`bamboomall_wallet_${user.id}`);
+        if (hasWallet) setWalletReady(true);
+        setSelectedMethod(null);
+        setAmount(TOP_UP_AMOUNT);
+        setScreenshot(null);
+        setSubmitState("idle");
+      }
+    } else {
+      document.body.style.overflow = 'unset';
     }
+    return () => { document.body.style.overflow = 'unset'; };
   }, [isOpen, user?.id]);
 
   const handleCreateWallet = () => {
@@ -99,26 +107,30 @@ export default function DepositModal({ isOpen, onClose, onSuccess, user }) {
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/90 backdrop-blur-sm animate-fade-in">
+    // WRAPPER: items-start + pt-24 pushes it to the top (below nav bar)
+    <div className="fixed inset-0 z-[100] flex items-start justify-center p-4 pt-24 sm:pt-32">
         
-        {/* Modal Container */}
-        <div className="bg-white rounded-xl w-full max-w-md overflow-hidden shadow-2xl relative border border-slate-200 flex flex-col max-h-[90vh]">
+        {/* BACKDROP */}
+        <div className="absolute inset-0 bg-slate-900/80 backdrop-blur-sm transition-opacity" onClick={onClose} />
+
+        {/* MODAL PANEL: Rounded-xl everywhere */}
+        <div className="relative w-full max-w-md bg-white rounded-xl shadow-2xl flex flex-col max-h-[80vh] overflow-hidden animate-slide-up">
             
-            {/* Header (Sticky) */}
-            <div className="bg-slate-50 px-6 py-4 border-b border-slate-100 flex justify-between items-center shrink-0">
+            {/* STICKY HEADER */}
+            <div className="flex-shrink-0 bg-slate-50 px-6 py-4 border-b border-slate-100 flex justify-between items-center">
                 <h3 className="font-bold text-slate-800 text-sm md:text-base flex items-center gap-2">
                 {selectedMethod === "USDC-TRC20" && !walletReady 
-                    ? <><FaFingerprint className="text-blue-600"/> Secure Wallet Initialization</>
+                    ? <><FaFingerprint className="text-blue-600"/> Secure Wallet Setup</>
                     : "Inbound Liquidity Request"
                 }
                 </h3>
                 <button onClick={onClose} className="p-2 -mr-2 text-slate-400 hover:text-slate-600 hover:bg-slate-200 rounded-full transition-colors">
-                   <FaTimes />
+                   <FaTimes size={20} />
                 </button>
             </div>
             
-            {/* Scrollable Content */}
-            <div className="p-6 overflow-y-auto">
+            {/* SCROLLABLE CONTENT AREA */}
+            <div className="flex-1 overflow-y-auto p-6 bg-white">
                 {!selectedMethod ? (
                     <div className="space-y-4">
                         <p className="text-xs text-slate-400 mb-2 uppercase tracking-widest font-bold">Select Settlement Rail</p>
@@ -149,11 +161,11 @@ export default function DepositModal({ isOpen, onClose, onSuccess, user }) {
                                 <div className="space-y-6 animate-pulse">
                                     <div className="w-16 h-16 border-4 border-slate-900 border-t-transparent rounded-full animate-spin mx-auto"></div>
                                     <div>
-                                        <h4 className="font-bold text-slate-900 text-lg">Allocating Dedicated Address...</h4>
-                                        <p className="text-sm text-slate-500 mt-2 font-mono">Connecting to TRON Mainnet Nodes (RPC-72)</p>
+                                        <h4 className="font-bold text-slate-900 text-lg">Allocating Address...</h4>
+                                        <p className="text-sm text-slate-500 mt-2 font-mono">Connecting to TRON Node (RPC-72)</p>
                                     </div>
                                     <div className="text-xs font-mono text-emerald-600 bg-emerald-50 py-2 px-4 rounded inline-block">
-                                        Generating Keys... Encrypting... Verifying...
+                                        Generating Keys... Encrypting...
                                     </div>
                                 </div>
                             ) : (
@@ -200,7 +212,7 @@ export default function DepositModal({ isOpen, onClose, onSuccess, user }) {
                                 <div className={`text-[10px] font-bold uppercase mb-2 tracking-wide ${
                                     PAYMENT_CHANNELS[selectedMethod].type === 'fiat' ? 'text-amber-800' : 'text-slate-500'
                                 }`}>
-                                    {PAYMENT_CHANNELS[selectedMethod].type === 'crypto' ? 'Your Unique Deposit Address (TRC20)' : 'Beneficiary Coordinates'}
+                                    {PAYMENT_CHANNELS[selectedMethod].type === 'crypto' ? 'Your Deposit Address (TRC20)' : 'Beneficiary Coordinates'}
                                 </div>
                                 
                                 <div 
@@ -278,16 +290,20 @@ export default function DepositModal({ isOpen, onClose, onSuccess, user }) {
                                     Back
                                 </button>
                                 <button 
-                                    type="submit" 
-                                    disabled={submitState !== 'idle'}
-                                    className={`flex-1 font-bold py-3.5 rounded-lg text-sm uppercase tracking-wide text-white shadow-lg transition-all active:scale-95 ${
-                                        PAYMENT_CHANNELS[selectedMethod].type === 'fiat' 
-                                        ? 'bg-amber-600 hover:bg-amber-700' 
-                                        : 'bg-slate-900 hover:bg-slate-800'
-                                    }`}
-                                >
-                                    {submitState === 'submitting' ? 'Verifying...' : 'Submit for Clearance'}
-                                </button>
+    type="submit" 
+    // Lock button if submitting OR if no screenshot is uploaded
+    disabled={submitState !== 'idle' || !screenshot} 
+    className={`flex-1 font-bold py-3.5 rounded-lg text-sm uppercase tracking-wide text-white shadow-lg transition-all active:scale-95 ${
+        // Add opacity and remove hover effects if disabled
+        (submitState !== 'idle' || !screenshot) 
+        ? 'bg-slate-400 cursor-not-allowed opacity-70' 
+        : PAYMENT_CHANNELS[selectedMethod].type === 'fiat' 
+            ? 'bg-amber-600 hover:bg-amber-700' 
+            : 'bg-slate-900 hover:bg-slate-800'
+    }`}
+>
+    {submitState === 'submitting' ? 'Verifying...' : 'Submit for Clearance'}
+</button>
                             </div>
                         </form>
                     )}
