@@ -7,17 +7,17 @@ import OrderPreviewModal from "../components/OrderPreviewModal";
 import ProductGallery from "../components/ProductGallery"; 
 import SupplierInfoBlock from "../components/SupplierInfoBlock"; 
 import { toast } from "react-toastify"; 
-import { API_BASE_URL } from "../config"; // 1. Added Import
+import { API_BASE_URL } from "../config"; 
 
 import { 
   FaArrowLeft, FaFilePdf, 
   FaCheckCircle, FaLock, FaStar,
   FaStarHalfAlt, FaPalette,
-  FaTrademark, FaBalanceScale, FaGlobeAmericas, FaShieldAlt
+  FaTrademark, FaBalanceScale, FaGlobeAmericas, FaShieldAlt,
+  FaInfoCircle, FaChevronUp // [ADDED]
 } from "react-icons/fa";
 import { useUser } from "../contexts/UserContext"; 
 
-// --- HELPER: Parse JSON safely ---
 function cleanJson(data) {
   if (Array.isArray(data)) return data;
   if (typeof data === 'string') {
@@ -26,7 +26,6 @@ function cleanJson(data) {
   return [];
 }
 
-// --- HELPER: Render Stars ---
 function renderRating(rating) {
   const stars = [];
   const fullStars = Math.floor(rating);
@@ -44,7 +43,7 @@ export default function ProductDetailPage() {
   const { user, wallet, updateWallet } = useUser();
   const navigate = useNavigate();
 
-  // --- STATE DEFINITIONS (Must be at top level) ---
+  // --- STATE ---
   const [product, setProduct] = useState(null);
   const [loading, setLoading] = useState(true);
   const [selectedSize, setSelectedSize] = useState(null);
@@ -53,9 +52,10 @@ export default function ProductDetailPage() {
   const [error, setError] = useState("");
   const [showModal, setShowModal] = useState(false);
   const [successData, setSuccessData] = useState(null); 
-  
-  // State to hold the calculated minimum based on tiers
   const [calculatedMin, setCalculatedMin] = useState(1);
+  
+  // [NEW] State for custom mobile dropdown
+  const [isSizeMenuOpen, setIsSizeMenuOpen] = useState(false);
 
   const isVerified = user && (user.verified || user.kyc_status === 'approved');
 
@@ -66,9 +66,8 @@ export default function ProductDetailPage() {
       const res = await fetch(`${API_BASE_URL}/wallet/${user.id}`);
       const data = await res.json();
       if (data.wallet) {
-        // Only update if balance actually changed to avoid re-renders (optional optimization)
         if (JSON.stringify(data.wallet) !== JSON.stringify(wallet)) {
-            updateWallet(data.wallet); 
+           updateWallet(data.wallet); 
         }
       }
     } catch (err) {
@@ -76,12 +75,10 @@ export default function ProductDetailPage() {
     }
   };
 
-  // --- EFFECT: Load Data & Refresh Wallet ---
+  // --- EFFECT: Load Data ---
   useEffect(() => {
     window.scrollTo(0, 0);
     setLoading(true);
-
-    // 2. Call refreshWallet immediately on mount
     refreshWallet(); 
 
     fetchProductById(id)
@@ -90,18 +87,16 @@ export default function ProductDetailPage() {
         const parsedColors = cleanJson(data.color);
         const parsedTiers = cleanJson(data.price_tiers || data.priceTiers);
 
-        // [LOGIC] Prioritize DB 'min_order' as the strict quantity lock
         let derivedMin = 1;
         if (data.min_order) {
             derivedMin = parseInt(data.min_order);
         } else if (parsedTiers.length > 0) {
-            // Fallback to lowest tier only if min_order is missing
             const sorted = parsedTiers.sort((a, b) => a.min - b.min);
             derivedMin = sorted[0].min;
         }
 
         setCalculatedMin(derivedMin);
-        setQuantity(derivedMin); // Set default input value
+        setQuantity(derivedMin);
 
         setProduct({
             ...data,
@@ -119,16 +114,15 @@ export default function ProductDetailPage() {
         setError("Manifest Retrieve Failed: " + err.message);
         setLoading(false);
       });
-  }, [id]); // Removed 'user.id' from dependency to prevent infinite loop if user object changes slightly
+  }, [id]);
 
   // --- CALCULATIONS ---
-
   function getVipBonus(totalValue) {
-    if (totalValue >= 20000) return 10; // Tier 1
-    if (totalValue >= 13000) return 8;  // Tier 2
-    if (totalValue >= 8000)  return 6;  // Tier 3
-    if (totalValue >= 4000)  return 5;  // Tier 4
-    if (totalValue >= 2000)  return 4;  // Tier 5
+    if (totalValue >= 20000) return 10; 
+    if (totalValue >= 13000) return 8;  
+    if (totalValue >= 8000)  return 6;  
+    if (totalValue >= 4000)  return 5;  
+    if (totalValue >= 2000)  return 4;  
     return 0;
   }
 
@@ -143,8 +137,6 @@ export default function ProductDetailPage() {
   const volumeSavings = marketTotal - bulkTotal; 
 
   const adminDiscount = Number(product?.discount || 0);
-
-  // Use Net Worth if available, otherwise fallback to balance
   const totalAssetValue = Number(wallet?.net_worth || wallet?.balance || 0);
   const vipBonus = getVipBonus(totalAssetValue);
   
@@ -157,7 +149,6 @@ export default function ProductDetailPage() {
   const margin = settlementAmount > 0 ? ((projectedProfit / settlementAmount) * 100).toFixed(2) : "0.00";
 
   // --- HANDLERS ---
-
   const handleQuantityChange = (e) => {
     let valStr = e.target.value.replace(/[^0-9]/g, '');
     if (valStr.length > 1 && valStr.startsWith('0')) valStr = valStr.replace(/^0+/, '');
@@ -174,21 +165,17 @@ export default function ProductDetailPage() {
 
   const handleOpenTicket = () => {
     if (!isVerified) return;
-    
     if (quantity < calculatedMin) {
         toast.error(`Order Rejected: Minimum allocation is ${calculatedMin} units.`);
         setQuantity(calculatedMin);
         return;
     }
-
-    // Check against Cash Balance (Liquidity)
     if (Number(wallet?.balance || 0) < settlementAmount) {
-        // Try one last refresh before failing, just in case they just topped up in another tab
         refreshWallet().then(() => {
              if (Number(wallet?.balance || 0) < settlementAmount) {
                  toast.error("INSUFFICIENT LIQUIDITY: Please fund your settlement account.");
              } else {
-                 setShowModal(true); // Logic saved them!
+                 setShowModal(true);
              }
         });
         return;
@@ -237,23 +224,23 @@ export default function ProductDetailPage() {
   if (error) return <div className="p-10 text-center text-red-600 font-mono font-bold">{error}</div>;
 
   return (
-    <div className="min-h-screen bg-slate-50 pb-20 font-sans text-slate-800">
+    <div className="min-h-screen bg-slate-50 pb-44 md:pb-20 font-sans text-slate-800">
       
       {/* 1. TOP NAV */}
       <div className="bg-white border-b border-slate-200 sticky top-0 z-30 shadow-sm">
         <div className="max-w-[1600px] mx-auto px-4 md:px-8 h-12 flex items-center justify-between">
-           <div className="flex items-center gap-4 text-[10px] md:text-xs font-mono uppercase tracking-wide text-slate-500">
-              <Link to="/products" className="hover:text-emerald-700 flex items-center gap-1 transition-colors">
-                 <FaArrowLeft /> MASTER_INVENTORY
+           <div className="flex items-center gap-2 text-[10px] md:text-xs font-mono uppercase tracking-wide text-slate-500 overflow-hidden whitespace-nowrap">
+              <Link to="/products" className="hover:text-emerald-700 flex items-center gap-1 transition-colors shrink-0">
+                 <FaArrowLeft /> <span className="hidden md:inline">MASTER_INVENTORY</span> <span className="md:hidden">BACK</span>
               </Link>
               <span className="text-slate-300">/</span>
-              <span>LOT_ID: {id ? id.substring(0,8).toUpperCase() : '...'}</span>
-              <span className="text-slate-300">/</span>
-              <span className="bg-emerald-100 text-emerald-800 px-1.5 py-0.5 rounded-sm">STATUS: LIVE</span>
+              <span className="truncate">ID: {id ? id.substring(0,8).toUpperCase() : '...'}</span>
+              <span className="text-slate-300 hidden md:inline">/</span>
+              <span className="bg-emerald-100 text-emerald-800 px-1.5 py-0.5 rounded-sm hidden md:inline">STATUS: LIVE</span>
            </div>
-           <div className="flex gap-2">
+           <div className="flex gap-2 shrink-0">
               <button className="flex items-center gap-2 px-3 py-1 bg-slate-100 hover:bg-slate-200 border border-slate-300 text-slate-600 text-[10px] uppercase font-bold tracking-wider rounded-sm transition">
-                 <FaFilePdf /> Tech_Report.pdf
+                 <FaFilePdf /> <span className="hidden md:inline">Tech_Report.pdf</span><span className="md:hidden">PDF</span>
               </button>
            </div>
         </div>
@@ -262,31 +249,31 @@ export default function ProductDetailPage() {
       <div className="max-w-[1600px] mx-auto px-4 md:px-8 mt-6">
         
         {/* 2. MAIN HEADER */}
-        <div className="mb-8">
-            <h1 className="text-2xl md:text-3xl font-bold text-slate-900 tracking-tight mb-2">
+        <div className="mb-6 md:mb-8">
+            <h1 className="text-xl md:text-3xl font-bold text-slate-900 tracking-tight mb-2 leading-tight">
                {product.title}
             </h1>
             
-            <div className="flex flex-wrap items-center gap-6 text-xs text-slate-600 border-b border-slate-200 pb-6">
-                <div className="flex items-center gap-2">
+            <div className="flex overflow-x-auto no-scrollbar items-center gap-4 md:gap-6 text-xs text-slate-600 border-b border-slate-200 pb-4 md:pb-6 whitespace-nowrap">
+                <div className="flex items-center gap-2 shrink-0">
                    <span className="font-mono font-bold text-slate-400 uppercase">Origin</span>
                    <span className="flex items-center gap-1 font-semibold text-slate-800"><FaGlobeAmericas size={10} /> {product.country || "Global"}</span>
                 </div>
-                <div className="h-4 w-px bg-slate-300"></div>
-                <div className="flex items-center gap-2">
+                <div className="h-4 w-px bg-slate-300 shrink-0"></div>
+                <div className="flex items-center gap-2 shrink-0">
                    <span className="font-mono font-bold text-slate-400 uppercase">Condition</span>
                    <span className="font-semibold text-slate-800">Factory New (A-Grade)</span>
                 </div>
-                <div className="h-4 w-px bg-slate-300"></div>
-                <div className="flex items-center gap-2">
+                <div className="h-4 w-px bg-slate-300 shrink-0"></div>
+                <div className="flex items-center gap-2 shrink-0">
                    <span className="font-mono font-bold text-slate-400 uppercase">Inspection</span>
                    <div className="flex items-center gap-2 bg-emerald-50 text-emerald-800 px-2 py-0.5 rounded-full border border-emerald-100">
                       <FaShieldAlt size={10} />
                       <span className="font-bold">VERIFIED</span>
                    </div>
                 </div>
-                <div className="h-4 w-px bg-slate-300"></div>
-                <div className="flex items-center gap-2">
+                <div className="h-4 w-px bg-slate-300 shrink-0"></div>
+                <div className="flex items-center gap-2 shrink-0">
                     <span className="font-mono font-bold text-slate-400 uppercase">Rating</span>
                     <div className="flex items-center gap-1">
                         {renderRating(product.rating || 0)}
@@ -300,12 +287,12 @@ export default function ProductDetailPage() {
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
            
            {/* LEFT COLUMN */}
-           <div className="lg:col-span-8 space-y-8">
+           <div className="lg:col-span-8 space-y-6 md:space-y-8">
               <ProductGallery gallery={product.gallery} title={product.title} />
 
               {/* COLORS */}
               {product.colors && product.colors.length > 0 && (
-                 <div className="bg-white border border-slate-200 rounded-sm p-6 shadow-sm">
+                 <div className="bg-white border border-slate-200 rounded-sm p-4 md:p-6 shadow-sm">
                     <div className="text-xs font-bold uppercase text-slate-400 mb-4 flex items-center gap-2">
                        <FaPalette /> Factory Color Options
                     </div>
@@ -320,14 +307,91 @@ export default function ProductDetailPage() {
                  </div>
               )}
 
+              {/* === MOBILE-ONLY: PRICING & FINANCE SECTION === */}
+              {/* 1. Volume Pricing Tiers (Mobile) */}
+              <div className="lg:hidden bg-white border border-slate-200 rounded-sm shadow-sm p-4">
+                 <div className="flex justify-between items-center mb-3">
+                    <span className="text-xs font-bold uppercase text-slate-500">Volume Pricing</span>
+                    <span className="text-[10px] text-emerald-600 font-bold bg-emerald-50 px-2 py-0.5 rounded">LIVE MARKET DATA</span>
+                 </div>
+                 {sortedTiers.length > 0 ? (
+                    <div className="border border-slate-200 rounded-sm overflow-hidden">
+                       {sortedTiers.map((tier, idx) => {
+                          const isActive = activeTier && activeTier.min === tier.min;
+                          return (
+                             <div key={idx} className={`flex justify-between items-center px-3 py-3 border-b border-slate-100 last:border-0 ${isActive ? 'bg-emerald-50' : 'bg-white'}`}>
+                                <div className="flex items-center gap-2">
+                                   {isActive && <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></div>}
+                                   <span className={`text-xs font-mono ${isActive ? 'text-slate-900 font-bold' : 'text-slate-500'}`}>≥ {tier.min} units</span>
+                                </div>
+                                <span className={`text-sm font-mono ${isActive ? 'text-emerald-700 font-bold' : 'text-slate-700'}`}>
+                                   ${Number(tier.price).toFixed(2)}
+                                </span>
+                             </div>
+                          );
+                       })}
+                    </div>
+                 ) : (
+                    <div className="text-xs text-slate-400 italic p-2 bg-slate-50 rounded">Standard market rate applies for all volumes.</div>
+                 )}
+              </div>
+
+              {/* 2. Financial Breakdown (Mobile) */}
+              <div className="lg:hidden bg-white border border-slate-200 rounded-sm shadow-sm p-4">
+                  <div className="flex justify-between items-center mb-4 border-b border-slate-100 pb-3">
+                      <span className="text-xs font-bold uppercase text-slate-500">Financial Breakdown</span>
+                      <span className="text-[10px] bg-slate-100 text-slate-500 px-2 py-1 rounded">ESTIMATED</span>
+                  </div>
+                  
+                  <div className="space-y-3 text-xs">
+                      <div className="flex justify-between text-slate-500">
+                          <span>Market Gross ({quantity}x)</span>
+                          <span className="line-through font-mono">${marketTotal.toFixed(2)}</span>
+                      </div>
+                      
+                      {volumeSavings > 0 && (
+                          <div className="flex justify-between text-emerald-600">
+                              <span>Volume Savings</span>
+                              <span className="font-mono">-${volumeSavings.toFixed(2)}</span>
+                          </div>
+                      )}
+
+                      {adminDiscount > 0 && (
+                          <div className="flex justify-between text-emerald-600">
+                              <span>Batch Incentive ({adminDiscount}%)</span>
+                              <span className="font-mono">-${adminDiscountAmount.toFixed(2)}</span>
+                          </div>
+                      )}
+
+                      {vipBonus > 0 && (
+                          <div className="flex justify-between text-blue-600">
+                              <span>VIP Tier Bonus ({vipBonus}%)</span>
+                              <span className="font-mono">-${vipBonusAmount.toFixed(2)}</span>
+                          </div>
+                      )}
+                      
+                      <div className="border-t border-slate-200 my-2"></div>
+                      
+                      <div className="flex justify-between items-center">
+                          <span className="font-bold text-slate-700 uppercase">Net Settlement</span>
+                          <span className="text-xl font-bold text-slate-900">${settlementAmount.toFixed(2)}</span>
+                      </div>
+
+                      <div className="bg-emerald-50 p-2 rounded text-center mt-2 border border-emerald-100">
+                          <span className="text-emerald-800 font-bold block text-[10px] uppercase">Projected Profit Margin</span>
+                          <span className="text-emerald-600 font-mono text-lg font-bold">+{margin}%</span>
+                      </div>
+                  </div>
+              </div>
+
               {/* SPECS */}
               <div className="bg-white border border-slate-200 shadow-sm rounded-sm">
-                 <div className="bg-slate-100/50 px-6 py-3 border-b border-slate-200 flex justify-between items-center">
+                 <div className="bg-slate-100/50 px-4 md:px-6 py-3 border-b border-slate-200 flex justify-between items-center">
                     <h3 className="text-xs font-bold uppercase tracking-widest text-slate-800">Technical Specifications</h3>
                     <span className="text-[10px] font-mono text-slate-400">REF: SPEC-Sheet-V2</span>
                  </div>
-                 <div className="p-6">
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-x-12 gap-y-4">
+                 <div className="p-4 md:p-6">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-x-12 gap-y-2 md:gap-y-4">
                        {product.brand && (
                           <div className="flex justify-between py-2 border-b border-slate-100">
                              <span className="text-xs font-semibold text-slate-500 uppercase flex items-center gap-2"><FaTrademark size={10} /> Manufacturer</span>
@@ -345,7 +409,7 @@ export default function ProductDetailPage() {
                           </div>
                        ))}
                     </div>
-                    <div className="mt-8 pt-6 border-t border-slate-100">
+                    <div className="mt-6 md:mt-8 pt-6 border-t border-slate-100">
                        <h4 className="text-xs font-bold text-slate-800 mb-3 uppercase">Asset Description</h4>
                        <p className="text-sm leading-relaxed text-slate-600 font-normal">
                           {product.description || "No detailed description available for this asset."}
@@ -361,9 +425,8 @@ export default function ProductDetailPage() {
               />
            </div>
 
-           {/* RIGHT COLUMN */}
-           <div className="lg:col-span-4 space-y-4 sticky top-24">
-              
+           {/* RIGHT COLUMN: Desktop Only Action Card */}
+           <div className="hidden lg:block lg:col-span-4 space-y-4 sticky top-24">
               <div className="bg-white border-t-4 border-emerald-600 shadow-xl rounded-sm overflow-hidden">
                  <div className="bg-slate-900 px-5 py-4 flex justify-between items-start">
                     <div>
@@ -379,6 +442,7 @@ export default function ProductDetailPage() {
                  </div>
 
                  <div className="p-5 space-y-6">
+                    {/* TIER LIST */}
                     {sortedTiers.length > 0 && (
                        <div>
                           <div className="flex justify-between items-center mb-2">
@@ -405,6 +469,7 @@ export default function ProductDetailPage() {
                     )}
 
                     <div className="space-y-4 pt-2">
+                       {/* Desktop Size Selector */}
                        {product.sizes && product.sizes.length > 0 && (
                           <div>
                              <label className="block text-[10px] font-bold text-slate-500 uppercase mb-2">Configuration Variant</label>
@@ -438,10 +503,6 @@ export default function ProductDetailPage() {
                              />
                              <div className="bg-slate-100 border border-l-0 border-slate-300 px-4 py-2 text-slate-500 text-xs font-bold rounded-r-sm flex items-center justify-center">PCS</div>
                           </div>
-                          <div className="text-[10px] text-slate-400 mt-1 flex justify-between">
-                             <span>Min. Order: {calculatedMin} Units</span>
-                             <span>Stock: {product.stock}</span>
-                          </div>
                        </div>
                     </div>
 
@@ -451,36 +512,28 @@ export default function ProductDetailPage() {
                              <span>Market Gross</span>
                              <span className="line-through">${marketTotal.toFixed(2)}</span>
                           </div>
-                          
                           {volumeSavings > 0 && (
                              <div className="flex justify-between text-emerald-600">
                                 <span>Volume Adjustment</span>
                                 <span>-${volumeSavings.toFixed(2)}</span>
                              </div>
                           )}
-
                           {adminDiscount > 0 && (
                              <div className="flex justify-between text-emerald-600">
                                 <span>Incentive ({adminDiscount}%)</span>
                                 <span>-${adminDiscountAmount.toFixed(2)}</span>
                              </div>
                           )}
-
                           {vipBonus > 0 && (
-                            <div className="flex justify-between text-blue-600">
-                               <span>Partner Tier Bonus ({vipBonus}%)</span>
-                               <span>-${vipBonusAmount.toFixed(2)}</span>
-                            </div>
+                             <div className="flex justify-between text-blue-600">
+                                <span>Partner Tier Bonus ({vipBonus}%)</span>
+                                <span>-${vipBonusAmount.toFixed(2)}</span>
+                             </div>
                           )}
-                          
                           <div className="border-t border-slate-300 my-2"></div>
-                          
                           <div className="flex justify-between items-end">
                              <span className="font-bold text-slate-700 uppercase">Settlement Due</span>
                              <span className="text-xl font-bold text-slate-900">${settlementAmount.toFixed(2)}</span>
-                          </div>
-                          <div className="text-right text-[10px] text-slate-400 mt-1">
-                             (Excl. Logistics & Duties)
                           </div>
                        </div>
                     </div>
@@ -502,18 +555,93 @@ export default function ProductDetailPage() {
                           <FaLock className="mr-2" /> Verify Account to Unlock
                        </Link>
                     )}
-
-                    {isVerified && (
-                        <div className="text-center">
-                            <span className="text-[10px] text-slate-400 flex items-center justify-center gap-1">
-                                <FaCheckCircle className="text-emerald-500"/> Escrow Secured via Smart Contract
-                            </span>
-                        </div>
-                    )}
                  </div>
               </div>
            </div>
 
+        </div>
+
+        {/* 4. MOBILE STICKY FOOTER (Custom Dropdown UPWARDS) */}
+        <div className="lg:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-slate-200 z-40 pb-4 shadow-[0_-4px_10px_rgba(0,0,0,0.05)]">
+           <div className="p-4 space-y-3">
+              
+              {/* Inputs Row */}
+              <div className="flex gap-3">
+                 <div className="flex-1">
+                    <input 
+                       type="number" 
+                       value={quantity}
+                       onChange={handleQuantityChange}
+                       onBlur={handleQuantityBlur}
+                       className="w-full border border-slate-300 px-3 py-2 text-slate-900 font-mono font-bold text-sm focus:ring-2 focus:ring-emerald-500 outline-none rounded-sm bg-white"
+                    />
+                 </div>
+                 
+                 {/* Custom Dropdown */}
+                 {product.sizes && product.sizes.length > 0 && (
+                    <div className="flex-1 relative">
+                       {/* Trigger */}
+                       <button 
+                          onClick={() => setIsSizeMenuOpen(!isSizeMenuOpen)}
+                          className="w-full border border-slate-300 px-3 py-2 text-slate-900 font-mono text-sm focus:ring-2 focus:ring-emerald-500 outline-none rounded-sm bg-white flex justify-between items-center"
+                       >
+                          <span className="truncate">{selectedSize}</span>
+                          <FaChevronUp size={10} className={`text-slate-400 transition-transform ${isSizeMenuOpen ? 'rotate-180' : ''}`} />
+                       </button>
+
+                       {/* Menu (Pops UP) */}
+                       {isSizeMenuOpen && (
+                          <>
+                             <div className="fixed inset-0 z-30" onClick={() => setIsSizeMenuOpen(false)}></div>
+                             <div className="absolute bottom-full mb-1 left-0 w-full bg-white border border-slate-300 shadow-xl rounded-sm z-40 max-h-48 overflow-y-auto">
+                                {product.sizes.map((s, i) => (
+                                   <button
+                                      key={i}
+                                      onClick={() => {
+                                         setSelectedSize(s.name);
+                                         setIsSizeMenuOpen(false);
+                                      }}
+                                      className={`w-full text-left px-3 py-3 text-xs font-mono border-b border-slate-100 last:border-0 hover:bg-slate-50 flex justify-between items-center ${
+                                         selectedSize === s.name ? 'bg-blue-50 text-blue-700 font-bold' : 'text-slate-700'
+                                      }`}
+                                   >
+                                      {s.name}
+                                      {selectedSize === s.name && <FaCheckCircle size={10} />}
+                                   </button>
+                                ))}
+                             </div>
+                          </>
+                       )}
+                    </div>
+                 )}
+              </div>
+
+              {/* Action Button */}
+              <div className="flex gap-3 items-center">
+                  <div className="flex flex-col">
+                     <span className="text-[10px] text-slate-500 font-bold uppercase">Total Due</span>
+                     <span className="text-xl font-mono font-bold text-slate-900">${settlementAmount.toFixed(0)}</span>
+                  </div>
+                  
+                  {isVerified ? (
+                     <button 
+                        onClick={handleOpenTicket}
+                        disabled={executing || isInvalidQuantity}
+                        className={`flex-1 font-bold py-3.5 rounded-sm shadow-md transition-all flex justify-center items-center gap-2 text-xs tracking-widest uppercase ${
+                           isInvalidQuantity 
+                           ? "bg-slate-300 text-slate-500 cursor-not-allowed" 
+                           : "bg-emerald-600 active:bg-emerald-700 text-white"
+                        }`}
+                     >
+                        {executing ? "PROCESSING..." : "Procure Now"}
+                     </button>
+                  ) : (
+                     <Link to="/kyc-verification" className="flex-1 flex items-center justify-center bg-slate-800 text-white font-bold py-3.5 rounded-sm active:bg-slate-700 text-xs uppercase tracking-widest">
+                        <FaLock className="mr-2" /> Unlock
+                     </Link>
+                  )}
+              </div>
+           </div>
         </div>
 
         {showModal && (

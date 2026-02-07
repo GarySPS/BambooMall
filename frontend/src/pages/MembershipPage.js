@@ -11,7 +11,8 @@ import {
   FaInfoCircle,
   FaCrown,
   FaPlaneDeparture,
-  FaHandshake
+  FaHandshake,
+  FaArrowRight
 } from "react-icons/fa";
 
 export default function MembershipPage() {
@@ -108,7 +109,7 @@ export default function MembershipPage() {
          </div>
       </div>
 
-      {/* 2. OVERVIEW TEXT (THE "FLUFF" TO MAKE IT REAL) */}
+      {/* 2. OVERVIEW TEXT */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 mb-10">
           <div className="lg:col-span-2 space-y-4">
               <h2 className="text-xl font-bold text-slate-900 flex items-center gap-2">
@@ -119,7 +120,7 @@ export default function MembershipPage() {
                   Your partnership tier is dynamically evaluated based on your <strong>Total Net Worth</strong> (Liquid Settlement Balance + Active Inventory Value).
               </p>
               <div className="bg-blue-50 border-l-4 border-blue-500 p-4 rounded-r-lg">
-                  <p className="text-sm text-blue-800">
+                  <p className="text-sm text-blue-800 leading-relaxed">
                       <strong>Automatic Upgrades:</strong> As your net worth increases through deposits or sales, your account is automatically upgraded to the next tier, unlocking deeper discounts and higher credit lines instantly.
                   </p>
               </div>
@@ -130,7 +131,7 @@ export default function MembershipPage() {
               {nextTier ? (
                   <>
                     <div className="flex justify-between items-end mb-2">
-                        <span className="text-slate-800 font-bold">{nextTier.name}</span>
+                        <span className="text-slate-800 font-bold text-sm md:text-base">{nextTier.name}</span>
                         <span className="text-emerald-600 font-mono text-sm">{formatCurrency(nextTier.minBalance)}</span>
                     </div>
                     <div className="w-full bg-slate-100 rounded-full h-2 mb-2">
@@ -150,7 +151,7 @@ export default function MembershipPage() {
           </div>
       </div>
 
-      {/* 3. STATUS CARD (DARK THEME) */}
+      {/* 3. STATUS CARD (STACKS ON MOBILE) */}
       <div className="bg-gradient-to-br from-slate-900 to-slate-800 text-white rounded-2xl shadow-xl overflow-hidden relative group mb-10">
          <div className="absolute top-0 right-0 p-8 opacity-5 transform translate-x-1/4 -translate-y-1/4 pointer-events-none">
             <FaBuilding size={240} />
@@ -159,8 +160,8 @@ export default function MembershipPage() {
          <div className="p-6 md:p-10 relative z-10 flex flex-col md:flex-row justify-between items-start md:items-center gap-8">
             <div>
                <div className="text-slate-400 text-xs font-bold uppercase tracking-[0.2em] mb-2">Current Active Standing</div>
-               <div className="text-3xl md:text-5xl font-mono font-bold text-white mb-4">
-                  {currentTier.name}
+               <div className="text-2xl md:text-5xl font-mono font-bold text-white mb-4 leading-tight">
+                  {currentTier.name.replace(/\(Tier \d\)/, '')}
                </div>
                
                <div className="flex flex-wrap gap-3">
@@ -173,7 +174,7 @@ export default function MembershipPage() {
                </div>
             </div>
 
-            <div className="bg-white/10 backdrop-blur-md p-6 rounded-xl border border-white/10 w-full md:w-auto min-w-[200px]">
+            <div className="bg-white/10 backdrop-blur-md p-6 rounded-xl border border-white/10 w-full md:w-auto min-w-[240px]">
                <div className="text-xs text-slate-300 uppercase mb-1">Syndicate Credit Line</div>
                <div className="text-2xl font-mono font-bold text-white">{currentTier.credit}</div>
                <div className="text-[10px] text-slate-400 mt-2 flex items-center gap-1">
@@ -183,7 +184,7 @@ export default function MembershipPage() {
          </div>
       </div>
 
-      {/* 4. TIER SCHEDULE TABLE */}
+      {/* 4. TIER SCHEDULE (Responsive Switch) */}
       <div className="bg-white border border-slate-200 rounded-xl shadow-sm overflow-hidden">
          <div className="px-6 py-5 border-b border-slate-200 bg-slate-50 flex justify-between items-center">
             <h3 className="font-bold text-slate-800 text-sm uppercase tracking-wide flex items-center gap-2">
@@ -192,8 +193,48 @@ export default function MembershipPage() {
             <span className="text-xs text-slate-400 font-mono hidden sm:inline">EFFECTIVE: JAN 01, 2026</span>
          </div>
          
-         <div className="overflow-x-auto">
-             <table className="w-full text-left min-w-[800px]">
+         {/* A. MOBILE CARDS (< md) */}
+         <div className="md:hidden divide-y divide-slate-100">
+            {TIERS.map((tier) => {
+               const isActive = currentTier.id === tier.id;
+               return (
+                  <div key={tier.id} className={`p-5 ${isActive ? 'bg-blue-50/50' : ''}`}>
+                     <div className="flex justify-between items-start mb-3">
+                        <div>
+                           <div className="font-bold text-slate-900 flex items-center gap-2">
+                              {tier.name}
+                              {isActive && <span className="text-[9px] bg-blue-100 text-blue-700 px-1.5 py-0.5 rounded uppercase tracking-wider">Current</span>}
+                           </div>
+                           <div className="text-xs text-slate-500 mt-1">Min. Net Worth: <span className="font-mono font-bold text-slate-700">{formatCurrency(tier.minBalance)}</span></div>
+                        </div>
+                        <div className="text-right">
+                           <div className="text-emerald-600 font-bold text-lg">{tier.bonus}</div>
+                           <div className="text-[9px] text-emerald-700 uppercase font-bold">Discount</div>
+                        </div>
+                     </div>
+                     
+                     <div className="grid grid-cols-2 gap-3 mb-4">
+                        <div className="bg-slate-50 p-2 rounded border border-slate-100">
+                           <div className="text-[9px] text-slate-400 uppercase font-bold">Settlement</div>
+                           <div className="text-xs font-bold text-slate-700">{tier.benefits[0].split(' ')[0]}</div>
+                        </div>
+                        <div className="bg-slate-50 p-2 rounded border border-slate-100">
+                           <div className="text-[9px] text-slate-400 uppercase font-bold">Credit Line</div>
+                           <div className="text-xs font-bold text-slate-700">{tier.credit}</div>
+                        </div>
+                     </div>
+
+                     <div className="text-xs text-slate-500 italic leading-relaxed">
+                        "{tier.desc}"
+                     </div>
+                  </div>
+               );
+            })}
+         </div>
+
+         {/* B. DESKTOP TABLE (>= md) */}
+         <div className="hidden md:block overflow-x-auto">
+             <table className="w-full text-left">
                 <thead className="bg-white text-slate-400 font-bold text-xs uppercase tracking-wider border-b border-slate-100">
                    <tr>
                       <th className="px-6 py-4">Tier Designation</th>
@@ -210,8 +251,8 @@ export default function MembershipPage() {
                          <tr key={tier.id} className={`transition-colors ${isActive ? 'bg-blue-50/50' : 'hover:bg-slate-50'}`}>
                             <td className="px-6 py-4">
                                <div className="flex items-center gap-2">
-                                   <span className={`font-bold ${isActive ? 'text-blue-700' : 'text-slate-700'}`}>{tier.name}</span>
-                                   {isActive && <span className="text-[10px] bg-blue-100 text-blue-700 px-2 py-0.5 rounded border border-blue-200 font-bold font-mono">CURRENT</span>}
+                                    <span className={`font-bold ${isActive ? 'text-blue-700' : 'text-slate-700'}`}>{tier.name}</span>
+                                    {isActive && <span className="text-[10px] bg-blue-100 text-blue-700 px-2 py-0.5 rounded border border-blue-200 font-bold font-mono">CURRENT</span>}
                                </div>
                                <div className="text-xs text-slate-500 mt-1 max-w-xs">{tier.desc}</div>
                             </td>
@@ -223,9 +264,9 @@ export default function MembershipPage() {
                             </td>
                             <td className="px-6 py-4 text-slate-600 text-xs font-medium">
                                <div className="flex flex-col gap-1">
-                                   {tier.benefits.map((b, i) => (
+                                    {tier.benefits.map((b, i) => (
                                        <span key={i} className="flex items-center gap-1.5"><FaCheckCircle size={10} className="text-slate-300"/> {b}</span>
-                                   ))}
+                                    ))}
                                </div>
                             </td>
                             <td className="px-6 py-4 text-right font-mono font-bold text-slate-800">
@@ -240,9 +281,9 @@ export default function MembershipPage() {
       </div>
 
       {/* 5. FOOTER DISCLAIMER */}
-      <div className="mt-6 bg-slate-50 p-4 border border-slate-200 rounded-xl text-xs text-slate-500 flex items-start gap-3">
+      <div className="mt-6 bg-slate-50 p-4 border border-slate-200 rounded-xl text-xs text-slate-500 flex items-start gap-3 leading-relaxed">
          <FaLock className="text-slate-400 mt-0.5 shrink-0" />
-         <div className="leading-relaxed">
+         <div>
            <strong>Tier Adjustment Protocol:</strong> Partner status is evaluated daily based on Total Net Worth (Liquid Settlement Balance + Active Inventory Value). 
            VIP Discounts are applied automatically to Proforma Invoices generated after status upgrade. Downgrades occur if Net Worth falls below threshold for 30 consecutive days.
          </div>

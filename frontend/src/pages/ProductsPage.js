@@ -66,11 +66,10 @@ export default function ProductsPage() {
       });
   }, []);
 
-  // 1. Process data first: Add Batch ID so it is stable and searchable
+  // 1. Process data: Just add the Batch ID. 
   const processedProducts = useMemo(() => {
     return products.map((p, i) => ({
       ...p,
-      // We attach the ID here so it doesn't change when filtering
       batchId: `BATCH-CN-${202600 + i}` 
     }));
   }, [products]);
@@ -119,14 +118,15 @@ export default function ProductsPage() {
          </div>
 
          {/* Metrics (Big & Bold) */}
-         <div className="flex gap-4">
-            <div className="bg-white px-6 py-3 rounded-xl border border-slate-200 shadow-sm min-w-[160px]">
-              <div className="text-xs uppercase text-slate-400 font-bold tracking-wider mb-1">Total Lots</div>
-              <div className="text-3xl font-mono font-bold text-slate-800">{products.length}</div>
-            </div>
-            <div className="bg-white px-6 py-3 rounded-xl border border-slate-200 shadow-sm min-w-[160px]">
-              <div className="text-xs uppercase text-slate-400 font-bold tracking-wider mb-1">Active Vol</div>
-              <div className="text-3xl font-mono font-bold text-slate-800">{formatNumber(totalVolume)}</div>
+         <div className="flex gap-4 w-full md:w-auto">
+            {/* Total Lots removed */}
+            
+            <div className="bg-white px-6 py-3 rounded-xl border border-slate-200 shadow-sm w-full md:min-w-[200px]">
+               <div className="text-xs uppercase text-slate-400 font-bold tracking-wider mb-1">Active Vol</div>
+               {/* Fixed: text-xl on mobile to prevent overflow, text-3xl on desktop */}
+               <div className="text-xl md:text-3xl font-mono font-bold text-slate-800 truncate">
+                 {formatNumber(totalVolume)}
+               </div>
             </div>
          </div>
       </div>
@@ -149,9 +149,80 @@ export default function ProductsPage() {
          </button>
       </div>
 
-      {/* 3. DATA TABLE (Spacious & Readable) */}
+      {/* 3. DATA DISPLAY (Responsive Switch) */}
       <RestrictedContent>
-        <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
+        
+        {/* === A. MOBILE CARD VIEW (Visible on < md screens) === */}
+        <div className="md:hidden grid gap-4">
+          {filteredProducts.map((product, index) => {
+            const gradeInfo = getGradeStyles(product.grade);
+            
+            return (
+              <div key={product.id || index} className="bg-white rounded-xl border border-slate-200 shadow-sm p-4 flex flex-col gap-4">
+                
+                {/* Card Header: Batch & Location */}
+                <div className="flex justify-between items-start border-b border-slate-100 pb-3">
+                  <span className="font-mono text-xs text-slate-400 font-semibold tracking-wide bg-slate-50 px-2 py-1 rounded">
+                    {product.batchId}
+                  </span>
+                  <div className="flex items-center gap-1 text-xs text-slate-400">
+                    <FaGlobeAsia /> Shenzhen, CN
+                  </div>
+                </div>
+
+                {/* Main Content: Image & Title */}
+                <div className="flex gap-4">
+                  <div className="w-20 h-20 bg-white rounded-lg border border-slate-200 p-1 flex-shrink-0">
+                    <img 
+                      src={getProductImage(product)} 
+                      alt="thumb" 
+                      className="w-full h-full object-contain mix-blend-multiply"
+                    />
+                  </div>
+                  <div className="flex flex-col gap-2">
+                    <Link to={`/products/${product.id}`} className="font-bold text-slate-800 text-lg leading-tight line-clamp-2">
+                      {product.title}
+                    </Link>
+                    {/* Grade Pill */}
+                    <span className={`self-start inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-[10px] font-bold uppercase tracking-wide border ${gradeInfo.style}`}>
+                      <span className={`w-1.5 h-1.5 rounded-full ${gradeInfo.dot}`}></span>
+                      {gradeInfo.label}
+                    </span>
+                  </div>
+                </div>
+
+                {/* Metrics Grid */}
+                <div className="grid grid-cols-2 gap-3 bg-slate-50 rounded-lg p-3">
+                  <div>
+                    <div className="text-[10px] text-slate-400 uppercase font-bold">Ask Price</div>
+                    <div className="font-mono text-lg font-bold text-slate-900">{formatCurrency(product.price)}</div>
+                  </div>
+                  <div className="text-right">
+                    <div className="text-[10px] text-slate-400 uppercase font-bold">Volume</div>
+                    <div className="font-mono text-sm font-medium text-slate-600">{formatNumber(product.stock || 500)} Units</div>
+                  </div>
+                </div>
+
+                {/* Action Button */}
+                <Link 
+                  to={`/products/${product.id}`}
+                  className="w-full py-3 bg-white border-2 border-slate-200 text-slate-700 font-bold rounded-lg flex items-center justify-center gap-2 hover:border-blue-600 hover:text-blue-700 transition-colors"
+                >
+                  View Manifest Details <FaChevronRight size={12} />
+                </Link>
+
+              </div>
+            );
+          })}
+
+          {/* Mobile Pagination Placeholder */}
+          <div className="text-center py-4 text-xs text-slate-400 font-mono uppercase">
+             Showing {filteredProducts.length} Records
+          </div>
+        </div>
+
+        {/* === B. DESKTOP TABLE VIEW (Hidden on Mobile) === */}
+        <div className="hidden md:block bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
           <div className="overflow-x-auto">
             <table className="w-full text-left">
               <thead className="bg-slate-50 text-slate-500 font-mono text-xs uppercase tracking-wider border-b border-slate-200">
@@ -173,7 +244,7 @@ export default function ProductsPage() {
                   return (
                     <tr key={product.id || index} className="hover:bg-blue-50/50 transition-colors group">
                       
-                      {/* Image - MUCH LARGER NOW (w-16 h-16) */}
+                      {/* Image */}
                       <td className="px-8 py-6 align-middle w-[120px]">
                         <div className="w-20 h-20 bg-white rounded-lg border border-slate-200 p-1 shadow-sm">
                            <img 
@@ -184,64 +255,65 @@ export default function ProductsPage() {
                         </div>
                       </td>
 
-                      {/* Description - LARGER TEXT */}
+                      {/* Description */}
                       <td className="px-8 py-6 align-middle">
-                         <div className="flex flex-col gap-1">
-                           <span className="font-mono text-xs text-slate-400 font-semibold tracking-wide">
-                             {product.batchId}
-                           </span>
-                           <Link to={`/products/${product.id}`} className="text-lg font-bold text-slate-800 hover:text-blue-700 transition-colors">
-                             {product.title}
-                           </Link>
-                           <div className="flex items-center gap-2 text-sm text-slate-500 mt-1">
-                              <FaGlobeAsia className="text-slate-400" />
-                              Shenzhen, CN
-                           </div>
-                         </div>
+                          <div className="flex flex-col gap-1">
+                            <span className="font-mono text-xs text-slate-400 font-semibold tracking-wide">
+                              {product.batchId}
+                            </span>
+                            <Link to={`/products/${product.id}`} className="text-lg font-bold text-slate-800 hover:text-blue-700 transition-colors">
+                              {product.title}
+                            </Link>
+                            <div className="flex items-center gap-2 text-sm text-slate-500 mt-1">
+                               <FaGlobeAsia className="text-slate-400" />
+                               Shenzhen, CN
+                            </div>
+                          </div>
                       </td>
 
-                      {/* Grade - PILL SHAPE & CLEARER */}
+                      {/* Grade */}
                       <td className="px-8 py-6 align-middle">
-                         <span className={`inline-flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-bold uppercase tracking-wide border ${gradeInfo.style}`}>
-                           <span className={`w-2 h-2 rounded-full ${gradeInfo.dot}`}></span>
-                           {gradeInfo.label}
-                         </span>
+                          <span className={`inline-flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-bold uppercase tracking-wide border ${gradeInfo.style}`}>
+                            <span className={`w-2 h-2 rounded-full ${gradeInfo.dot}`}></span>
+                            {gradeInfo.label}
+                          </span>
                       </td>
 
-                      {/* Stock - MONO FONT */}
+                      {/* Stock */}
                       <td className="px-8 py-6 align-middle text-right">
-                         <div className="font-mono text-base text-slate-600 font-medium">
-                           {formatNumber(product.stock || 500)}
-                         </div>
-                         <div className="text-[10px] text-slate-400 uppercase font-bold mt-0.5">Units</div>
+                          <div className="font-mono text-base text-slate-600 font-medium">
+                            {formatNumber(product.stock || 500)}
+                          </div>
+                          <div className="text-[10px] text-slate-400 uppercase font-bold mt-0.5">Units</div>
                       </td>
 
-                      {/* Price - BIG & BOLD */}
+                      {/* Price */}
                       <td className="px-8 py-6 align-middle text-right">
-                         <div className="font-mono text-xl font-bold text-slate-900">
-                           {formatCurrency(product.price)}
-                         </div>
-                         <div className="text-[10px] text-slate-400 uppercase font-bold mt-0.5">Per Unit</div>
+                          <div className="font-mono text-xl font-bold text-slate-900">
+                            {formatCurrency(product.price)}
+                          </div>
+                          <div className="text-[10px] text-slate-400 uppercase font-bold mt-0.5">Per Unit</div>
                       </td>
 
+                      {/* Discount */}
                       <td className="px-8 py-6 align-middle text-center">
-                         {product.discount ? (
-                           <span className="inline-block bg-rose-100 text-rose-700 border border-rose-200 px-3 py-1 rounded-lg text-xs font-bold whitespace-nowrap">
-                              {product.discount}% OFF
-                           </span>
-                         ) : (
-                           <span className="text-slate-300 font-mono text-xs">-</span>
-                         )}
+                          {product.discount ? (
+                            <span className="inline-block bg-rose-100 text-rose-700 border border-rose-200 px-3 py-1 rounded-lg text-xs font-bold whitespace-nowrap">
+                               {product.discount}% OFF
+                            </span>
+                          ) : (
+                            <span className="text-slate-300 font-mono text-xs">-</span>
+                          )}
                       </td>
 
                       {/* Action */}
                       <td className="px-8 py-6 align-middle text-right">
-                         <Link 
-                           to={`/products/${product.id}`}
-                           className="inline-flex items-center gap-2 px-5 py-2.5 bg-white border-2 border-slate-200 hover:border-blue-600 hover:text-blue-700 text-slate-700 text-sm font-bold rounded-lg transition-all"
-                         >
-                           Details <FaChevronRight size={12} />
-                         </Link>
+                          <Link 
+                            to={`/products/${product.id}`}
+                            className="inline-flex items-center gap-2 px-5 py-2.5 bg-white border-2 border-slate-200 hover:border-blue-600 hover:text-blue-700 text-slate-700 text-sm font-bold rounded-lg transition-all"
+                          >
+                            Details <FaChevronRight size={12} />
+                          </Link>
                       </td>
                     </tr>
                   );
@@ -252,11 +324,11 @@ export default function ProductsPage() {
           
           {/* Pagination Footer */}
           <div className="bg-slate-50 px-8 py-4 border-t border-slate-200 flex justify-between items-center text-sm text-slate-500 font-mono">
-             <span className="font-medium">DISPLAYING {filteredProducts.length} RECORDS</span>
-             <div className="flex gap-3">
-                <button disabled className="px-4 py-2 bg-white border border-slate-300 rounded hover:bg-slate-50 text-slate-400 font-bold text-xs uppercase cursor-not-allowed">Previous</button>
-                <button className="px-4 py-2 bg-white border border-slate-300 rounded hover:bg-slate-100 hover:border-slate-400 text-slate-700 font-bold text-xs uppercase shadow-sm">Next Page</button>
-             </div>
+              <span className="font-medium">DISPLAYING {filteredProducts.length} RECORDS</span>
+              <div className="flex gap-3">
+                 <button disabled className="px-4 py-2 bg-white border border-slate-300 rounded hover:bg-slate-50 text-slate-400 font-bold text-xs uppercase cursor-not-allowed">Previous</button>
+                 <button className="px-4 py-2 bg-white border border-slate-300 rounded hover:bg-slate-100 hover:border-slate-400 text-slate-700 font-bold text-xs uppercase shadow-sm">Next Page</button>
+              </div>
           </div>
         </div>
       </RestrictedContent>

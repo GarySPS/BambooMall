@@ -1,4 +1,4 @@
-//src>pages>CartPage.js
+// src/pages/CartPage.js
 
 import React, { useState, useEffect, useCallback, useMemo } from "react";
 import { Link } from "react-router-dom";
@@ -8,10 +8,10 @@ import { getProductImage } from "../utils/image";
 import { API_BASE_URL } from "../config"; 
 import { 
   FaBoxOpen, FaChartLine, FaSpinner, FaFileContract,
-  FaExternalLinkAlt, FaUndoAlt, FaExclamationCircle,
+  FaUndoAlt, FaExclamationCircle,
   FaTimes, FaShieldAlt, FaMoneyBillWave, FaWallet,
-  FaChartPie, FaCheckCircle, FaGlobeAsia, FaShip,
-  FaLayerGroup
+  FaChartPie, FaCheckCircle, FaShip,
+  FaLayerGroup, FaChevronRight
 } from "react-icons/fa";
 
 // --- HELPER: Random Channel Generator (Deterministic) ---
@@ -60,7 +60,7 @@ export default function CartPage() {
 
   useEffect(() => { loadData(); }, [loadData]); 
 
-  // --- METRICS (UPDATED: Only count Active/Selling items) ---
+  // --- METRICS ---
   const portfolioStats = useMemo(() => {
   return orders.reduce((acc, order) => {
     // ONLY count active stock towards "Capital Deployed"
@@ -104,17 +104,17 @@ export default function CartPage() {
   // --- RENDER HELPERS ---
   const StatusBadge = ({ isSold, isRefundPending }) => {
     if (isSold) return (
-      <span className="inline-flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-bold uppercase tracking-wide border bg-emerald-100 text-emerald-800 border-emerald-200">
+      <span className="inline-flex items-center gap-2 px-3 py-1.5 rounded-lg text-[10px] font-bold uppercase tracking-wide border bg-emerald-100 text-emerald-800 border-emerald-200">
          <FaCheckCircle /> Liquidated
       </span>
     );
     if (isRefundPending) return (
-      <span className="inline-flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-bold uppercase tracking-wide border bg-slate-100 text-slate-500 border-slate-300">
+      <span className="inline-flex items-center gap-2 px-3 py-1.5 rounded-lg text-[10px] font-bold uppercase tracking-wide border bg-slate-100 text-slate-500 border-slate-300">
          <FaExclamationCircle /> Audit Pending
       </span>
     );
     return (
-      <span className="inline-flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-bold uppercase tracking-wide border bg-blue-50 text-blue-700 border-blue-100">
+      <span className="inline-flex items-center gap-2 px-3 py-1.5 rounded-lg text-[10px] font-bold uppercase tracking-wide border bg-blue-50 text-blue-700 border-blue-100">
          <FaChartLine /> Live Market
       </span>
     );
@@ -145,7 +145,7 @@ export default function CartPage() {
   return (
     <div className="space-y-8 animate-fade-in pb-12 max-w-[1600px] mx-auto pt-4 px-1">
       
-      {/* 1. DASHBOARD HEADER (Matched Products Page Style) */}
+      {/* 1. DASHBOARD HEADER */}
       <div className="flex flex-col md:flex-row md:items-end justify-between gap-6">
          <div>
             <h2 className="text-3xl font-bold text-slate-900 flex items-center gap-4">
@@ -164,19 +164,20 @@ export default function CartPage() {
             </div>
          </div>
 
-         {/* Metrics (Big & Bold) */}
-         <div className="flex gap-4">
-            // ... inside the return statement ...
-<div className="bg-white px-6 py-3 rounded-xl border border-slate-200 shadow-sm min-w-[180px]">
-    <div className="text-xs uppercase text-slate-400 font-bold tracking-wider mb-1 flex items-center gap-2">
-    <FaWallet /> Active Inventory
-</div>
-    <div className="text-2xl font-mono font-bold text-slate-800">
-        {formatCurrency(portfolioStats.totalCost)}
-    </div>
-</div>
-            <div className="bg-white px-6 py-3 rounded-xl border border-slate-200 shadow-sm min-w-[180px]">
-               <div className="text-xs uppercase text-slate-400 font-bold tracking-wider mb-1 flex items-center gap-2"><FaChartPie /> Projected NAV</div>
+         {/* Metrics */}
+         <div className="flex gap-4 overflow-x-auto pb-2 md:pb-0">
+            <div className="bg-white px-6 py-3 rounded-xl border border-slate-200 shadow-sm min-w-[180px] flex-shrink-0">
+               <div className="text-xs uppercase text-slate-400 font-bold tracking-wider mb-1 flex items-center gap-2">
+                 <FaWallet /> Active Inventory
+               </div>
+               <div className="text-2xl font-mono font-bold text-slate-800">
+                   {formatCurrency(portfolioStats.totalCost)}
+               </div>
+            </div>
+            <div className="bg-white px-6 py-3 rounded-xl border border-slate-200 shadow-sm min-w-[180px] flex-shrink-0">
+               <div className="text-xs uppercase text-slate-400 font-bold tracking-wider mb-1 flex items-center gap-2">
+                 <FaChartPie /> Projected NAV
+               </div>
                <div className="text-2xl font-mono font-bold text-blue-600">
                    {formatCurrency(portfolioStats.totalValue)}
                </div>
@@ -184,7 +185,7 @@ export default function CartPage() {
          </div>
       </div>
 
-      {/* 2. DATA TABLE (Matched Products Page Style) */}
+      {/* 2. DATA DISPLAY (Responsive Switch) */}
       {orders.length === 0 ? (
          <div className="text-center py-24 bg-white border border-dashed border-slate-300 rounded-xl">
             <div className="bg-slate-50 w-20 h-20 rounded-full flex items-center justify-center mx-auto mb-6">
@@ -197,121 +198,197 @@ export default function CartPage() {
             </Link>
          </div>
       ) : (
-         <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
-            <div className="overflow-x-auto">
-               <table className="w-full text-left">
-                  <thead className="bg-slate-50 text-slate-500 font-mono text-xs uppercase tracking-wider border-b border-slate-200">
-                     <tr>
-                        <th className="px-8 py-5 font-bold">Asset Preview</th> 
-                        <th className="px-8 py-5 font-bold">Batch / Config</th>
-                        <th className="px-8 py-5 font-bold text-center">Volume</th>
-                        <th className="px-8 py-5 font-bold text-right">Cost Basis</th>
-                        <th className="px-8 py-5 font-bold text-right">Est. Market Val</th>
-                        <th className="px-8 py-5 font-bold">Syndication Channels</th>
-                        <th className="px-8 py-5 font-bold text-right">Status</th>
-                        <th className="px-8 py-5 font-bold text-right">Action</th>
-                     </tr>
-                  </thead>
-                  <tbody className="divide-y divide-slate-100">
-                     {orders.map((order) => {
-                        const qty = Number(order.qty || order.quantity || 0);
-                        const cost = Number(order.amount);
-                        const unitPrice = Number(order.product?.price || 0);
-                        const marketValue = unitPrice > 0 ? (unitPrice * qty) : (cost * 1.5);
-                        const isSold = order.status === 'sold';
-                        const isRefundPending = order.status === 'refund_pending' || order.status === 'refunded';
-                        const shortId = order.id.toString().substring(0, 8).toUpperCase();
+         <>
+            {/* === A. MOBILE CARD VIEW (< md) === */}
+            <div className="md:hidden grid gap-4">
+              {orders.map((order) => {
+                 const qty = Number(order.qty || order.quantity || 0);
+                 const cost = Number(order.amount);
+                 const unitPrice = Number(order.product?.price || 0);
+                 const marketValue = unitPrice > 0 ? (unitPrice * qty) : (cost * 1.5);
+                 const isSold = order.status === 'sold';
+                 const isRefundPending = order.status === 'refund_pending' || order.status === 'refunded';
+                 const shortId = order.id.toString().substring(0, 8).toUpperCase();
 
-                        return (
-                           <tr key={order.id} className="hover:bg-blue-50/50 transition-colors group">
-                              
-                              {/* Image (Big Square) */}
-                              <td className="px-8 py-6 align-middle w-[120px]">
-                                 <div className="w-20 h-20 bg-white rounded-lg border border-slate-200 p-1 shadow-sm">
-                                    <img src={getProductImage(order.product)} alt="asset" className="w-full h-full object-cover mix-blend-multiply"/>
-                                 </div>
-                              </td>
-                              
-                              {/* Description */}
-                              <td className="px-8 py-6 align-middle">
-                                 <div className="flex flex-col gap-1">
-                                    <span className="font-mono text-xs text-slate-400 font-semibold tracking-wide">
-                                         BATCH-CN-{shortId}
-                                    </span>
-                                    <Link to={`/products/${order.product_id}`} className="text-lg font-bold text-slate-800 hover:text-blue-700 transition-colors line-clamp-1">
-                                       {order.product?.title || "Allocated Inventory Lot"}
-                                    </Link>
-                                    
-                                    {order.details && order.details.size && (
-                                       <div className="mt-1">
-                                          <span className="inline-flex items-center px-2 py-1 rounded text-[10px] font-bold bg-slate-100 text-slate-600 border border-slate-200 uppercase tracking-wide">
-                                             CONFIG: {order.details.size}
-                                          </span>
-                                       </div>
-                                    )}
-                                 </div>
-                              </td>
+                 return (
+                    <div key={order.id} className="bg-white rounded-xl border border-slate-200 shadow-sm p-4 flex flex-col gap-4">
+                        {/* Header: Batch & Status */}
+                        <div className="flex justify-between items-start border-b border-slate-100 pb-3">
+                           <span className="font-mono text-[10px] text-slate-400 font-bold tracking-wider bg-slate-50 px-2 py-1 rounded">
+                              BATCH-CN-{shortId}
+                           </span>
+                           <StatusBadge isSold={isSold} isRefundPending={isRefundPending} />
+                        </div>
 
-                              {/* Volume */}
-                              <td className="px-8 py-6 align-middle text-center">
-                                 <div className="font-mono text-base text-slate-600 font-medium">{qty}</div>
-                                 <div className="text-[10px] text-slate-400 uppercase font-bold mt-0.5">Units</div>
-                              </td>
+                        {/* Main: Image & Title */}
+                        <div className="flex gap-4">
+                           <div className="w-16 h-16 bg-white rounded-lg border border-slate-200 p-1 flex-shrink-0">
+                              <img src={getProductImage(order.product)} alt="asset" className="w-full h-full object-cover mix-blend-multiply"/>
+                           </div>
+                           <div className="flex flex-col gap-1">
+                              <Link to={`/products/${order.product_id}`} className="font-bold text-slate-800 text-base leading-tight line-clamp-2">
+                                 {order.product?.title || "Allocated Inventory Lot"}
+                              </Link>
+                              {order.details && order.details.size && (
+                                 <span className="self-start inline-flex px-1.5 py-0.5 rounded text-[9px] font-bold bg-slate-100 text-slate-500 border border-slate-200 uppercase tracking-wide">
+                                    CFG: {order.details.size}
+                                 </span>
+                              )}
+                           </div>
+                        </div>
 
-                              {/* Cost */}
-                              <td className="px-8 py-6 align-middle text-right">
-                                  <div className="font-mono text-base text-slate-700 font-medium">{formatCurrency(cost)}</div>
-                              </td>
+                        {/* Stats Grid */}
+                        <div className="grid grid-cols-2 gap-3 bg-slate-50 rounded-lg p-3">
+                           <div>
+                              <div className="text-[10px] text-slate-400 uppercase font-bold">Cost Basis</div>
+                              <div className="font-mono text-sm font-bold text-slate-700">{formatCurrency(cost)}</div>
+                           </div>
+                           <div className="text-right">
+                              <div className="text-[10px] text-emerald-500 uppercase font-bold">Est. Value</div>
+                              <div className="font-mono text-sm font-bold text-emerald-600">{formatCurrency(marketValue)}</div>
+                           </div>
+                        </div>
 
-                              {/* Market Val */}
-                              <td className="px-8 py-6 align-middle text-right">
-                                  <div className="font-mono text-base font-bold text-emerald-600">{formatCurrency(marketValue)}</div>
-                                  <div className="text-[10px] text-emerald-500 uppercase font-bold mt-0.5">Projected</div>
-                              </td>
-
-                              {/* Channels */}
-                              <td className="px-8 py-6 align-middle">
-                                 {isSold || isRefundPending ? <span className="text-slate-300 font-mono text-xs">-</span> : <DynamicChannelList orderId={order.id} />}
-                              </td>
-
-                              {/* Status */}
-                              <td className="px-8 py-6 align-middle text-right">
-                                 <div className="flex justify-end">
-                                    <StatusBadge isSold={isSold} isRefundPending={isRefundPending} />
-                                 </div>
-                              </td>
-
-                              {/* Action */}
-                              <td className="px-8 py-6 align-middle text-right">
-                                 {!isSold && !isRefundPending && (
-                                    <button 
-                                       onClick={() => initiateRefund(order)}
-                                       className="inline-flex items-center gap-2 px-4 py-2 bg-white border-2 border-slate-200 hover:border-red-300 hover:text-red-600 text-slate-400 text-xs font-bold uppercase tracking-wide rounded-lg transition-all"
-                                       title="Recall Asset from Market"
-                                    >
-                                       <FaUndoAlt /> Recall
-                                    </button>
-                                 )}
-                              </td>
-                           </tr>
-                        );
-                     })}
-                  </tbody>
-               </table>
-            </div>
-            
-            {/* Footer / Disclaimer */}
-            <div className="bg-slate-50 px-8 py-4 border-t border-slate-200 flex justify-between items-center text-xs text-slate-500 font-mono">
-               <div className="flex items-center gap-2">
-                  <FaShip className="opacity-50" />
-                  <span>LOGISTICS PARTNER: SHENZHEN GLOBAL SCM LTD.</span>
+                        {/* Channels or Actions */}
+                        {!isSold && !isRefundPending && (
+                           <div className="pt-2 border-t border-slate-100">
+                              <div className="mb-3">
+                                 <div className="text-[10px] text-slate-400 uppercase font-bold mb-2">Syndication Channels</div>
+                                 <DynamicChannelList orderId={order.id} />
+                              </div>
+                              <button 
+                                 onClick={() => initiateRefund(order)}
+                                 className="w-full py-2.5 bg-white border border-slate-200 text-slate-500 text-xs font-bold uppercase tracking-wide rounded-lg flex items-center justify-center gap-2 hover:bg-red-50 hover:text-red-600 hover:border-red-200 transition-colors"
+                              >
+                                 <FaUndoAlt /> Recall Asset
+                              </button>
+                           </div>
+                        )}
+                    </div>
+                 );
+              })}
+              
+              {/* Mobile Footer */}
+               <div className="text-center py-4 text-[10px] text-slate-400 font-mono uppercase">
+                  Logistics: Shenzhen Global SCM Ltd.
                </div>
-               <span>SETTLEMENT CYCLE: T+2 DAYS</span>
             </div>
-         </div>
+
+            {/* === B. DESKTOP TABLE VIEW (≥ md) === */}
+            <div className="hidden md:block bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
+               <div className="overflow-x-auto">
+                  <table className="w-full text-left">
+                     <thead className="bg-slate-50 text-slate-500 font-mono text-xs uppercase tracking-wider border-b border-slate-200">
+                        <tr>
+                           <th className="px-8 py-5 font-bold">Asset Preview</th> 
+                           <th className="px-8 py-5 font-bold">Batch / Config</th>
+                           <th className="px-8 py-5 font-bold text-center">Volume</th>
+                           <th className="px-8 py-5 font-bold text-right">Cost Basis</th>
+                           <th className="px-8 py-5 font-bold text-right">Est. Market Val</th>
+                           <th className="px-8 py-5 font-bold">Syndication Channels</th>
+                           <th className="px-8 py-5 font-bold text-right">Status</th>
+                           <th className="px-8 py-5 font-bold text-right">Action</th>
+                        </tr>
+                     </thead>
+                     <tbody className="divide-y divide-slate-100">
+                        {orders.map((order) => {
+                           const qty = Number(order.qty || order.quantity || 0);
+                           const cost = Number(order.amount);
+                           const unitPrice = Number(order.product?.price || 0);
+                           const marketValue = unitPrice > 0 ? (unitPrice * qty) : (cost * 1.5);
+                           const isSold = order.status === 'sold';
+                           const isRefundPending = order.status === 'refund_pending' || order.status === 'refunded';
+                           const shortId = order.id.toString().substring(0, 8).toUpperCase();
+
+                           return (
+                              <tr key={order.id} className="hover:bg-blue-50/50 transition-colors group">
+                                 {/* Image */}
+                                 <td className="px-8 py-6 align-middle w-[120px]">
+                                    <div className="w-20 h-20 bg-white rounded-lg border border-slate-200 p-1 shadow-sm">
+                                       <img src={getProductImage(order.product)} alt="asset" className="w-full h-full object-cover mix-blend-multiply"/>
+                                    </div>
+                                 </td>
+                                 
+                                 {/* Description */}
+                                 <td className="px-8 py-6 align-middle">
+                                    <div className="flex flex-col gap-1">
+                                       <span className="font-mono text-xs text-slate-400 font-semibold tracking-wide">
+                                             BATCH-CN-{shortId}
+                                       </span>
+                                       <Link to={`/products/${order.product_id}`} className="text-lg font-bold text-slate-800 hover:text-blue-700 transition-colors line-clamp-1">
+                                          {order.product?.title || "Allocated Inventory Lot"}
+                                       </Link>
+                                       {order.details && order.details.size && (
+                                          <div className="mt-1">
+                                             <span className="inline-flex items-center px-2 py-1 rounded text-[10px] font-bold bg-slate-100 text-slate-600 border border-slate-200 uppercase tracking-wide">
+                                                CONFIG: {order.details.size}
+                                             </span>
+                                          </div>
+                                       )}
+                                    </div>
+                                 </td>
+
+                                 {/* Volume */}
+                                 <td className="px-8 py-6 align-middle text-center">
+                                    <div className="font-mono text-base text-slate-600 font-medium">{qty}</div>
+                                    <div className="text-[10px] text-slate-400 uppercase font-bold mt-0.5">Units</div>
+                                 </td>
+
+                                 {/* Cost */}
+                                 <td className="px-8 py-6 align-middle text-right">
+                                    <div className="font-mono text-base text-slate-700 font-medium">{formatCurrency(cost)}</div>
+                                 </td>
+
+                                 {/* Market Val */}
+                                 <td className="px-8 py-6 align-middle text-right">
+                                    <div className="font-mono text-base font-bold text-emerald-600">{formatCurrency(marketValue)}</div>
+                                    <div className="text-[10px] text-emerald-500 uppercase font-bold mt-0.5">Projected</div>
+                                 </td>
+
+                                 {/* Channels */}
+                                 <td className="px-8 py-6 align-middle">
+                                    {isSold || isRefundPending ? <span className="text-slate-300 font-mono text-xs">-</span> : <DynamicChannelList orderId={order.id} />}
+                                 </td>
+
+                                 {/* Status */}
+                                 <td className="px-8 py-6 align-middle text-right">
+                                    <div className="flex justify-end">
+                                       <StatusBadge isSold={isSold} isRefundPending={isRefundPending} />
+                                    </div>
+                                 </td>
+
+                                 {/* Action */}
+                                 <td className="px-8 py-6 align-middle text-right">
+                                    {!isSold && !isRefundPending && (
+                                       <button 
+                                          onClick={() => initiateRefund(order)}
+                                          className="inline-flex items-center gap-2 px-4 py-2 bg-white border-2 border-slate-200 hover:border-red-300 hover:text-red-600 text-slate-400 text-xs font-bold uppercase tracking-wide rounded-lg transition-all"
+                                          title="Recall Asset from Market"
+                                       >
+                                          <FaUndoAlt /> Recall
+                                       </button>
+                                    )}
+                                 </td>
+                              </tr>
+                           );
+                        })}
+                     </tbody>
+                  </table>
+               </div>
+               
+               {/* Footer */}
+               <div className="bg-slate-50 px-8 py-4 border-t border-slate-200 flex justify-between items-center text-xs text-slate-500 font-mono">
+                  <div className="flex items-center gap-2">
+                     <FaShip className="opacity-50" />
+                     <span>LOGISTICS PARTNER: SHENZHEN GLOBAL SCM LTD.</span>
+                  </div>
+                  <span>SETTLEMENT CYCLE: T+2 DAYS</span>
+               </div>
+            </div>
+         </>
       )}
 
-      {/* 3. UNWIND MODAL (Styled to match new theme) */}
+      {/* 3. UNWIND MODAL (Matches Theme) */}
       {refundModalOrder && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm transition-all">
            <div className="bg-white rounded-xl w-full max-w-md overflow-hidden shadow-2xl border border-slate-200 animate-slide-up">

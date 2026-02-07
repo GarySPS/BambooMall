@@ -16,7 +16,7 @@ import {
   Microscope,
 } from "lucide-react";
 import CertAwards from "../components/CertAwards";
-import GradingMatrix from "../components/GradingMatrix"; // <--- IMPORTED
+import GradingMatrix from "../components/GradingMatrix"; 
 
 export default function AboutUsPage() {
   const [tab, setTab] = useState("corporate");
@@ -24,49 +24,71 @@ export default function AboutUsPage() {
   return (
     <div className="min-h-screen w-full bg-slate-50 text-slate-800 font-sans pb-24">
       
-      {/* 1. HEADER SECTION */}
-      <div className="bg-white border-b border-slate-200 sticky top-0 z-30 shadow-sm">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between">
-              <div className="flex items-center gap-4">
-                 <h1 className="text-lg font-black text-slate-900 uppercase tracking-tighter hidden sm:block">
-                    Corporate Profile
-                 </h1>
-                 <h1 className="text-lg font-black text-slate-900 uppercase tracking-tighter sm:hidden">
-                    Profile
-                 </h1>
-                 <div className="hidden md:flex h-4 w-[1px] bg-slate-300"></div>
-                 <div className="hidden md:flex items-center gap-2 text-xs text-slate-500 font-mono">
-                    <span className="text-emerald-600 flex items-center gap-1"><span className="relative flex h-2 w-2"><span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span><span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span></span> LIVE</span>
-                    <span>SESSION: AGT-116430</span>
-                 </div>
-              </div>
+      {/* 1. HEADER SECTION (Mobile-First Polish) */}
+      <div className="bg-white border-b border-slate-200 sticky top-0 z-30 shadow-sm transition-all">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6">
+              <div className="flex flex-col md:flex-row md:items-center justify-between md:h-16 gap-2 md:gap-0 py-3 md:py-0">
+                  
+                  {/* Top Row: Title & Live Indicator */}
+                  <div className="flex items-center justify-between md:justify-start w-full md:w-auto">
+                     <div className="flex items-center gap-4">
+                        <h1 className="text-lg font-black text-slate-900 uppercase tracking-tighter">
+                           <span className="hidden sm:inline">Corporate Profile</span>
+                           <span className="sm:hidden">Profile</span>
+                        </h1>
+                        
+                        {/* Vertical Divider (Desktop Only) */}
+                        <div className="hidden md:flex h-4 w-[1px] bg-slate-300"></div>
+                        
+                        {/* Session Info */}
+                        <div className="flex items-center gap-2 text-[10px] md:text-xs text-slate-500 font-mono">
+                           <span className="text-emerald-600 flex items-center gap-1">
+                              <span className="relative flex h-2 w-2">
+                                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                                <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
+                              </span> 
+                              LIVE
+                           </span>
+                           <span className="hidden sm:inline">| SESSION: AGT-116430</span>
+                        </div>
+                     </div>
+                  </div>
 
-              {/* Tab Navigation */}
-              <div className="flex h-full overflow-x-auto no-scrollbar">
-                {['corporate', 'grading', 'contact'].map((t) => (
-                    <button
-                        key={t}
-                        onClick={() => setTab(t)}
-                        className={`h-full px-4 sm:px-6 text-xs sm:text-sm font-bold uppercase tracking-widest transition-all relative whitespace-nowrap
-                            ${tab === t ? "text-blue-700 bg-blue-50/50" : "text-slate-500 hover:text-slate-800 hover:bg-slate-50"}
-                        `}
-                    >
-                        {t}
-                        {tab === t && (
-                            <div className="absolute bottom-0 left-0 w-full h-[2px] bg-blue-600"></div>
-                        )}
-                    </button>
-                ))}
+                  {/* Bottom Row (Mobile) / Right Side (Desktop): Navigation Tabs */}
+                  {/* Added w-full for mobile scroll area */}
+                  <div className="w-full md:w-auto overflow-x-auto no-scrollbar -mx-4 md:mx-0 px-4 md:px-0 border-t md:border-t-0 border-slate-100 md:h-full pt-1 md:pt-0">
+                      <div className="flex gap-1 md:gap-0 md:h-full">
+                        {['corporate', 'grading', 'contact'].map((t) => (
+                            <button
+                                key={t}
+                                onClick={() => setTab(t)}
+                                className={`
+                                    relative px-3 py-2 md:py-0 md:px-6 text-xs sm:text-sm font-bold uppercase tracking-widest transition-all whitespace-nowrap rounded-md md:rounded-none
+                                    ${tab === t 
+                                        ? "text-blue-700 bg-blue-50 md:bg-transparent" 
+                                        : "text-slate-500 hover:text-slate-800 hover:bg-slate-50"
+                                    }
+                                `}
+                            >
+                                {t}
+                                {/* Active Underline (Desktop Only) */}
+                                {tab === t && (
+                                    <div className="hidden md:block absolute bottom-0 left-0 w-full h-[2px] bg-blue-600"></div>
+                                )}
+                            </button>
+                        ))}
+                      </div>
+                  </div>
               </div>
           </div>
       </div>
 
       {/* MAIN CONTENT */}
-      <div className="w-full px-4 sm:px-6 pt-8 max-w-7xl mx-auto">
+      <div className="w-full px-4 sm:px-6 pt-6 md:pt-8 max-w-7xl mx-auto">
         
         {/* --- TAB: CORPORATE --- */}
         {tab === "corporate" && (
-          <div className="flex flex-col gap-8 animate-in fade-in slide-in-from-bottom-2 duration-500">
+          <div className="flex flex-col gap-6 md:gap-8 animate-in fade-in slide-in-from-bottom-2 duration-500">
             
             {/* HERO SECTION */}
             <div className="w-full bg-[#0a0f1c] rounded-2xl text-white relative overflow-hidden shadow-2xl border border-slate-800">
@@ -75,20 +97,20 @@ export default function AboutUsPage() {
                <div className="absolute inset-0 opacity-10" style={{ backgroundImage: 'linear-gradient(#1e293b 1px, transparent 1px), linear-gradient(90deg, #1e293b 1px, transparent 1px)', backgroundSize: '40px 40px' }}></div>
 
                <div className="relative z-10 grid grid-cols-1 lg:grid-cols-12">
-                   <div className="lg:col-span-8 p-8 md:p-12 border-b lg:border-b-0 lg:border-r border-white/10">
+                   <div className="lg:col-span-8 p-6 md:p-12 border-b lg:border-b-0 lg:border-r border-white/10">
                         <div className="flex items-center gap-3 mb-6">
-                            <span className="px-3 py-1 bg-white/5 text-slate-300 text-xs font-mono uppercase tracking-widest border border-white/10 rounded-md">
-                                Entity ID: 91440300MA5FP7W02K
+                            <span className="px-3 py-1 bg-white/5 text-slate-300 text-[10px] md:text-xs font-mono uppercase tracking-widest border border-white/10 rounded-md">
+                               Entity ID: 91440300MA5FP7W02K
                             </span>
                         </div>
-                        <h2 className="text-3xl lg:text-4xl font-light mb-6 tracking-tight text-white leading-tight">
+                        <h2 className="text-2xl md:text-3xl lg:text-4xl font-light mb-6 tracking-tight text-white leading-tight">
                            Operational <span className="font-bold text-blue-400">Mandate</span>
                         </h2>
                         <p className="text-slate-400 text-sm md:text-base leading-relaxed max-w-2xl text-justify">
                            BambooMall Supply Chain Management (Shenzhen) Co., Ltd. operates as a licensed liquidation clearinghouse for Tier-1 manufacturing hubs in the Greater Bay Area. Unlike traditional retail models, we strictly secure <strong>Ex-Factory</strong> and <strong>Distressed Asset</strong> contracts directly from OEM production lines, ensuring provenance and price efficiency.
                         </p>
                         
-                        <div className="mt-8 flex flex-wrap gap-4">
+                        <div className="mt-8 flex flex-wrap gap-3">
                             <div className="flex items-center gap-2 text-xs text-emerald-400 bg-emerald-500/10 px-3 py-2 rounded-lg border border-emerald-500/20">
                                 <ShieldCheck size={16} /> Licensed Distributor
                             </div>
@@ -98,13 +120,13 @@ export default function AboutUsPage() {
                         </div>
                    </div>
 
-                   <div className="lg:col-span-4 p-8 md:p-12 bg-white/[0.02] flex flex-col justify-center">
+                   <div className="lg:col-span-4 p-6 md:p-12 bg-white/[0.02] flex flex-col justify-center">
                         <div className="mb-8">
                             <div className="text-xs uppercase text-amber-500 font-bold tracking-widest mb-2 flex items-center gap-2">
                                 <Building2 size={14} /> Registered Capital
                             </div>
-                            <div className="text-4xl font-mono font-medium text-white tracking-tighter">
-                                <span className="text-2xl text-slate-500 mr-2">¥</span>50,000,000
+                            <div className="text-3xl md:text-4xl font-mono font-medium text-white tracking-tighter">
+                                <span className="text-xl md:text-2xl text-slate-500 mr-2">¥</span>50,000,000
                             </div>
                             <div className="text-xs text-slate-500 mt-2 font-mono">
                                 FULLY PAID-UP (CNY)
@@ -126,7 +148,7 @@ export default function AboutUsPage() {
             </div>
 
             {/* METRICS */}
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4">
                 {[
                     { label: "Daily Volume", val: "$2.4M+", icon: <TrendingUp className="text-emerald-600"/> },
                     { label: "Active Warehouses", val: "14", icon: <Building2 className="text-blue-600"/> },
@@ -134,9 +156,9 @@ export default function AboutUsPage() {
                     { label: "Clearance Rate", val: "99.8%", icon: <ShieldCheck className="text-purple-600"/> },
                 ].map((stat, i) => (
                     <div key={i} className="bg-white border border-slate-200 p-4 rounded-xl shadow-sm flex flex-col items-center text-center">
-                        <div className="mb-2 p-2 bg-slate-50 rounded-full">{stat.icon}</div>
-                        <div className="text-2xl font-bold text-slate-900">{stat.val}</div>
-                        <div className="text-xs text-slate-500 uppercase font-bold tracking-wider">{stat.label}</div>
+                        <div className="mb-2 p-2 bg-slate-50 rounded-full scale-75 md:scale-100">{stat.icon}</div>
+                        <div className="text-xl md:text-2xl font-bold text-slate-900">{stat.val}</div>
+                        <div className="text-[10px] md:text-xs text-slate-500 uppercase font-bold tracking-wider">{stat.label}</div>
                     </div>
                 ))}
             </div>
@@ -213,21 +235,21 @@ export default function AboutUsPage() {
               
               {/* Analyst Note */}
               <div className="flex items-center gap-4 bg-amber-50/50 border border-amber-100 p-4 rounded-lg">
-                 <Scale className="text-amber-500 shrink-0" size={24}/>
-                 <div className="text-sm text-slate-600">
-                    <strong>Analyst Note:</strong> All assets are graded according to <em>Shenzhen Export Standard T/SZ 2023</em>. Grading is performed by independent third-party inspectors.
-                 </div>
+                  <Scale className="text-amber-500 shrink-0" size={24}/>
+                  <div className="text-sm text-slate-600">
+                     <strong>Analyst Note:</strong> All assets are graded according to <em>Shenzhen Export Standard T/SZ 2023</em>. Grading is performed by independent third-party inspectors.
+                  </div>
               </div>
 
               {/* Inspection Protocol Info */}
               <div className="bg-white border border-slate-200 p-6 md:p-8 rounded-xl shadow-sm">
-                 <div className="flex flex-col md:flex-row gap-6 items-start">
-                    <div className="p-4 bg-blue-50 rounded-xl text-blue-600">
-                        <Microscope size={32} />
-                    </div>
-                    <div>
-                        <h3 className="text-lg font-bold text-slate-900 mb-2">20-Point Technical Inspection</h3>
-                        <p className="text-slate-600 text-sm leading-relaxed mb-4">
+                  <div className="flex flex-col md:flex-row gap-6 items-start">
+                     <div className="p-4 bg-blue-50 rounded-xl text-blue-600">
+                         <Microscope size={32} />
+                     </div>
+                     <div>
+                         <h3 className="text-lg font-bold text-slate-900 mb-2">20-Point Technical Inspection</h3>
+                         <p className="text-slate-600 text-sm leading-relaxed mb-4">
                             All electronic assets processed by BambooMall undergo a rigorous multi-stage testing protocol. We do not sell unchecked "raw" returns. 
                             Our independent QA teams in Shenzhen verify functionality, battery health, and cosmetic condition before any item is listed on the Manifest.
                         </p>
@@ -238,8 +260,8 @@ export default function AboutUsPage() {
                                 </span>
                             ))}
                         </div>
-                    </div>
-                 </div>
+                     </div>
+                  </div>
               </div>
 
               {/* DYNAMIC MATRIX COMPONENT */}

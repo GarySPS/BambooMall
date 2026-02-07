@@ -1,25 +1,20 @@
-import React, { useState, useEffect, useRef } from "react";
-import { Link } from "react-router-dom";
-import { Warehouse, ArrowUp, Activity } from "lucide-react";
+// src/components/ManifestTable.js
 
-// --- EXPANDED DATA SETS (Preserved from your snippet) ---
+import React, { useState, useEffect } from "react";
+import { Link } from "react-router-dom";
+import { Warehouse, ArrowUp, Activity, Pause, Play } from "lucide-react";
+
+// --- DATA SETS ---
 const CATEGORIES = [
   "Consumer Electronics", "Branded Sportswear", "Home Appliances", "Gaming Consoles", 
   "Cosmetics Lot", "Vintage Apparel", "Auto Parts", "Lithium Batteries", 
   "Raw Silk", "Medical Devices", "Smart Home IoT", "Luxury Handbags",
   "Industrial Graphene", "Surgical Robots", "Rare Earth Metals", "Server Racks", 
-  "Agri-Drones", "Solar Panels", "Fine Art Logistics", "Precision Optics",
-  "Aerospace Titanium", "Quantum Processors", "Bio-Synthetic Fabric", "Solid State Drives", 
-  "Heavy Construction Rigs", "Pharma Cold Chain", "Deep Sea Drilling Gear", 
-  "Fiber Optic Cabling", "Recycled Ocean Plastic", "Electric Vehicle Chassis", 
-  "Nano-Carbon Filters", "Hydraulic Press Units", "Avionics Modules", 
-  "High-Speed Rail Parts", "Cryptomining ASICs", "Lab Centrifuges", 
-  "Marine Propulsion", "Tactical Gear Surplus", "Drone Swarm Controllers", 
-  "Holographic Displays", "Semiconductor Wafers", "LNG Storage Valves"
+  "Agri-Drones", "Solar Panels", "Fine Art Logistics", "Precision Optics"
 ];
 
 const ORIGINS = [
-  { id: "CN-SZ", city: "Shenzhen, CN", ports: ["T-5", "T-9", "X-2"] },
+  { id: "CN-SZ", city: "Shenzhen, CN", ports: ["T-5", "T-9"] },
   { id: "VN-HCM", city: "Ho Chi Minh, VN", ports: ["T-2", "A-1"] },
   { id: "CN-YIWU", city: "Yiwu, CN", ports: ["T-4", "Z-8"] },
   { id: "JP-TOK", city: "Tokyo, JP", ports: ["T-3", "J-5"] },
@@ -28,16 +23,11 @@ const ORIGINS = [
   { id: "DE-HAM", city: "Hamburg, DE", ports: ["E-4", "H-2"] },
   { id: "SG-SIN", city: "Singapore, SG", ports: ["S-1", "S-9"] },
   { id: "IN-MUM", city: "Mumbai, IN", ports: ["M-2", "M-5"] },
-  { id: "AE-DXB", city: "Dubai, UAE", ports: ["D-1", "D-8"] },
   { id: "NL-ROT", city: "Rotterdam, NL", ports: ["R-3", "R-9"] },
   { id: "GB-FXT", city: "Felixstowe, UK", ports: ["F-1", "F-4"] },
-  { id: "BE-ANT", city: "Antwerp, BE", ports: ["A-7", "A-9"] },
-  { id: "BR-SSZ", city: "Santos, BR", ports: ["S-2", "S-5"] },
-  { id: "MY-PKG", city: "Port Klang, MY", ports: ["P-3", "P-8"] },
   { id: "AU-SYD", city: "Sydney, AU", ports: ["Y-1", "Y-6"] }
 ];
 
-// Helper to generate ONE random item
 const generateSingleItem = (isNew = false) => {
   const origin = ORIGINS[Math.floor(Math.random() * ORIGINS.length)];
   const category = CATEGORIES[Math.floor(Math.random() * CATEGORIES.length)];
@@ -46,7 +36,7 @@ const generateSingleItem = (isNew = false) => {
   const randomSuffix = Math.floor(Math.random() * 8999) + 1000;
 
   return {
-    id: Date.now() + Math.random(), // Unique React Key
+    id: Date.now() + Math.random(), 
     batchId: `${origin.id}-${randomSuffix}`,
     origin: origin.city,
     port: port,
@@ -55,65 +45,53 @@ const generateSingleItem = (isNew = false) => {
     grade: Math.random() > 0.7 ? "A+" : Math.random() > 0.4 ? "A" : "B",
     status: isNew ? "NEW ARRIVAL" : (Math.random() > 0.8 ? "PENDING" : "LIVE"),
     trend: Math.random() > 0.5 ? 1 : -1,
-    isNew: isNew // Flag for animation
+    isNew: isNew 
   };
 };
 
-// Initial Bulk Generator (60 items to keep buffer large)
 const generateInitialData = (count = 60) => {
   return Array.from({ length: count }).map(() => generateSingleItem());
 };
 
 export default function ManifestTable() {
   const [manifests, setManifests] = useState([]);
-  const [isLive, setIsLive] = useState(true); // Toggle for stream
+  const [isLive, setIsLive] = useState(true);
   
-  // Removed scrollRef since we are hiding scrollbar
-
   // 1. Initialize Data
   useEffect(() => {
     setManifests(generateInitialData(60));
   }, []);
 
-  // 2. SIMULATE MARKET ACTIVITY (The "Pulse")
+  // 2. SIMULATE MARKET ACTIVITY
   useEffect(() => {
     if (!isLive) return;
 
     const interval = setInterval(() => {
       setManifests(current => {
-        // Clone array
         let next = [...current];
-
-        // A. REMOVE OLD: Randomly remove an item from the bottom half (Simulate "Sold Out")
-        if (next.length > 50) {
-           next.pop(); 
-        }
-
-        // B. ADD NEW: Add a new "Incoming" shipment to the top
+        if (next.length > 50) next.pop(); 
         const newItem = generateSingleItem(true);
         next.unshift(newItem);
-
-        // C. UPDATE STATUS: Randomly flip a "LIVE" item to "RESERVED"
-        const randomIndex = Math.floor(Math.random() * 7); // Focus on top 7 visible items
+        
+        // Randomly flip a "LIVE" item to "RESERVED"
+        const randomIndex = Math.floor(Math.random() * 7); 
         if (next[randomIndex] && next[randomIndex].status === 'LIVE') {
            next[randomIndex] = { ...next[randomIndex], status: "RESERVED" };
         }
-
         return next;
       });
-    }, 2500); // New batch every 2.5 seconds
+    }, 2500); 
 
     return () => clearInterval(interval);
   }, [isLive]);
 
-  // 3. FAST PRICE TICKER (Flicker effect)
+  // 3. FAST PRICE TICKER
   useEffect(() => {
     const interval = setInterval(() => {
       setManifests(prev => {
         const next = [...prev];
-        // Update 3 random rows within the top 7
         for(let i=0; i<3; i++){
-            const idx = Math.floor(Math.random() * 7); // Focus on visible rows
+            const idx = Math.floor(Math.random() * 7); 
             if(next[idx]) {
                 const change = (Math.random() * 600 - 300); 
                 next[idx].value = Math.max(1000, next[idx].value + change);
@@ -127,11 +105,10 @@ export default function ManifestTable() {
   }, []);
 
   return (
-    // [UPDATE 1] Fixed height + Overflow Hidden (Removes Scrollbar)
-    <div className="xl:col-span-3 bg-white rounded-lg shadow-sm border border-slate-200 flex flex-col min-h-[420px] overflow-hidden">
+    <div className="xl:col-span-3 bg-white rounded-xl shadow-sm border border-slate-200 flex flex-col min-h-[420px] overflow-hidden">
       
       {/* HEADER */}
-      <div className="px-5 py-4 border-b border-slate-100 flex justify-between items-center bg-slate-50/80 backdrop-blur z-10 relative">
+      <div className="px-4 md:px-5 py-4 border-b border-slate-100 flex flex-col md:flex-row justify-between items-start md:items-center bg-slate-50/80 backdrop-blur z-10 relative gap-3 md:gap-0">
         <div className="flex items-center gap-3">
           <div className="p-2 bg-white border border-slate-200 rounded shadow-sm text-blue-600">
             <Warehouse size={20} />
@@ -153,23 +130,24 @@ export default function ManifestTable() {
             </div>
           </div>
         </div>
-        <div className="flex gap-2">
+        
+        <div className="flex gap-2 w-full md:w-auto">
           <button 
-             onClick={() => setIsLive(!isLive)}
-             className={`px-3 py-1.5 text-xs font-bold rounded border transition-colors ${
+              onClick={() => setIsLive(!isLive)}
+              className={`flex-1 md:flex-none flex items-center justify-center gap-1 px-3 py-1.5 text-xs font-bold rounded border transition-colors ${
                 isLive ? "bg-emerald-50 text-emerald-700 border-emerald-200" : "bg-slate-50 text-slate-500 border-slate-200"
-             }`}
+              }`}
           >
-             {isLive ? "Pause Stream" : "Resume"}
+              {isLive ? <><Pause size={10}/> Pause Stream</> : <><Play size={10}/> Resume</>}
           </button>
-          <Link to="/products" className="px-3 py-1.5 lg:px-4 lg:py-2 text-xs lg:text-sm font-bold text-white bg-slate-900 rounded hover:bg-slate-800 transition-colors shadow-sm">
+          <Link to="/products" className="flex-1 md:flex-none text-center px-3 py-1.5 lg:px-4 lg:py-2 text-xs lg:text-sm font-bold text-white bg-slate-900 rounded hover:bg-slate-800 transition-colors shadow-sm">
             View Full Manifest
           </Link>
         </div>
       </div>
 
       {/* TABLE */}
-      <div className="flex-1 relative bg-white">
+      <div className="flex-1 relative bg-white overflow-x-auto">
         <table className="w-full text-left text-sm lg:text-base whitespace-nowrap">
           <thead className="bg-slate-50 text-slate-500 font-mono text-[10px] lg:text-xs uppercase tracking-wider border-b border-slate-200">
             <tr>
@@ -177,12 +155,11 @@ export default function ManifestTable() {
               <th className="px-5 py-3">Origin / Port</th>
               <th className="px-5 py-3">Category</th>
               <th className="px-5 py-3">Est. Value</th>
-              <th className="px-5 py-3">Grade</th>
+              <th className="px-5 py-3 hidden sm:table-cell">Grade</th>
               <th className="px-5 py-3 text-right">Status</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-slate-50">
-            {/* [UPDATE 2] SLICE TO 7 ITEMS */}
             {manifests.slice(0, 7).map((item) => (
               <tr 
                 key={item.id} 
@@ -192,24 +169,24 @@ export default function ManifestTable() {
               >
                 <td className="px-5 py-3 font-mono text-blue-600 font-bold text-xs lg:text-sm">
                   <div className="flex items-center gap-2">
-                     {item.batchId}
-                     {item.isNew && <span className="text-[9px] bg-emerald-500 text-white px-1 rounded animate-pulse">NEW</span>}
+                      {item.batchId}
+                      {item.isNew && <span className="text-[9px] bg-emerald-500 text-white px-1 rounded animate-pulse">NEW</span>}
                   </div>
                 </td>
                 <td className="px-5 py-3 text-slate-600 font-medium">
                   <div className="flex flex-col">
-                    <span className="text-xs lg:text-sm">{item.origin}</span>
+                    <span className="text-xs lg:text-sm font-bold text-slate-700">{item.origin}</span>
                     <span className="text-[9px] lg:text-[10px] text-slate-400 font-mono">PORT: {item.port}</span>
                   </div>
                 </td>
-                <td className="px-5 py-3 text-slate-700 font-medium text-xs lg:text-sm">{item.category}</td>
-                <td className="px-5 py-3 font-mono text-slate-700 font-medium">
+                <td className="px-5 py-3 text-slate-600 font-medium text-xs lg:text-sm">{item.category}</td>
+                <td className="px-5 py-3 font-mono text-slate-700 font-medium text-xs lg:text-sm">
                   <div className="flex items-center gap-1">
                     {item.value.toLocaleString('en-US', { style: 'currency', currency: 'USD' }).split('.')[0]}
                     {item.trend > 0 ? <ArrowUp size={10} className="text-emerald-500" /> : <ArrowUp size={10} className="text-rose-500 rotate-180" />}
                   </div>
                 </td>
-                <td className="px-5 py-3">
+                <td className="px-5 py-3 hidden sm:table-cell">
                   <span className={`px-2 py-0.5 rounded text-[10px] font-bold border ${
                     item.grade.includes('A') ? 'bg-emerald-50 text-emerald-700 border-emerald-100' : 
                     item.grade === 'B' ? 'bg-amber-50 text-amber-700 border-amber-100' : 
@@ -231,7 +208,8 @@ export default function ManifestTable() {
             ))}
           </tbody>
         </table>
-        {/* [UPDATE 3] Subtle Fade at bottom to imply "stream continues" */}
+        
+        {/* Fade Gradient at bottom */}
         <div className="absolute bottom-0 left-0 right-0 h-16 bg-gradient-to-t from-white to-transparent pointer-events-none"></div>
       </div>
     </div>
