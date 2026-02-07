@@ -65,7 +65,8 @@ export function createOrder(orderData) {
 // 1. Get Balance & Financial Position
 export async function fetchWalletBalance(userId) {
   try {
-    const data = await fetchJson(`/wallet/${userId}`);
+    // FIX: Send 'me' instead of the potentially broken userId
+    const data = await fetchJson(`/wallet/me`);
     const realWallet = data.wallet || {};
 
     // Ensure numeric safety for the UI calculations
@@ -99,7 +100,8 @@ export async function fetchWalletBalance(userId) {
 
 // 2. Transaction History
 export async function fetchWalletHistory(userId) {
-  const data = await fetchJson(`/wallet/history/${userId}`);
+  // FIX: Send 'me' instead of the potentially broken userId
+  const data = await fetchJson(`/wallet/history/me`);
   return data.transactions || [];
 }
 
