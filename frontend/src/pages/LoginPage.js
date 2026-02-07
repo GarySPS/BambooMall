@@ -1,15 +1,12 @@
-// src/pages/LoginPage.js
-
 import React, { useState, useEffect, useRef } from "react";
 import { useUser } from "../contexts/UserContext";
 import { useNavigate } from "react-router-dom";
 import { API_BASE_URL } from "../config";
 import { FaShieldAlt, FaGlobe, FaLock, FaKey, FaBuilding, FaExclamationTriangle, FaCheckCircle, FaArrowRight } from "react-icons/fa";
 
-// --- COMPONENT: ANIMATED NETWORK BACKGROUND (Milky White Theme) ---
+// --- COMPONENT: ANIMATED NETWORK BACKGROUND (Unchanged) ---
 const NetworkCanvas = () => {
   const canvasRef = useRef(null);
-  
   useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
@@ -17,7 +14,7 @@ const NetworkCanvas = () => {
     let width, height;
     let particles = [];
     let animationFrameId; 
-    
+
     const getParticleCount = () => window.innerWidth < 768 ? 30 : 50;
     const connectionDistance = 120;
     const speed = 0.25; 
@@ -44,7 +41,6 @@ const NetworkCanvas = () => {
       draw() {
         ctx.beginPath();
         ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
-        // Dark particles
         ctx.fillStyle = "rgba(148, 163, 184, 0.6)"; 
         ctx.fill();
       }
@@ -95,11 +91,10 @@ const NetworkCanvas = () => {
       cancelAnimationFrame(animationFrameId);
     };
   }, []);
-
   return <canvas ref={canvasRef} className="fixed inset-0 w-full h-full pointer-events-none z-0 bg-slate-50" />;
 };
 
-// --- COMPONENT: STATS HUD (Dark Mode) ---
+// --- COMPONENT: STATS HUD (Unchanged) ---
 const StatusHUD = () => (
   <div className="flex flex-row gap-3 mb-6 animate-pulse">
     <div className="flex-1 bg-slate-900 shadow-xl border border-slate-700/50 p-2.5 rounded flex items-center justify-between">
@@ -149,6 +144,15 @@ export default function LoginPage() {
         throw new Error(data.error || `Server Error: ${res.statusText}`);
       }
       
+      // --- SECURITY FIX START ---
+      // We must save the token so api.js can use it for requests
+      if (data.token) {
+        localStorage.setItem("token", data.token);
+      } else {
+        console.warn("Security Warning: No token received from backend.");
+      }
+      // --- SECURITY FIX END ---
+
       login(data.user);
       
     } catch (err) {
@@ -163,11 +167,9 @@ export default function LoginPage() {
 
   return (
     <div className="min-h-screen font-sans bg-slate-50 relative flex flex-col overflow-hidden selection:bg-blue-500/30">
-      
-      {/* 1. BACKGROUND LAYER */}
       <NetworkCanvas />
       
-      {/* 2. HEADER */}
+      {/* HEADER */}
       <div className="relative z-20 bg-slate-900 border-b border-slate-800 py-2 px-4 flex justify-between items-center text-[10px] md:text-xs text-slate-400">
         <span className="flex items-center gap-2">
           <FaGlobe className="text-blue-500" />
@@ -180,7 +182,7 @@ export default function LoginPage() {
         </span>
       </div>
 
-      {/* 3. MAIN CONTENT */}
+      {/* MAIN CONTENT */}
       <div className="relative z-10 flex-1 flex flex-col items-center justify-center p-4 sm:p-6 lg:p-8">
         
         {/* LOGO */}
@@ -197,11 +199,9 @@ export default function LoginPage() {
 
         {/* LOGIN CARD */}
         <div className="w-full max-w-md">
-          
           <StatusHUD />
 
           <div className="bg-slate-900 backdrop-blur-xl border border-slate-700 rounded-2xl shadow-2xl p-6 md:p-8 relative overflow-hidden group">
-            
             <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-transparent via-blue-500/50 to-transparent opacity-50 group-hover:opacity-100 transition-opacity duration-700"></div>
 
             <div className="mb-6">
@@ -252,7 +252,6 @@ export default function LoginPage() {
                 </div>
               </div>
 
-              {/* Forgot Password Link (New) */}
               <div className="flex justify-end -mt-2">
                 <button 
                   type="button" 
@@ -300,7 +299,6 @@ export default function LoginPage() {
             </div>
           </div>
           
-          {/* FOOTER */}
           <div className="mt-8 flex flex-col items-center space-y-2">
              <div className="flex items-center gap-4 text-slate-500 font-semibold">
                <FaShieldAlt className="text-emerald-600" />

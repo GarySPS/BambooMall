@@ -1,9 +1,9 @@
-// src/pages/HistoryPage.js
+//src>pages>HistoryPage.js
 
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useUser } from "../contexts/UserContext";
-import { fetchResaleHistory, fetchWalletHistory, fetchCartOrders } from "../utils/api"; 
+import { fetchResaleHistory, fetchWalletHistory, fetchCartOrders } from "../utils/api"; // <--- Already Secure
 import { getProductImage } from "../utils/image"; 
 import { 
   FaArrowLeft, 
@@ -29,20 +29,22 @@ export default function HistoryPage() {
   useEffect(() => {
     if (user?.id) {
       setLoading(true);
+      // These calls use the secured api.js (auto-token)
       Promise.all([
         fetchCartOrders(user.id).catch(() => []),      // 1. Get ACTIVE (Selling)
         fetchResaleHistory(user.id).catch(() => []),   // 2. Get HISTORY (Sold)
         fetchWalletHistory(user.id).catch(() => [])    // 3. Get WALLET
       ]).then(([activeData, historyData, walletData]) => {
         
-        const rawActive = Array.isArray(activeData) ? activeData : (activeData.orders || []);
-        const rawHistory = Array.isArray(historyData) ? historyData : (historyData.orders || []);
+        // Robust data handling (in case backend returns {error: ...} instead of array)
+        const rawActive = Array.isArray(activeData) ? activeData : (activeData?.orders || []);
+        const rawHistory = Array.isArray(historyData) ? historyData : (historyData?.orders || []);
         
         const combinedOrders = [...rawActive, ...rawHistory];
         const uniqueOrders = Array.from(new Map(combinedOrders.map(item => [item.id, item])).values());
 
         setOrders(uniqueOrders);
-        setWalletTx(Array.isArray(walletData) ? walletData : []);
+        setWalletTx(Array.isArray(walletData) ? walletData : (walletData?.transactions || []));
       }).finally(() => {
         setLoading(false);
       });
@@ -64,10 +66,12 @@ export default function HistoryPage() {
     if (activeTab === "wallet" && item.type !== 'wallet') return false;
     
     const term = searchTerm.toLowerCase();
-    const title = item.product?.title || item.title || item.note || item.displayType;
+    const title = item.product?.title || item.title || item.note || item.displayType || "";
+    const status = item.status || "";
+    
     return (
-      (title && title.toLowerCase().includes(term)) ||
-      (item.status && item.status.toLowerCase().includes(term))
+      title.toLowerCase().includes(term) ||
+      status.toLowerCase().includes(term)
     );
   });
 
@@ -109,7 +113,6 @@ export default function HistoryPage() {
   };
 
   return (
-    // Added padding for mobile (px-4)
     <div className="min-h-screen bg-slate-50 text-slate-800 font-sans animate-fade-in pb-20">
       
       <div className="max-w-4xl mx-auto px-4 sm:px-6 py-8">
@@ -128,7 +131,7 @@ export default function HistoryPage() {
           </div>
         </div>
 
-        {/* Controls - Stacked on Mobile, Row on Desktop */}
+        {/* Controls */}
         <div className="flex flex-col sm:flex-row gap-4 mb-8">
            <div className="flex bg-white border border-slate-200 p-1 rounded-xl shadow-sm overflow-x-auto">
              {['all', 'orders', 'wallet'].map((tab) => (
@@ -149,7 +152,7 @@ export default function HistoryPage() {
            <div className="relative flex-1">
              <FaSearch className="absolute left-4 top-3.5 text-slate-400" />
              <input 
-               type="text"
+               type="text" 
                placeholder="Search transactions..."
                value={searchTerm}
                onChange={(e) => setSearchTerm(e.target.value)}
@@ -172,10 +175,8 @@ export default function HistoryPage() {
              </div>
           ) : (
             filteredItems.map((item, idx) => {
-              // Determine Title
-              const title = item.product?.title || item.title || item.note || item.displayType;
+              const title = item.product?.title || item.title || item.note || item.displayType || "Transaction";
               
-              // Determine Financial Direction
               const isPositive = item.type === 'wallet' && item.displayType === 'Inbound Wire';
               const isOrder = item.type === 'order';
               const isProfit = item.status === 'sold' && item.earn > 0;
@@ -215,7 +216,6 @@ export default function HistoryPage() {
                           </div>
                           
                           <div className="flex flex-row sm:flex-col justify-between items-center sm:items-end mt-3 sm:mt-0 border-t sm:border-0 border-slate-100 pt-3 sm:pt-0">
-                              {/* Amount Display */}
                               <div className={`font-mono font-bold text-sm sm:text-base ${
                                  isPositive || isProfit ? 'text-emerald-600' : 'text-slate-900'
                               }`}>
@@ -225,7 +225,6 @@ export default function HistoryPage() {
                                  }
                               </div>
                               
-                              {/* Status Badge */}
                               <div className="mt-0 sm:mt-1">
                                  {getStatusBadge(item)}
                               </div>

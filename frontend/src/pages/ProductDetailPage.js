@@ -1,8 +1,12 @@
-// src/pages/ProductDetailPage.js
+//src>pages>ProductDetailPage.js
 
 import React, { useState, useEffect } from "react";
 import { useParams, Link, useNavigate } from "react-router-dom";
-import { fetchProductById, createOrder } from "../utils/api";
+import { 
+  fetchProductById, 
+  createOrder, 
+  fetchWalletBalance
+} from "../utils/api";
 import OrderPreviewModal from "../components/OrderPreviewModal"; 
 import ProductGallery from "../components/ProductGallery"; 
 import SupplierInfoBlock from "../components/SupplierInfoBlock"; 
@@ -14,7 +18,7 @@ import {
   FaCheckCircle, FaLock, FaStar,
   FaStarHalfAlt, FaPalette,
   FaTrademark, FaBalanceScale, FaGlobeAmericas, FaShieldAlt,
-  FaInfoCircle, FaChevronUp // [ADDED]
+  FaInfoCircle, FaChevronUp
 } from "react-icons/fa";
 import { useUser } from "../contexts/UserContext"; 
 
@@ -54,21 +58,18 @@ export default function ProductDetailPage() {
   const [successData, setSuccessData] = useState(null); 
   const [calculatedMin, setCalculatedMin] = useState(1);
   
-  // [NEW] State for custom mobile dropdown
   const [isSizeMenuOpen, setIsSizeMenuOpen] = useState(false);
 
   const isVerified = user && (user.verified || user.kyc_status === 'approved');
 
-  // --- HELPER: Silent Wallet Refresh ---
+  // --- HELPER: Silent Wallet Refresh (SECURED) ---
   const refreshWallet = async () => {
     if (!user?.id) return;
     try {
-      const res = await fetch(`${API_BASE_URL}/wallet/${user.id}`);
-      const data = await res.json();
-      if (data.wallet) {
-        if (JSON.stringify(data.wallet) !== JSON.stringify(wallet)) {
-           updateWallet(data.wallet); 
-        }
+      // SECURITY FIX: Use the authenticated helper instead of raw fetch
+      const walletData = await fetchWalletBalance(user.id);
+      if (walletData) {
+         updateWallet(walletData); 
       }
     } catch (err) {
       console.error("Silent wallet sync failed", err);
@@ -170,8 +171,10 @@ export default function ProductDetailPage() {
         setQuantity(calculatedMin);
         return;
     }
+    // Check balance before opening modal
     if (Number(wallet?.balance || 0) < settlementAmount) {
         refreshWallet().then(() => {
+             // Re-check after refresh
              if (Number(wallet?.balance || 0) < settlementAmount) {
                  toast.error("INSUFFICIENT LIQUIDITY: Please fund your settlement account.");
              } else {
@@ -193,13 +196,14 @@ export default function ProductDetailPage() {
 
     try {
         const response = await createOrder({
-            user_id: user.id,
+            user_id: user.id, // Backend will also verify this against token
             product_id: product.id,
             quantity: Number(quantity),
             type: "liquidation_acquisition",
             details: { size: selectedSize } 
         });
         
+        // Optimistic Update
         updateWallet({ 
             ...wallet, 
             balance: wallet.balance - settlementAmount 
@@ -619,8 +623,8 @@ export default function ProductDetailPage() {
               {/* Action Button */}
               <div className="flex gap-3 items-center">
                   <div className="flex flex-col">
-                     <span className="text-[10px] text-slate-500 font-bold uppercase">Total Due</span>
-                     <span className="text-xl font-mono font-bold text-slate-900">${settlementAmount.toFixed(0)}</span>
+                      <span className="text-[10px] text-slate-500 font-bold uppercase">Total Due</span>
+                      <span className="text-xl font-mono font-bold text-slate-900">${settlementAmount.toFixed(0)}</span>
                   </div>
                   
                   {isVerified ? (

@@ -1,22 +1,15 @@
-// src/components/AdminLayout.js
+//src>components>AdminLayout.js
 
-import React, { useState } from "react";
-import { NavLink, Outlet, useLocation } from "react-router-dom";
+import React, { useState, useEffect } from "react";
+import { NavLink, Outlet, useLocation, useNavigate } from "react-router-dom";
+import { useUser } from "../contexts/UserContext"; // <--- 1. Import Context
 import { 
-  FaBars, 
-  FaTimes, 
-  FaUserShield, 
-  FaUsers, 
-  FaShieldAlt, 
-  FaMoneyCheckAlt, 
-  FaExchangeAlt, 
-  FaClipboardList, 
-  FaSignOutAlt,
-  FaChartPie,
-  FaPlusCircle
+  FaBars, FaTimes, FaUserShield, FaUsers, FaShieldAlt, 
+  FaMoneyCheckAlt, FaExchangeAlt, FaClipboardList, FaSignOutAlt,
+  FaChartPie, FaPlusCircle
 } from "react-icons/fa";
 
-// Navigation Configuration
+// Navigation Configuration (Unchanged)
 const navLinks = [
   { to: "/admin", label: "Overview", icon: <FaChartPie className="text-lg" /> },
   { to: "/admin/create-product", label: "Add Product", icon: <FaPlusCircle className="text-lg text-emerald-400" /> },
@@ -30,9 +23,29 @@ const navLinks = [
 export default function AdminLayout() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const location = useLocation();
+  
+  // --- SECURITY CHECK START ---
+  const { user } = useUser();
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    // If not logged in, or logged in but NOT an admin...
+    if (!user || !user.is_admin) {
+        // ...Kick them out to the home page
+        navigate("/", { replace: true });
+    }
+  }, [user, navigate]);
+
+  // Prevent "Flash" of admin content while checking
+  if (!user || !user.is_admin) {
+      return null; 
+  }
+  // --- SECURITY CHECK END ---
 
   // Helper to determine if link is active
   const isLinkActive = (path) => location.pathname === path;
+
+  // ... (Rest of your component logic remains exactly the same) ...
 
   const SidebarContent = () => (
     <>
@@ -61,7 +74,7 @@ export default function AdminLayout() {
             <NavLink
               key={link.to}
               to={link.to}
-              onClick={() => setSidebarOpen(false)} // Close on mobile click
+              onClick={() => setSidebarOpen(false)} 
               className={`
                 flex items-center gap-3 rounded-xl px-4 py-3 font-semibold text-sm transition-all duration-200
                 ${active 
@@ -94,8 +107,7 @@ export default function AdminLayout() {
   return (
     <div className="min-h-screen flex flex-col md:flex-row bg-[#f8fafc] font-inter">
       
-      {/* --- MOBILE TOP BAR (New) --- */}
-      {/* This prevents content from being hidden behind a floating button */}
+      {/* MOBILE TOP BAR */}
       <div className="md:hidden bg-white/80 backdrop-blur-md border-b border-slate-200 sticky top-0 z-30 px-4 py-3 flex items-center justify-between shadow-sm">
         <div className="flex items-center gap-3">
           <button
@@ -111,21 +123,18 @@ export default function AdminLayout() {
         </div>
       </div>
 
-      {/* --- DESKTOP SIDEBAR --- */}
+      {/* DESKTOP SIDEBAR */}
       <aside className="hidden md:flex w-72 bg-white border-r border-slate-200 shadow-xl shadow-slate-200/50 flex-col p-6 z-20 h-screen sticky top-0">
         <SidebarContent />
       </aside>
 
-      {/* --- MOBILE DRAWER --- */}
+      {/* MOBILE DRAWER */}
       {sidebarOpen && (
         <div className="md:hidden relative z-50">
-          {/* Backdrop */}
           <div 
             className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm transition-opacity"
             onClick={() => setSidebarOpen(false)}
           />
-          
-          {/* Drawer Panel */}
           <aside className="fixed top-0 left-0 h-full w-[85vw] max-w-xs bg-white p-6 flex flex-col shadow-2xl animate-slide-in">
              <div className="absolute top-4 right-4">
                 <button 
@@ -140,15 +149,13 @@ export default function AdminLayout() {
         </div>
       )}
 
-      {/* --- MAIN CONTENT AREA --- */}
+      {/* MAIN CONTENT AREA */}
       <main className="flex-1 min-w-0">
-        {/* The Outlet renders the current page (Users, Deposits, etc.) */}
         <div className="h-full">
            <Outlet />
         </div>
       </main>
 
-      {/* Inline Animation Styles for Mobile Drawer */}
       <style>{`
         @keyframes slideIn {
           from { transform: translateX(-100%); }

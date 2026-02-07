@@ -1,4 +1,4 @@
-// src/pages/KYCVerificationPage.js
+//src>pages>KYCVerificationPage.js
 
 import React, { useState, useEffect } from 'react';
 import { useUser } from "../contexts/UserContext"; 
@@ -78,11 +78,20 @@ export default function KYCVerificationPage() {
   const nextStep = () => setStep(prev => prev + 1);
   const prevStep = () => setStep(prev => prev - 1);
 
+  // --- SECURE UPLOAD ---
   const uploadFile = async (file) => {
     if (!file) return null; 
+    const token = localStorage.getItem("token"); // <--- Get Token
     const data = new FormData();
     data.append("file", file);
-    const res = await fetch(`${API_BASE_URL}/upload/kyc`, { method: "POST", body: data });
+    
+    const res = await fetch(`${API_BASE_URL}/upload/kyc`, { 
+        method: "POST", 
+        headers: {
+            "Authorization": `Bearer ${token}` // <--- Attach Token
+        },
+        body: data 
+    });
     if (!res.ok) throw new Error("Upload failed");
     const json = await res.json();
     return json.url;
@@ -102,9 +111,15 @@ export default function KYCVerificationPage() {
       const selfieUrl = await uploadFile(formData.selfie);
 
       setStatusMessage("Transmitting to Compliance Ledger...");
+      
+      // --- SECURE SUBMISSION ---
+      const token = localStorage.getItem("token"); // <--- Get Token
       const res = await fetch(`${API_BASE_URL}/kyc/submit-application`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: { 
+            "Content-Type": "application/json",
+            "Authorization": `Bearer ${token}` // <--- Attach Token
+        },
         body: JSON.stringify({
           short_id: user.short_id,
           full_name: formData.fullName,
@@ -238,9 +253,7 @@ export default function KYCVerificationPage() {
                   <span>Ensure all four corners of the ID are visible. Text must be clear and legible. High-resolution preferred.</span>
                 </div>
                 
-                {/* Mobile: Stack (grid-cols-1), Desktop: Side-by-side (md:grid-cols-2) */}
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  {/* Front Side - Mandatory */}
                   <UploadZone 
                     label="Front Side" 
                     description="National ID / Passport" 
@@ -249,7 +262,6 @@ export default function KYCVerificationPage() {
                     onFileSelect={(f) => setFormData({...formData, idFront: f})} 
                   />
                   
-                  {/* Reverse Side - OPTIONAL */}
                   <UploadZone 
                     label="Reverse Side" 
                     description="Optional (If applicable)" 

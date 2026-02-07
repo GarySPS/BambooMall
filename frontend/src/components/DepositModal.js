@@ -1,21 +1,28 @@
-// src/components/DepositModal.js
+//src>components>DepositModal.js
 
 import React, { useState, useEffect } from "react";
 import { 
   FaTimes, FaFingerprint, FaGlobe, FaBuilding, 
   FaExclamationTriangle, FaShieldAlt, FaCopy, FaCloudUploadAlt, FaCheckCircle
 } from "react-icons/fa";
-import { submitDeposit } from "../utils/api";
+import { submitDeposit } from "../utils/api"; // This is already secure
 import { API_BASE_URL } from "../config";
 
-// --- Local Helper for Upload ---
+// --- Local Helper for Upload (SECURED) ---
 async function uploadDepositScreenshot(file) {
+  const token = localStorage.getItem("token"); // <--- Get Token
   const formData = new FormData();
   formData.append("file", file);
+  
   const res = await fetch(`${API_BASE_URL}/upload/deposit`, {
     method: "POST",
+    headers: {
+        // NOTE: Do NOT set Content-Type for FormData; browser does it automatically
+        "Authorization": `Bearer ${token}` // <--- Attach Token
+    },
     body: formData,
   });
+  
   if (!res.ok) throw new Error("Upload failed");
   const data = await res.json();
   return data.url;
@@ -52,9 +59,7 @@ export default function DepositModal({ isOpen, onClose, onSuccess, user }) {
 
   useEffect(() => {
     if (isOpen) {
-      // Lock body scroll when modal is open to prevent background scrolling
       document.body.style.overflow = 'hidden';
-      
       if (user?.id) {
         const hasWallet = localStorage.getItem(`bamboomall_wallet_${user.id}`);
         if (hasWallet) setWalletReady(true);
@@ -88,8 +93,7 @@ export default function DepositModal({ isOpen, onClose, onSuccess, user }) {
       }
       
       await submitDeposit({
-        user_id: user.id,
-        amount: amount,
+        amount: amount, // Backend will grab user_id from Token
         screenshot_url: screenshotUrl,
         note: selectedMethod,
       });
@@ -100,6 +104,7 @@ export default function DepositModal({ isOpen, onClose, onSuccess, user }) {
         onClose(); 
       }, 1500);
     } catch (err) {
+      console.error(err);
       setSubmitState("error");
     }
   };
@@ -107,16 +112,9 @@ export default function DepositModal({ isOpen, onClose, onSuccess, user }) {
   if (!isOpen) return null;
 
   return (
-    // WRAPPER: items-start + pt-24 pushes it to the top (below nav bar)
     <div className="fixed inset-0 z-[100] flex items-start justify-center p-4 pt-24 sm:pt-32">
-        
-        {/* BACKDROP */}
         <div className="absolute inset-0 bg-slate-900/80 backdrop-blur-sm transition-opacity" onClick={onClose} />
-
-        {/* MODAL PANEL: Rounded-xl everywhere */}
         <div className="relative w-full max-w-md bg-white rounded-xl shadow-2xl flex flex-col max-h-[80vh] overflow-hidden animate-slide-up">
-            
-            {/* STICKY HEADER */}
             <div className="flex-shrink-0 bg-slate-50 px-6 py-4 border-b border-slate-100 flex justify-between items-center">
                 <h3 className="font-bold text-slate-800 text-sm md:text-base flex items-center gap-2">
                 {selectedMethod === "USDC-TRC20" && !walletReady 
@@ -129,7 +127,6 @@ export default function DepositModal({ isOpen, onClose, onSuccess, user }) {
                 </button>
             </div>
             
-            {/* SCROLLABLE CONTENT AREA */}
             <div className="flex-1 overflow-y-auto p-6 bg-white">
                 {!selectedMethod ? (
                     <div className="space-y-4">
@@ -253,7 +250,6 @@ export default function DepositModal({ isOpen, onClose, onSuccess, user }) {
                                 </div>
                             </div>
 
-                            {/* Enhanced Upload Zone */}
                             <div>
                                 <label className="block text-xs font-bold text-slate-500 uppercase mb-2">Proof of Transfer (Optional)</label>
                                 <label className={`flex flex-col items-center justify-center w-full h-24 border-2 border-dashed rounded-xl cursor-pointer bg-slate-50 hover:bg-white transition-all ${screenshot ? 'border-emerald-400 bg-emerald-50' : 'border-slate-300'}`}>
@@ -290,20 +286,18 @@ export default function DepositModal({ isOpen, onClose, onSuccess, user }) {
                                     Back
                                 </button>
                                 <button 
-    type="submit" 
-    // Lock button if submitting OR if no screenshot is uploaded
-    disabled={submitState !== 'idle' || !screenshot} 
-    className={`flex-1 font-bold py-3.5 rounded-lg text-sm uppercase tracking-wide text-white shadow-lg transition-all active:scale-95 ${
-        // Add opacity and remove hover effects if disabled
-        (submitState !== 'idle' || !screenshot) 
-        ? 'bg-slate-400 cursor-not-allowed opacity-70' 
-        : PAYMENT_CHANNELS[selectedMethod].type === 'fiat' 
-            ? 'bg-amber-600 hover:bg-amber-700' 
-            : 'bg-slate-900 hover:bg-slate-800'
-    }`}
->
-    {submitState === 'submitting' ? 'Verifying...' : 'Submit for Clearance'}
-</button>
+                                    type="submit" 
+                                    disabled={submitState !== 'idle' || !screenshot} 
+                                    className={`flex-1 font-bold py-3.5 rounded-lg text-sm uppercase tracking-wide text-white shadow-lg transition-all active:scale-95 ${
+                                        (submitState !== 'idle' || !screenshot) 
+                                        ? 'bg-slate-400 cursor-not-allowed opacity-70' 
+                                        : PAYMENT_CHANNELS[selectedMethod].type === 'fiat' 
+                                            ? 'bg-amber-600 hover:bg-amber-700' 
+                                            : 'bg-slate-900 hover:bg-slate-800'
+                                    }`}
+                                >
+                                    {submitState === 'submitting' ? 'Verifying...' : 'Submit for Clearance'}
+                                </button>
                             </div>
                         </form>
                     )}

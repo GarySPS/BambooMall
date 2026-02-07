@@ -4,6 +4,9 @@ import { API_BASE_URL } from "../config";
 
 // --- HELPER: Generic Fetch Wrapper ---
 async function fetchJson(endpoint, options = {}) {
+  // 1. SECURITY: Get the token (Ensure your Login saves it as "token")
+  const token = localStorage.getItem("token");
+
   // Ensure we don't double-slash (e.g., base/ + /endpoint)
   const cleanEndpoint = endpoint.startsWith("/") ? endpoint : `/${endpoint}`;
   
@@ -11,6 +14,8 @@ async function fetchJson(endpoint, options = {}) {
     ...options,
     headers: {
       "Content-Type": "application/json",
+      // 2. SECURITY: Attach the token to every request
+      ...(token ? { "Authorization": `Bearer ${token}` } : {}),
       ...options.headers,
     },
   });
@@ -67,7 +72,6 @@ export async function fetchWalletBalance(userId) {
     const balance = Number(realWallet.balance || 0);
     const stock_value = Number(realWallet.stock_value || 0);
     
-    // If backend doesn't calculate net_worth, we calculate it here
     // Net Worth = Liquid Cash + Inventory Value
     const net_worth = realWallet.net_worth 
       ? Number(realWallet.net_worth) 
@@ -78,7 +82,8 @@ export async function fetchWalletBalance(userId) {
       balance,
       stock_value,
       net_worth,
-      credit_limit: 50000.00, // Static Institutional Cap (The "Illusion")
+      // SECURITY: Removed hardcoded credit_limit. 
+      // It must come from the database (realWallet.credit_limit).
     };
   } catch (err) {
     console.error("Wallet Fetch Error", err);

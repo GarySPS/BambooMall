@@ -1,16 +1,14 @@
-// src/pages/OTPPage.js
+//src>pages>OTPPage.js
 
 import React, { useState, useEffect, useRef } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { useUser } from "../contexts/UserContext";
 import { API_BASE_URL } from "../config";
-// FIXED: Removed unused FaServer and FaArrowRight to fix build error
 import { FaShieldAlt, FaLock, FaGlobe, FaExclamationCircle, FaCheckCircle } from "react-icons/fa";
 
-// --- NETWORK BACKGROUND (Milky White Theme) ---
+// --- NETWORK BACKGROUND (Unchanged) ---
 const NetworkCanvas = () => {
   const canvasRef = useRef(null);
-  
   useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
@@ -18,16 +16,13 @@ const NetworkCanvas = () => {
     let width, height;
     let particles = [];
     let animationFrameId; 
-    
     const getParticleCount = () => window.innerWidth < 768 ? 30 : 50;
     const connectionDistance = 120;
     const speed = 0.25; 
-
     const resize = () => {
       width = canvas.width = window.innerWidth;
       height = canvas.height = window.innerHeight;
     };
-
     class Particle {
       constructor() {
         this.x = Math.random() * width;
@@ -45,12 +40,10 @@ const NetworkCanvas = () => {
       draw() {
         ctx.beginPath();
         ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
-        // Dark particles for light background
         ctx.fillStyle = "rgba(148, 163, 184, 0.6)"; 
         ctx.fill();
       }
     }
-
     const init = () => {
       resize();
       particles = [];
@@ -59,7 +52,6 @@ const NetworkCanvas = () => {
         particles.push(new Particle());
       }
     };
-
     const animate = () => {
       ctx.clearRect(0, 0, width, height);
       particles.forEach((p, index) => {
@@ -82,21 +74,17 @@ const NetworkCanvas = () => {
       });
       animationFrameId = requestAnimationFrame(animate);
     };
-
     window.addEventListener("resize", () => {
       resize();
       init();
     });
-    
     init();
     animate();
-    
     return () => {
       window.removeEventListener("resize", resize);
       cancelAnimationFrame(animationFrameId);
     };
   }, []);
-
   return <canvas ref={canvasRef} className="fixed inset-0 w-full h-full pointer-events-none z-0 bg-slate-50" />;
 };
 
@@ -110,12 +98,17 @@ export default function OTPPage() {
   const { login } = useUser();
   const navigate = useNavigate();
   const location = useLocation();
-  const email = location.state?.email || "unknown_agent";
+  const email = location.state?.email || ""; // Default to empty if missing
 
   useEffect(() => {
+    // If no email (user refreshed page), send them back to login
+    if (!email) {
+        navigate("/login");
+        return;
+    }
     const randomId = "SES-" + Math.random().toString(36).substr(2, 9).toUpperCase();
     setSessionId(randomId);
-  }, []);
+  }, [email, navigate]);
 
   useEffect(() => {
     let timer;
@@ -140,10 +133,16 @@ export default function OTPPage() {
 
       if (!res.ok) throw new Error(data.error || "Token verification failed");
 
+      // --- SECURITY FIX: Save the token! ---
+      if (data.token) {
+        localStorage.setItem("token", data.token);
+      }
+
       if (data.user) {
          login(data.user);
          navigate("/");    
       } else {
+         // Fallback if backend doesn't send user/token
          navigate("/login");
       }
 
@@ -172,11 +171,8 @@ export default function OTPPage() {
 
   return (
     <div className="min-h-screen font-sans bg-slate-50 relative flex flex-col overflow-y-auto selection:bg-blue-500/30">
-      
-      {/* 1. BACKGROUND */}
       <NetworkCanvas />
 
-      {/* 2. HEADER - Dark Background for consistency */}
       <div className="relative z-20 bg-slate-900 border-b border-slate-800 py-2 px-4 flex justify-between items-center text-[10px] md:text-xs text-slate-400">
         <span className="flex items-center gap-2">
           <FaGlobe className="text-blue-500" />
@@ -189,10 +185,8 @@ export default function OTPPage() {
         </span>
       </div>
 
-      {/* 3. CONTENT */}
       <div className="relative z-10 flex-1 flex flex-col items-center justify-center p-4 py-10 sm:p-6">
         
-        {/* Title Section */}
         <div className="text-center mb-6">
           <div className="inline-flex items-center justify-center w-12 h-12 bg-gradient-to-br from-blue-600 to-blue-900 rounded-lg shadow-lg shadow-blue-900/20 mb-3 border border-blue-400/20">
              <FaShieldAlt className="text-white text-xl" />
@@ -203,13 +197,10 @@ export default function OTPPage() {
           </p>
         </div>
 
-        {/* Card - DARK MODE */}
         <div className="w-full max-w-md bg-slate-900 backdrop-blur-xl border border-slate-700 rounded-2xl shadow-2xl p-6 md:p-8 relative overflow-hidden group">
             
-            {/* Decoration: Top shine */}
             <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-transparent via-blue-500/50 to-transparent opacity-50"></div>
 
-            {/* Technical Info Box */}
             <div className="mb-6 bg-slate-800/50 border border-slate-700 rounded p-3 font-mono text-[10px] text-slate-400 space-y-1">
                  <p className="flex justify-between">
                    <span>STATUS:</span> <span className="text-amber-400 animate-pulse">AWAITING TOKEN</span>
@@ -280,7 +271,6 @@ export default function OTPPage() {
             </div>
         </div>
 
-        {/* Footer */}
         <div className="mt-8 text-center opacity-100">
              <p className="text-[10px] text-slate-500 font-mono">
                SESSION ID: {sessionId} <br/>

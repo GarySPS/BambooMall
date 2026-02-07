@@ -30,40 +30,59 @@ export function UserProvider({ children }) {
   }, [user]);
 
   useEffect(() => {
+    // Only persist wallet for UI caching; real value comes from API
     localStorage.setItem("bamboomall_wallet", JSON.stringify(wallet));
   }, [wallet]);
 
-  // --- Actions (WRAPPED IN useCallback TO FIX INFINITE LOOP) ---
-
-  const login = useCallback((userObj) => {
-    setUser(userObj);
-  }, []);
+  // --- Actions ---
 
   const logout = useCallback(() => {
     setUser(null);
     setWallet({ balance: 0 });
+    // SECURITY: Wipe the keys
     localStorage.removeItem("bamboomall_user");
     localStorage.removeItem("bamboomall_wallet");
+    localStorage.removeItem("token"); 
     window.location.href = "/login"; 
   }, []);
 
-  // [CRITICAL FIX] This prevents BalancePage from re-running the API endlessly
+  const login = useCallback((userObj) => {
+    setUser(userObj);
+    // Note: Token is saved by the LoginPage before calling this
+  }, []);
+
   const updateWallet = useCallback((newData) => {
     setWallet((prev) => ({ ...prev, ...newData }));
   }, []);
 
-  // --- Fetch latest user data ---
+  // --- SECURE REFRESH (Uses Token, not ID) ---
   const refreshUser = useCallback(async () => {
-    if (!user || !user.short_id) return;
+    // 1. Get the Key
+    const token = localStorage.getItem("token");
+    
+    // If we have a user in state but no token, they are de-authenticated.
+    if (!token) {
+        if (user) logout(); 
+        return;
+    }
 
     try {
-      const res = await fetch(`${API_BASE_URL}/users/profile?short_id=${user.short_id}`);
+      // 2. Fetch Profile (No ID in URL anymore)
+      const res = await fetch(`${API_BASE_URL}/users/profile`, {
+        headers: {
+            "Content-Type": "application/json",
+            "Authorization": `Bearer ${token}` // <--- THE BADGE
+        }
+      });
+
       if (res.ok) {
         const data = await res.json();
+        // Update state with fresh data from server
         if (data.user) setUser(prev => ({ ...prev, ...data.user }));
         if (data.wallet) setWallet(data.wallet);
-      } else if (res.status === 404) {
-          logout();
+      } else if (res.status === 401 || res.status === 403) {
+         // Token expired or invalid
+         logout();
       }
     } catch (error) {
       console.error("Failed to refresh user data:", error);
@@ -72,11 +91,11 @@ export function UserProvider({ children }) {
 
   // 3. Force Sync on Load
   useEffect(() => {
-    if (user && user.short_id) {
+    if (user) {
        refreshUser(); 
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []); // Run once on mount
+  }, []); 
 
   return (
     <UserContext.Provider value={{ user, wallet, login, logout, updateWallet, refreshUser }}>

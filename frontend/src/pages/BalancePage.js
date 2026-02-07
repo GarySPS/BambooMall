@@ -1,9 +1,13 @@
-// src/pages/BalancePage.js
+//src>pages>BalancePage.js
 
 import React, { useState, useEffect, useCallback } from "react";
 import { useUser } from "../contexts/UserContext";
-import { API_BASE_URL } from "../config";
-import { fetchCartOrders, fetchResaleHistory } from "../utils/api";
+import { 
+  fetchCartOrders, 
+  fetchResaleHistory, 
+  fetchWalletBalance,
+  fetchWalletHistory
+} from "../utils/api";
 import { 
   FaWallet, FaArrowDown, FaArrowUp, FaHistory, FaCheck, FaFileInvoiceDollar, 
   FaChevronRight, FaBoxOpen, FaChartPie, FaClock, FaUniversity, FaCircle,
@@ -22,21 +26,6 @@ function getSyndicateTier(netWorth) {
   if (netWorth >= 4000)  return "Wholesale Agent (Tier 3)";
   if (netWorth >= 2000)  return "Verified Scout";
   return "Unverified Entity";
-}
-
-// --- API Helpers ---
-async function fetchWalletFromBackend(user_id) {
-  const res = await fetch(`${API_BASE_URL}/wallet/${user_id}`);
-  if (!res.ok) throw new Error("Failed to fetch wallet");
-  const data = await res.json();
-  return data.wallet; 
-}
-
-async function fetchTransactionHistory(user_id) {
-  const res = await fetch(`${API_BASE_URL}/wallet/history/${user_id}`);
-  if (!res.ok) throw new Error("Failed to fetch history");
-  const data = await res.json();
-  return data.transactions; 
 }
 
 export default function BalancePage() {
@@ -61,10 +50,12 @@ export default function BalancePage() {
   // --- Data Loading Wrapper ---
   const refreshData = useCallback(() => {
     if (user?.id) {
-      fetchWalletFromBackend(user.id).then(updateWallet).catch(() => {});
+      // 1. Fetch Wallet (Securely)
+      fetchWalletBalance(user.id).then(updateWallet).catch(() => {});
 
+      // 2. Fetch All History (Securely)
       Promise.all([
-        fetchTransactionHistory(user.id).catch(() => []), 
+        fetchWalletHistory(user.id).catch(() => []), 
         fetchCartOrders(user.id).catch(() => []),        
         fetchResaleHistory(user.id).catch(() => [])       
       ]).then(([walletData, activeData, historyData]) => {
@@ -94,6 +85,7 @@ export default function BalancePage() {
   const stockValue = Number(wallet?.stock_value || 0);
   const netWorth = wallet?.net_worth ? Number(wallet.net_worth) : (liquidBalance + stockValue);
   const tier = getSyndicateTier(netWorth);
+  // Credit limit is now handled by backend/context, or static display here
   const creditLine = 50000.00; 
 
   const formatCurrency = (amount) => {
@@ -135,7 +127,7 @@ export default function BalancePage() {
           {/* 2. CAPITAL STRUCTURE CARDS */}
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-10">
               
-              {/* CARD 1: SETTLEMENT - DARK THEME */}
+              {/* CARD 1: SETTLEMENT */}
               <div className="bg-gradient-to-br from-slate-900 to-slate-800 text-white rounded-2xl shadow-xl overflow-hidden relative group">
                  <div className="absolute top-0 right-0 p-8 opacity-5 transform translate-x-1/4 -translate-y-1/4 pointer-events-none">
                     <FaWallet size={240} />
@@ -171,7 +163,7 @@ export default function BalancePage() {
                  </div>
               </div>
 
-              {/* CARD 2: NET WORTH SUMMARY - CLEAN LIGHT THEME */}
+              {/* CARD 2: NET WORTH SUMMARY */}
               <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-6 md:p-8 flex flex-col justify-between">
                  
                  <div className="flex justify-between items-start mb-6">
@@ -186,7 +178,6 @@ export default function BalancePage() {
                     </div>
                  </div>
 
-                 {/* Breakdown */}
                  <div className="space-y-4 font-mono text-xs md:text-sm">
                     <div className="flex items-center justify-between group">
                         <span className="text-slate-500 flex items-center gap-3 group-hover:text-slate-800 transition-colors whitespace-nowrap">
@@ -215,7 +206,7 @@ export default function BalancePage() {
               </div>
           </div>
 
-          {/* 3. FISCAL LEDGER (Responsive Switch) */}
+          {/* 3. FISCAL LEDGER */}
           <div className="bg-white border border-slate-200 rounded-xl shadow-sm overflow-hidden">
               <div className="px-6 py-5 border-b border-slate-200 flex flex-col sm:flex-row justify-between items-start sm:items-center bg-slate-50/50 gap-3">
                  <h3 className="font-bold text-slate-800 text-sm uppercase tracking-wider flex items-center gap-2">
@@ -229,7 +220,7 @@ export default function BalancePage() {
                  </button>
               </div>
               
-              {/* === A. MOBILE TRANSACTION LIST (< md) === */}
+              {/* MOBILE LIST */}
               <div className="md:hidden">
                  {transactions.length === 0 ? (
                     <div className="p-8 text-center text-slate-400 italic text-sm">
@@ -271,7 +262,7 @@ export default function BalancePage() {
                  )}
               </div>
 
-              {/* === B. DESKTOP TABLE VIEW (>= md) === */}
+              {/* DESKTOP TABLE */}
               <div className="hidden md:block overflow-x-auto">
                  <table className="w-full text-left">
                     <thead className="bg-white text-slate-400 font-bold text-xs uppercase tracking-wider border-b border-slate-100">
@@ -313,16 +304,16 @@ export default function BalancePage() {
                                 <td className="px-6 py-4 text-right">
                                    <div className="flex justify-end">
                                         {tx.type === 'wallet' ? (
-                                          (tx.status === 'completed' || tx.status === 'approved') 
-                                          ? <span className="flex items-center gap-1.5 text-emerald-600 text-xs font-bold uppercase"><FaCheck size={10}/> Cleared</span>
-                                          : <span className="flex items-center gap-1.5 text-amber-500 text-xs font-bold uppercase"><FaClock size={10}/> Pending</span>
+                                           (tx.status === 'completed' || tx.status === 'approved') 
+                                           ? <span className="flex items-center gap-1.5 text-emerald-600 text-xs font-bold uppercase"><FaCheck size={10}/> Cleared</span>
+                                           : <span className="flex items-center gap-1.5 text-amber-500 text-xs font-bold uppercase"><FaClock size={10}/> Pending</span>
                                         ) : (
-                                          tx.status === 'selling' 
-                                          ? <span className="flex items-center gap-1.5 text-blue-600 text-xs font-bold uppercase"><span className="w-1.5 h-1.5 bg-blue-600 rounded-full animate-pulse"></span> Live</span>
-                                          : (tx.status === 'sold' 
-                                             ? <span className="flex items-center gap-1.5 text-emerald-600 text-xs font-bold uppercase"><FaCheck size={10}/> Sold</span>
-                                             : <span className="flex items-center gap-1.5 text-slate-400 text-xs font-bold uppercase">{tx.status}</span>
-                                            )
+                                           tx.status === 'selling' 
+                                           ? <span className="flex items-center gap-1.5 text-blue-600 text-xs font-bold uppercase"><span className="w-1.5 h-1.5 bg-blue-600 rounded-full animate-pulse"></span> Live</span>
+                                           : (tx.status === 'sold' 
+                                              ? <span className="flex items-center gap-1.5 text-emerald-600 text-xs font-bold uppercase"><FaCheck size={10}/> Sold</span>
+                                              : <span className="flex items-center gap-1.5 text-slate-400 text-xs font-bold uppercase">{tx.status}</span>
+                                             )
                                         )}
                                    </div>
                                 </td>

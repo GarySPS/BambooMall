@@ -1,27 +1,14 @@
-// src/pages/ProfilePage.js
+//src>pages>ProfilePage.js
 
 import React, { useState, useEffect } from "react";
 import { useUser } from "../contexts/UserContext";
 import { useNavigate } from "react-router-dom";
+import { fetchWalletBalance } from "../utils/api";
 import { API_BASE_URL } from "../config"; 
 import { 
-  Building2, 
-  CheckCircle2, 
-  Globe, 
-  Server, 
-  Lock, 
-  UploadCloud,
-  Fingerprint,
-  Copy,
-  ShieldCheck,
-  CreditCard,
-  Briefcase,
-  AlertTriangle,
-  TrendingUp,
-  Activity,
-  FileText,
-  Landmark,
-  ArrowRight
+  Building2, CheckCircle2, Globe, Server, Lock, UploadCloud,
+  Fingerprint, Copy, ShieldCheck, CreditCard, Briefcase,
+  AlertTriangle, TrendingUp, Activity, FileText, Landmark, ArrowRight
 } from "lucide-react";
 
 // --- HELPER: CURRENCY FORMATTER ---
@@ -41,13 +28,10 @@ function getSyndicateTier(netWorth) {
   return "Standard Entity";
 }
 
-// --- SUB-COMPONENTS (UPGRADED UI) ---
-
-// 1. Premium Tier Badge (Larger, Bolder)
+// --- SUB-COMPONENTS ---
 function TierBadge({ tier, kycStatus }) {
   const isVerified = kycStatus === 'approved';
   const isHighTier = tier.includes("Titanium") || tier.includes("Partner");
-  
   return (
     <div className={`flex items-center gap-2 px-4 py-2 rounded-md text-xs font-black uppercase tracking-widest border-2 shadow-sm ${
       isVerified 
@@ -62,7 +46,6 @@ function TierBadge({ tier, kycStatus }) {
   );
 }
 
-// 2. Stat Card (Heavier Fonts, Terminal Look)
 function StatCard({ label, value, subtext, icon: Icon }) {
   return (
     <div className="bg-white p-5 md:p-6 flex items-start justify-between group transition-colors hover:bg-slate-50 border-r border-slate-100 last:border-0">
@@ -86,7 +69,6 @@ function StatCard({ label, value, subtext, icon: Icon }) {
   );
 }
 
-// 3. Info Field (The "Ledger" Look)
 function InfoField({ label, value, statusColor, isMono, icon }) {
   return (
     <div className="w-full">
@@ -105,7 +87,6 @@ function InfoField({ label, value, statusColor, isMono, icon }) {
   );
 }
 
-// 4. Security Action (Larger Touch Targets)
 function SecurityAction({ label, status, isGood, onClick, icon: Icon }) {
   return (
     <div 
@@ -130,22 +111,21 @@ export default function ProfilePage() {
   const { user, updateWallet } = useUser();
   const navigate = useNavigate();
   
-  // State
   const [localWallet, setLocalWallet] = useState(null);
   const [apiKey, setApiKey] = useState("sk_live_************************");
   const [licenseFile, setLicenseFile] = useState(null);
   const [uploadStatus, setUploadStatus] = useState("idle");
 
-  // Fetch Wallet Data
+  // Fetch Wallet Data (SECURED)
   useEffect(() => {
     async function fetchWalletData() {
       if (user?.id) {
         try {
-          const res = await fetch(`${API_BASE_URL}/wallet/${user.id}`);
-          if (res.ok) {
-            const data = await res.json();
-            setLocalWallet(data.wallet); 
-            if (data.wallet && updateWallet) updateWallet(data.wallet);
+          // Replaced manual fetch with secure helper
+          const walletData = await fetchWalletBalance(user.id);
+          if (walletData) {
+            setLocalWallet(walletData); 
+            if (updateWallet) updateWallet(walletData);
           }
         } catch (error) {
           console.error("Wallet sync failed", error);
@@ -179,7 +159,7 @@ export default function ProfilePage() {
   return (
     <div className="min-h-screen w-full bg-[#F1F5F9] text-slate-900 font-sans pb-32">
       
-      {/* 1. HEADER (Larger & Cleaner) */}
+      {/* 1. HEADER */}
       <div className="bg-white border-b border-slate-200 sticky top-0 z-30 shadow-sm">
           <div className="max-w-7xl mx-auto px-4 sm:px-8 h-auto min-h-[5rem] py-4 md:py-0 md:h-24 flex flex-col md:flex-row md:items-center justify-between gap-4">
               <div className="flex justify-between items-center w-full md:w-auto">
@@ -193,7 +173,6 @@ export default function ProfilePage() {
                           Confidential
                        </span>
                     </div>
-                    {/* Status Line */}
                     <div className="flex items-center gap-4 text-xs text-slate-500 font-mono">
                        <span className="hidden md:inline font-semibold">REF: {user.id.substring(0, 8).toUpperCase()}</span>
                        <span className="flex items-center gap-2 text-emerald-700 font-bold bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-100">
@@ -202,13 +181,11 @@ export default function ProfilePage() {
                        </span>
                     </div>
                  </div>
-                 {/* Mobile Badge */}
                  <div className="md:hidden">
                     <TierBadge tier={currentTier} kycStatus={user.kyc_status} />
                  </div>
               </div>
               
-              {/* Desktop Badge */}
               <div className="hidden md:block">
                 <TierBadge tier={currentTier} kycStatus={user.kyc_status} />
               </div>
@@ -217,7 +194,7 @@ export default function ProfilePage() {
 
       <div className="max-w-7xl mx-auto px-4 sm:px-8 pt-8 space-y-8">
          
-         {/* 2. FINANCIAL DASHBOARD (High Impact) */}
+         {/* 2. FINANCIAL DASHBOARD */}
          <div className="grid grid-cols-1 md:grid-cols-3 gap-0 rounded-xl overflow-hidden border border-slate-200 shadow-sm bg-white divide-y md:divide-y-0 md:divide-x divide-slate-100">
             <StatCard 
               label="Total Liquidity Position" 
@@ -247,10 +224,9 @@ export default function ProfilePage() {
 
          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
              
-             {/* 3. LEFT COL: Identity & Docs */}
+             {/* 3. LEFT COL: Identity */}
              <div className="lg:col-span-2 space-y-8">
                
-                {/* Identity Card */}
                 <div className="bg-white shadow-sm border border-slate-200 rounded-xl overflow-hidden">
                     <div className="px-6 py-5 border-b border-slate-100 flex justify-between items-center bg-slate-50">
                         <h3 className="text-sm font-black text-slate-800 uppercase tracking-widest flex items-center gap-3">
@@ -326,8 +302,6 @@ export default function ProfilePage() {
 
              {/* 4. RIGHT COL: Developer & Security */}
              <div className="space-y-8">
-                
-                {/* Developer Console (Dark UI - Upgraded) */}
                 <div className="bg-[#0B1120] text-slate-400 rounded-xl shadow-2xl overflow-hidden border border-slate-800">
                    <div className="bg-[#151F32] px-6 py-4 border-b border-slate-800 flex justify-between items-center">
                       <h3 className="text-xs font-bold text-white uppercase tracking-widest flex items-center gap-2">
@@ -366,7 +340,6 @@ export default function ProfilePage() {
                    </div>
                 </div>
 
-                {/* Security Protocols */}
                 <div className="bg-white p-6 md:p-8 rounded-xl border border-slate-200 shadow-sm">
                    <h3 className="text-xs font-black text-slate-900 uppercase tracking-widest mb-6 flex items-center gap-3">
                       <ShieldCheck size={16} className="text-slate-400"/> Security Level 3

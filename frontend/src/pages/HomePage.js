@@ -1,23 +1,16 @@
-// src/pages/HomePage.js
+//src>pages>HomePage.js
 
 import React, { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
-import { useUser } from "../contexts/UserContext";
-import { API_BASE_URL } from "../config";
+import { useUser } from "../contexts/UserContext"; // <--- We get wallet from here now
 import ManifestTable from "../components/ManifestTable";
 import GlobalFeed from "../components/GlobalFeed";
 import { 
-  LineChart, 
-  Package, 
-  DollarSign, 
-  AlertTriangle, 
-  ArrowUp, 
-  Clock, 
-  ChevronRight,
-  FileText
+  LineChart, Package, DollarSign, AlertTriangle, 
+  ArrowUp, Clock, ChevronRight, FileText
 } from "lucide-react";
 
-// --- TIER CONFIGURATION (Synced with MembershipPage.js) ---
+// --- TIER CONFIGURATION ---
 const TIERS = [
   { min: 20000, name: "Global Syndicate", credit: "Unlimited" }, 
   { min: 13000, name: "Regional Partner", credit: 50000 }, 
@@ -28,38 +21,29 @@ const TIERS = [
 ];
 
 export default function HomePage() {
-  const { user } = useUser();
-  const [balance, setBalance] = useState(0);
-  const [creditLimit, setCreditLimit] = useState(0); 
+  // 1. GET DATA FROM CONTEXT (Secure & Cached)
+  const { user, wallet } = useUser();
+  
   const [tier, setTier] = useState("Standard");
+  const [creditLimit, setCreditLimit] = useState(0); 
   const [currentTime, setCurrentTime] = useState(new Date());
 
-  // Fetch Financials & Calculate Tier/Credit
+  // 2. Calculate Tier based on Context Data
   useEffect(() => {
-    const fetchFinancials = async () => {
-      if (!user?.id) return;
-      try {
-        const res = await fetch(`${API_BASE_URL}/wallet/${user.id}`);
-        const data = await res.json();
-        
-        if (data.wallet) {
-           const currentBalance = data.wallet.balance || 0;
-           const stockValue = data.wallet.stock_value || 0;
-           const netWorth = data.wallet.net_worth || (currentBalance + stockValue);
+    if (wallet) {
+       const currentBalance = Number(wallet.balance) || 0;
+       const stockValue = Number(wallet.stock_value) || 0;
+       // Use backend net_worth if available, else calculate
+       const netWorth = wallet.net_worth !== undefined 
+          ? Number(wallet.net_worth) 
+          : (currentBalance + stockValue);
 
-           setBalance(currentBalance);
-           
-           const matchingTier = TIERS.sort((a, b) => b.min - a.min).find(t => netWorth >= t.min) || TIERS[TIERS.length - 1];
-           
-           setTier(matchingTier.name);
-           setCreditLimit(matchingTier.credit);
-        }
-      } catch (err) {
-        console.error("Financial Data Stream Interrupted");
-      }
-    };
-    fetchFinancials();
-  }, [user]);
+       const matchingTier = TIERS.sort((a, b) => b.min - a.min).find(t => netWorth >= t.min) || TIERS[TIERS.length - 1];
+       
+       setTier(matchingTier.name);
+       setCreditLimit(matchingTier.credit);
+    }
+  }, [wallet]);
 
   // Clock
   useEffect(() => {
@@ -70,15 +54,14 @@ export default function HomePage() {
   return (
     <div className="space-y-6 animate-fade-in font-sans pb-24 w-full">
       
-      {/* --- HEADER (Mobile Optimized) --- */}
+      {/* --- HEADER --- */}
       <div className="flex flex-col md:flex-row justify-between items-start md:items-end border-b-2 border-slate-800 pb-6 gap-4 md:gap-0">
         <div className="w-full md:w-auto">
            <h1 className="text-3xl lg:text-4xl font-extrabold text-slate-900 tracking-tight flex justify-between items-center w-full">
-              Procurement Console
-              {/* Mobile Only Browse Link */}
-              <Link to="/products" className="md:hidden text-xs font-bold text-blue-600 flex items-center gap-1 bg-blue-50 px-3 py-1.5 rounded-full">
+             Procurement Console
+             <Link to="/products" className="md:hidden text-xs font-bold text-blue-600 flex items-center gap-1 bg-blue-50 px-3 py-1.5 rounded-full">
                  Manifest <ChevronRight size={12}/>
-              </Link>
+             </Link>
            </h1>
            
            <div className="flex flex-wrap items-center gap-x-4 gap-y-2 mt-2 text-[10px] md:text-sm font-mono font-medium text-slate-500">
@@ -95,12 +78,8 @@ export default function HomePage() {
            </div>
         </div>
         
-        {/* Desktop Browse Link */}
         <div className="hidden md:flex items-center gap-2">
-           <Link 
-             to="/products"
-             className="text-sm lg:text-base font-bold text-blue-600 hover:text-blue-800 flex items-center gap-1 group"
-           >
+           <Link to="/products" className="text-sm lg:text-base font-bold text-blue-600 hover:text-blue-800 flex items-center gap-1 group">
              Browse Master Manifest <ChevronRight className="group-hover:translate-x-1 transition-transform" size={16} />
            </Link>
         </div>
@@ -118,7 +97,8 @@ export default function HomePage() {
                <DollarSign className="text-blue-500" size={24} />
              </div>
              <div className="text-3xl lg:text-4xl font-bold text-slate-900 font-mono tracking-tight">
-               {balance.toLocaleString('en-US', { style: 'currency', currency: 'USD' })}
+               {/* Use Context Wallet Balance */}
+               {(wallet?.balance || 0).toLocaleString('en-US', { style: 'currency', currency: 'USD' })}
              </div>
              <div className="mt-2 lg:mt-3 flex items-center gap-2 text-[10px] lg:text-sm font-bold">
                <span className="text-emerald-600 bg-emerald-50 px-1.5 py-0.5 rounded flex items-center gap-1">
@@ -149,7 +129,7 @@ export default function HomePage() {
            </div>
         </div>
 
-        {/* Card C: Compliance (Full Width Mobile Button) */}
+        {/* Card C: Compliance */}
         <div className="bg-amber-50 p-5 lg:p-8 rounded-xl shadow-sm border border-amber-200 relative overflow-hidden sm:col-span-2 lg:col-span-2">
            <div className="relative z-10">
              <div className="flex justify-between items-center mb-2 lg:mb-4">
@@ -165,7 +145,6 @@ export default function HomePage() {
                       All fiat transfers (SWIFT) are now subject to a 15% pre-clearance holding period. Use USDC for instant release.
                    </p>
                 </div>
-                {/* Full width button on mobile */}
                 <Link to="/compliance" className="w-full md:w-auto text-center text-xs lg:text-sm font-bold text-amber-800 bg-amber-100 hover:bg-amber-200 px-6 py-3 rounded-lg transition-colors whitespace-nowrap shadow-sm">
                    Review Action Items →
                 </Link>
@@ -176,18 +155,13 @@ export default function HomePage() {
 
       {/* --- MAIN DASHBOARD SPLIT --- */}
       <div className="grid grid-cols-1 xl:grid-cols-4 gap-6 lg:gap-8 min-h-[500px]">
-         
-         {/* LEFT: MANIFEST FEED */}
          <ManifestTable />
-
-         {/* RIGHT: GLOBAL FEED (Stacked on mobile) */}
          <div className="xl:col-span-1 h-fit">
              <GlobalFeed />
          </div>
-
       </div>
 
-      {/* --- FOOTER ACTIONS (Responsive Grid) --- */}
+      {/* --- FOOTER ACTIONS --- */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-6 pt-4">
          <Link to="/products" className="bg-blue-700 hover:bg-blue-600 active:scale-95 text-white p-4 lg:p-6 rounded-xl flex flex-col items-center justify-center gap-2 text-center shadow-lg shadow-blue-900/20 transition-all">
             <Package className="text-2xl md:text-4xl text-blue-100" />
@@ -209,7 +183,6 @@ export default function HomePage() {
             <span className="text-xs md:text-base font-bold uppercase tracking-wide">My Stats</span>
          </Link>
       </div>
-
     </div>
   );
 }
