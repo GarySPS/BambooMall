@@ -248,17 +248,27 @@ export default function ProfilePage() {
                           icon={<CheckCircle2 size={16}/>}
                        />
                        
-                       <div className="md:col-span-2 pt-6 border-t border-slate-100 mt-2">
-                          <label className="block text-[11px] font-bold text-slate-500 uppercase mb-3 tracking-widest">Registration Compliance</label>
-                          <div className="flex items-center gap-4">
-                             <div className="h-4 flex-1 bg-slate-100 rounded-full overflow-hidden border border-slate-200">
-                                <div className={`h-full ${user.kyc_status === 'approved' ? 'bg-emerald-500 w-full' : 'bg-amber-400 w-2/3'}`}></div>
-                             </div>
-                             <span className="text-xs font-black text-slate-700 uppercase">
-                                {user.kyc_status === 'approved' ? '100% Compliant' : '66% Verified'}
-                             </span>
-                          </div>
-                       </div>
+                        <div className="md:col-span-2 pt-6 border-t border-slate-100 mt-2">
+                           <div className="flex justify-between items-end mb-3">
+                              <label className="block text-[11px] font-bold text-slate-500 uppercase tracking-widest">Registration Compliance</label>
+                              {user.kyc_status !== 'approved' && (
+                                <button 
+                                  onClick={() => navigate('/kyc-verification')}
+                                  className="flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-slate-900 bg-amber-400 hover:bg-amber-500 px-3 py-1.5 rounded transition-colors shadow-sm"
+                                >
+                                  Complete Verification <ArrowRight size={12} strokeWidth={3} />
+                                </button>
+                              )}
+                           </div>
+                           <div className="flex items-center gap-4">
+                              <div className="h-4 flex-1 bg-slate-100 rounded-full overflow-hidden border border-slate-200">
+                                 <div className={`h-full ${user.kyc_status === 'approved' ? 'bg-emerald-500 w-full' : 'bg-amber-400 w-2/3'}`}></div>
+                              </div>
+                              <span className="text-xs font-black text-slate-700 uppercase">
+                                 {user.kyc_status === 'approved' ? '100% Compliant' : '66% Verified'}
+                              </span>
+                           </div>
+                        </div>
                     </div>
                 </div>
 
