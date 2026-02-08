@@ -2,7 +2,7 @@
 
 import React, { createContext, useContext, useState, useEffect, useCallback } from "react";
 import { API_BASE_URL } from "../config";
-import { fetchWalletBalance } from "../utils/api"; // <--- IMPORT ADDED
+import { fetchWalletBalance } from "../utils/api"; 
 
 const UserContext = createContext();
 
@@ -38,7 +38,6 @@ export function UserProvider({ children }) {
 
   // --- Helpers ---
   
-  // Internal helper to get fresh wallet data
   const _syncWallet = async () => {
     try {
       const freshData = await fetchWalletBalance();
@@ -59,9 +58,18 @@ export function UserProvider({ children }) {
     window.location.href = "/login"; 
   }, []);
 
-  const login = useCallback((userObj) => {
+  // --- FIX APPLIED HERE ---
+  // Accept 'token' as the second argument
+  const login = useCallback((userObj, token) => {
+    // 1. Save token FIRST to ensure it is available for requests
+    if (token) {
+        localStorage.setItem("token", token);
+    }
+    
+    // 2. Then set user state
     setUser(userObj);
-    // FIX: Immediately fetch wallet upon login so Home Page is ready
+
+    // 3. Finally sync wallet (which requires the token we just saved)
     _syncWallet();
   }, []);
 
@@ -75,12 +83,12 @@ export function UserProvider({ children }) {
     
     // If we have a user in state but no token, they are de-authenticated.
     if (!token) {
+        // This was likely the culprit: User existed, but token wasn't saved yet
         if (user) logout(); 
         return;
     }
 
     try {
-      // A. Fetch User Profile
       const res = await fetch(`${API_BASE_URL}/users/profile`, {
         headers: {
             "Content-Type": "application/json",
@@ -92,7 +100,6 @@ export function UserProvider({ children }) {
         const data = await res.json();
         if (data.user) setUser(prev => ({ ...prev, ...data.user }));
         
-        // B. Fetch Wallet (FIX: Explicitly call wallet endpoint on refresh)
         await _syncWallet();
 
       } else if (res.status === 401 || res.status === 403) {
@@ -105,7 +112,6 @@ export function UserProvider({ children }) {
 
   // 3. Force Sync on App Load
   useEffect(() => {
-    // Only refresh if we have a user (or think we do)
     if (user) {
        refreshUser(); 
     }
