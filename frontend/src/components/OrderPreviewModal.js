@@ -5,8 +5,6 @@ import {
   FaFileInvoiceDollar, 
   FaTimes, 
   FaUniversity, 
-  FaCheckCircle, 
-  FaDownload, 
   FaArrowRight,
   FaTag,
   FaBox
@@ -272,10 +270,7 @@ export default function OrderPreviewModal({
         <div className="bg-slate-50 p-4 md:p-6 border-t border-slate-200 shrink-0">
            {successData ? (
               <div className="flex gap-4">
-                 <button className="flex-1 py-3 md:py-4 border border-slate-300 bg-white text-slate-600 font-bold text-xs uppercase tracking-widest rounded hover:bg-slate-100 transition flex justify-center items-center gap-2">
-                    <FaDownload /> Save Receipt
-                 </button>
-                 <button onClick={onFinish} className="flex-[2] py-3 md:py-4 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs uppercase tracking-widest rounded shadow-lg flex items-center justify-center gap-2 transition">
+                 <button onClick={onFinish} className="w-full py-3 md:py-4 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs uppercase tracking-widest rounded shadow-lg flex items-center justify-center gap-2 transition">
                     View Portfolio <FaArrowRight />
                  </button>
               </div>
