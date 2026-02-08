@@ -4,7 +4,8 @@ import React from "react";
 import { 
   FaFileInvoiceDollar, 
   FaTimes, 
-  FaUniversity, 
+  FaUniversity,
+  FaCheckCircle,
   FaArrowRight,
   FaTag,
   FaBox
