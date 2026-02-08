@@ -1,4 +1,4 @@
-//src>pages>OTPPage.js
+// src/pages/OTPPage.js
 
 import React, { useState, useEffect, useRef } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
@@ -133,16 +133,15 @@ export default function OTPPage() {
 
       if (!res.ok) throw new Error(data.error || "Token verification failed");
 
-      // --- SECURITY FIX: Save the token! ---
-      if (data.token) {
-        localStorage.setItem("token", data.token);
-      }
-
-      if (data.user) {
-         login(data.user);
+      // --- FIX: Pass BOTH User and Token to login ---
+      if (data.user && data.token) {
+         // This triggers the updated UserContext logic which saves the token immediately
+         login(data.user, data.token);
          navigate("/");    
       } else {
-         // Fallback if backend doesn't send user/token
+         // Safety: If backend verifies OTP but doesn't return a token,
+         // we must force a manual login to avoid "Zombie State" (User exists but no token).
+         console.warn("OTP Success but no token received. Redirecting to login.");
          navigate("/login");
       }
 

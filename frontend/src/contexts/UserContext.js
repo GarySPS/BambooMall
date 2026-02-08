@@ -58,18 +58,20 @@ export function UserProvider({ children }) {
     window.location.href = "/login"; 
   }, []);
 
-  // --- FIX APPLIED HERE ---
-  // Accept 'token' as the second argument
+  // --- FIX: Accept token as 2nd argument and save it FIRST ---
   const login = useCallback((userObj, token) => {
-    // 1. Save token FIRST to ensure it is available for requests
+    // 1. Mandatory Token Save
     if (token) {
         localStorage.setItem("token", token);
+    } else {
+        // Warning if no token passed (helps debugging)
+        console.warn("UserContext: Login called without token. Persistence may fail.");
     }
     
     // 2. Then set user state
     setUser(userObj);
 
-    // 3. Finally sync wallet (which requires the token we just saved)
+    // 3. Finally sync wallet (Now safe because token is in localStorage)
     _syncWallet();
   }, []);
 
@@ -83,7 +85,6 @@ export function UserProvider({ children }) {
     
     // If we have a user in state but no token, they are de-authenticated.
     if (!token) {
-        // This was likely the culprit: User existed, but token wasn't saved yet
         if (user) logout(); 
         return;
     }
@@ -100,6 +101,7 @@ export function UserProvider({ children }) {
         const data = await res.json();
         if (data.user) setUser(prev => ({ ...prev, ...data.user }));
         
+        // Refresh wallet too
         await _syncWallet();
 
       } else if (res.status === 401 || res.status === 403) {
