@@ -1,4 +1,5 @@
-// middleware/authMiddleware.js
+//middleware>authMiddleware.js
+
 const jwt = require('jsonwebtoken');
 
 module.exports = function (req, res, next) {
@@ -12,9 +13,10 @@ module.exports = function (req, res, next) {
 
   // 3. Verify token
   try {
-    // Make sure you have JWT_SECRET in your .env file
-    const decoded = jwt.verify(token, process.env.JWT_SECRET || 'fallback_secret_key');
-    req.user = decoded; // Adds user info to the request
+    const secret = process.env.JWT_SECRET || 'fallback_secret_key';
+    const decoded = jwt.verify(token, secret);
+    
+    req.user = decoded; 
     next();
   } catch (err) {
     res.status(401).json({ error: 'Token is not valid' });
