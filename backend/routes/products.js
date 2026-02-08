@@ -7,6 +7,14 @@ const router = express.Router();
 const authMiddleware = require('../middleware/authMiddleware');
 const adminMiddleware = require('../middleware/adminMiddleware');
 
+// HELPER: Convert Data to String for Database TEXT columns
+// Your database columns are 'text', so we must JSON.stringify objects before saving.
+const safeStringify = (val) => {
+    if (!val) return '[]'; // Default to empty array string if null
+    if (typeof val === 'string') return val; // If already string, return it
+    return JSON.stringify(val); // Convert Object/Array to String
+};
+
 // ==========================================
 // 1. PUBLIC ROUTES (View Only)
 // ==========================================
@@ -24,8 +32,8 @@ router.get('/', async (req, res) => {
   // Inject Batch ID so it is available to the API consumers
   const enrichedData = data.map(item => ({
     ...item,
-    // Using ID ensures this number is permanent and unique
-    batchId: `BATCH-CN-${202600 + (item.id || 0)}`
+    // FIX: Use substring of the UUID instead of adding numbers to text
+    batchId: `BATCH-CN-${(item.id || '').substring(0, 8).toUpperCase()}`
   }));
 
   res.json(enrichedData);
@@ -46,7 +54,7 @@ router.get('/:id', async (req, res) => {
   // Inject Batch ID for the details page
   const enrichedProduct = {
     ...data,
-    batchId: `BATCH-CN-${202600 + (data.id || 0)}`
+    batchId: `BATCH-CN-${(data.id || '').substring(0, 8).toUpperCase()}`
   };
 
   res.json(enrichedProduct);
@@ -73,12 +81,6 @@ router.post('/', authMiddleware, adminMiddleware, async (req, res) => {
     country
   } = req.body;
 
-  // Validate JSON fields to prevent DB errors
-  const safeJson = (val) => {
-      if (typeof val === 'object') return val;
-      try { return JSON.parse(val); } catch { return []; }
-  };
-
   const { data, error } = await supabase
     .from('products')
     .insert([{
@@ -86,20 +88,23 @@ router.post('/', authMiddleware, adminMiddleware, async (req, res) => {
       description,
       price,
       min_order: parseInt(min_order || 1),
-      color: safeJson(color),
-      size: safeJson(size),
+      stock: parseInt(stock || 5000),
       brand,
       factory_url,
-      images: safeJson(images),
       rating,
       review_count,
       discount,
-      key_attributes: safeJson(key_attributes),
-      gallery: safeJson(gallery),
-      price_tiers: safeJson(price_tiers),
-      stock: stock || 5000,
       supplier: supplier || "Direct Factory",
-      country: country || "China"
+      country: country || "China",
+
+      // --- CRITICAL FIX: Stringify JSON for TEXT columns ---
+      // We use safeStringify because your DB columns are type 'text'
+      color: safeStringify(color),
+      size: safeStringify(size),
+      images: safeStringify(images),
+      gallery: safeStringify(gallery),
+      key_attributes: safeStringify(key_attributes),
+      price_tiers: safeStringify(price_tiers) 
     }])
     .select()
     .single();
