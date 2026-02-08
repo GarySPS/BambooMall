@@ -106,12 +106,17 @@ export default function KYCVerificationPage() {
     try {
       setStatusMessage("Encrypting & Uploading Documents...");
       
-      const frontUrl = await uploadFile(formData.idFront);
-      const backUrl = formData.idBack ? await uploadFile(formData.idBack) : "NOT_PROVIDED";
-      const selfieUrl = await uploadFile(formData.selfie);
+      // --- CHANGE START: Upload in Parallel (Much Faster) ---
+      // This triggers all uploads simultaneously instead of one by one
+      const [frontUrl, backUrl, selfieUrl] = await Promise.all([
+        uploadFile(formData.idFront),
+        formData.idBack ? uploadFile(formData.idBack) : "NOT_PROVIDED",
+        uploadFile(formData.selfie)
+      ]);
+      // --- CHANGE END ---
 
       setStatusMessage("Transmitting to Compliance Ledger...");
-      
+     
       // --- SECURE SUBMISSION ---
       const token = localStorage.getItem("token"); // <--- Get Token
       const res = await fetch(`${API_BASE_URL}/kyc/submit-application`, {
