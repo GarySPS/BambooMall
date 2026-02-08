@@ -1,4 +1,4 @@
-// src/pages/AdminWithdrawPage.js
+//src>pages>AdminWithdrawPage.js
 
 import React, { useEffect, useState, useMemo } from "react";
 import { 
@@ -26,7 +26,15 @@ export default function AdminWithdrawPage() {
     async function fetchWithdraws() {
       setLoading(true);
       try {
-        const res = await fetch(`${API_URL}/users`);
+        // FIX: Get Token
+        const token = localStorage.getItem("token");
+        if (!token) throw new Error("No token found");
+
+        // FIX: Attach Token
+        const res = await fetch(`${API_URL}/users`, {
+            headers: { "Authorization": `Bearer ${token}` }
+        });
+
         let data = await res.json();
         if (!Array.isArray(data)) data = [];
         setUsers(data);
@@ -62,10 +70,16 @@ export default function AdminWithdrawPage() {
     );
 
     try {
-      // 3. API Call
+      // FIX: Get Token
+      const token = localStorage.getItem("token");
+
+      // 3. API Call with Token
       const res = await fetch(`${API_URL}/tx-approve`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: { 
+            "Content-Type": "application/json",
+            "Authorization": `Bearer ${token}` // <--- Header Added
+        },
         body: JSON.stringify({ tx_id: txId, approve }),
       });
 

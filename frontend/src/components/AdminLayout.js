@@ -2,17 +2,22 @@
 
 import React, { useState, useEffect } from "react";
 import { NavLink, Outlet, useLocation, useNavigate } from "react-router-dom";
-import { useUser } from "../contexts/UserContext"; // <--- 1. Import Context
+import { useUser } from "../contexts/UserContext"; 
 import { 
   FaBars, FaTimes, FaUserShield, FaUsers, FaShieldAlt, 
   FaMoneyCheckAlt, FaExchangeAlt, FaClipboardList, FaSignOutAlt,
-  FaChartPie, FaPlusCircle
+  FaChartPie, FaPlusCircle, FaBox // <--- Added FaBox import
 } from "react-icons/fa";
 
-// Navigation Configuration (Unchanged)
+// Navigation Configuration
 const navLinks = [
   { to: "/admin", label: "Overview", icon: <FaChartPie className="text-lg" /> },
-  { to: "/admin/create-product", label: "Add Product", icon: <FaPlusCircle className="text-lg text-emerald-400" /> },
+  
+  // --- NEW: Inventory Management Links ---
+  { to: "/admin/products", label: "Inventory", icon: <FaBox className="text-lg" /> }, // View List
+  { to: "/admin/products/create", label: "Add Product", icon: <FaPlusCircle className="text-lg text-emerald-400" /> }, // Create New
+  // ---------------------------------------
+
   { to: "/admin/users", label: "Users", icon: <FaUsers className="text-lg" /> },
   { to: "/admin/kyc", label: "KYC", icon: <FaShieldAlt className="text-lg" /> },
   { to: "/admin/deposits", label: "Deposits", icon: <FaMoneyCheckAlt className="text-lg" /> },
@@ -45,8 +50,6 @@ export default function AdminLayout() {
   // Helper to determine if link is active
   const isLinkActive = (path) => location.pathname === path;
 
-  // ... (Rest of your component logic remains exactly the same) ...
-
   const SidebarContent = () => (
     <>
       {/* Logo Area */}
@@ -67,9 +70,11 @@ export default function AdminLayout() {
       </div>
 
       {/* Navigation Items */}
-      <nav className="flex flex-col gap-1.5 flex-1">
+      <nav className="flex flex-col gap-1.5 flex-1 overflow-y-auto">
         {navLinks.map((link) => {
-          const active = isLinkActive(link.to);
+          // Check for exact match or sub-route match (e.g., active on /products/create if link is /products)
+          const active = location.pathname === link.to; 
+          
           return (
             <NavLink
               key={link.to}

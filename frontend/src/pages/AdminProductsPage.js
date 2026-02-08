@@ -1,9 +1,8 @@
-// src/pages/admin/AdminProductsPage.js
+//src>pages>AdminProductsPage.js
 
 import React, { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
-import { fetchProducts } from "../../utils/api"; 
-import { getProductImage } from "../../utils/image";
+import { API_BASE_URL } from "../config";
 import { 
   FaPlus, 
   FaSearch, 
@@ -11,7 +10,7 @@ import {
   FaTrash, 
   FaBox, 
   FaExclamationTriangle,
-  FaLock // Added Lock icon for visual cue
+  FaLock
 } from "react-icons/fa";
 
 export default function AdminProductsPage() {
@@ -19,23 +18,56 @@ export default function AdminProductsPage() {
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
 
+  // --- 1. Load Inventory with Token ---
+  const loadInventory = async () => {
+    setLoading(true);
+    try {
+      // We use the public endpoint, but you can add headers if your backend filters hidden items
+      const res = await fetch(`${API_BASE_URL}/products`);
+      let data = await res.json();
+      
+      // Safety check if API returns object instead of array
+      if (data.products) data = data.products; 
+      if (!Array.isArray(data)) data = [];
+      
+      setProducts(data);
+    } catch (err) {
+      console.error("Failed to load inventory", err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   useEffect(() => {
     loadInventory();
   }, []);
 
-  const loadInventory = () => {
-    setLoading(true);
-    fetchProducts()
-      .then((data) => {
-        setProducts(data || []);
-        setLoading(false);
-      })
-      .catch((err) => {
-        console.error("Failed to load inventory", err);
-        setLoading(false);
+  // --- 2. Handle Delete (New Logic) ---
+  const handleDelete = async (id) => {
+    if(!window.confirm("Are you sure you want to delete this product?")) return;
+
+    try {
+      const token = localStorage.getItem("token");
+      if (!token) throw new Error("Authentication missing");
+
+      const res = await fetch(`${API_BASE_URL}/products/${id}`, {
+        method: "DELETE",
+        headers: { 
+            "Authorization": `Bearer ${token}` // <--- Token Required to Delete
+        }
       });
+
+      if (!res.ok) throw new Error("Failed to delete");
+
+      // Remove from list locally
+      setProducts(prev => prev.filter(p => p.id !== id));
+
+    } catch (error) {
+      alert("Error deleting product: " + error.message);
+    }
   };
 
+  // --- 3. Filter Logic ---
   const filteredProducts = products.filter(p => 
     p.title?.toLowerCase().includes(searchTerm.toLowerCase()) ||
     p.id?.includes(searchTerm)
@@ -51,11 +83,11 @@ export default function AdminProductsPage() {
              <FaBox className="text-blue-900" /> Master Inventory Control
            </h1>
            <p className="text-xs text-slate-500 font-mono mt-1">
-             TOTAL SKUs: {products.length} // VALUATION: ${products.reduce((acc, p) => acc + (p.price * p.stock), 0).toLocaleString()}
+             TOTAL SKUs: {products.length} // VALUATION: ${products.reduce((acc, p) => acc + (Number(p.price) * Number(p.stock)), 0).toLocaleString()}
            </p>
         </div>
         <Link 
-          to="/admin/products/new" 
+          to="/admin/products/create" 
           className="bg-blue-900 hover:bg-blue-800 text-white px-6 py-3 rounded text-sm font-bold uppercase tracking-wide flex items-center gap-2 shadow-lg"
         >
           <FaPlus /> Ingest New Lot
@@ -84,7 +116,7 @@ export default function AdminProductsPage() {
                <th className="px-6 py-3 w-16">Img</th>
                <th className="px-6 py-3">Lot Details</th>
                <th className="px-6 py-3">Unit Price</th>
-               <th className="px-6 py-3 text-center">Min Order</th> {/* NEW COLUMN */}
+               <th className="px-6 py-3 text-center">Min Order</th>
                <th className="px-6 py-3 text-center">Stock Level</th>
                <th className="px-6 py-3">Supplier</th>
                <th className="px-6 py-3 text-right">Actions</th>
@@ -92,13 +124,17 @@ export default function AdminProductsPage() {
            </thead>
            <tbody className="divide-y divide-slate-100">
              {loading ? (
-                <tr><td colSpan="7" className="p-10 text-center text-slate-400">Loading Manifest...</td></tr>
+               <tr><td colSpan="7" className="p-10 text-center text-slate-400">Loading Manifest...</td></tr>
              ) : filteredProducts.map(product => (
                <tr key={product.id} className="hover:bg-slate-50 group transition-colors">
                  {/* Image */}
                  <td className="px-6 py-3">
                     <div className="w-10 h-10 bg-slate-100 rounded border border-slate-200 overflow-hidden">
-                       <img src={getProductImage(product)} className="w-full h-full object-cover mix-blend-multiply" alt="" />
+                       <img 
+                         src={product.images && product.images[0] ? product.images[0] : "https://via.placeholder.com/50"} 
+                         className="w-full h-full object-cover mix-blend-multiply" 
+                         alt="" 
+                       />
                     </div>
                  </td>
                  
@@ -115,7 +151,7 @@ export default function AdminProductsPage() {
                     ${Number(product.price).toFixed(2)}
                  </td>
 
-                 {/* Min Order - NEW DATA */}
+                 {/* Min Order */}
                  <td className="px-6 py-3 text-center">
                     <div className="inline-flex items-center gap-1 px-2 py-1 bg-slate-100 border border-slate-200 rounded text-xs font-mono font-bold text-slate-600">
                         <FaLock size={10} className="text-slate-400" />
@@ -151,7 +187,11 @@ export default function AdminProductsPage() {
                        >
                           <FaEdit />
                        </Link>
-                       <button className="p-2 text-red-600 hover:bg-red-50 rounded" title="Archive Lot">
+                       <button 
+                         onClick={() => handleDelete(product.id)}
+                         className="p-2 text-red-600 hover:bg-red-50 rounded" 
+                         title="Delete Product"
+                       >
                           <FaTrash />
                        </button>
                     </div>

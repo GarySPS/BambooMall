@@ -1,4 +1,4 @@
-// src/pages/AdminOrderPage.js
+//src>pages>AdminOrderPage.js
 
 import React, { useEffect, useState, useCallback, useMemo } from "react";
 import { 
@@ -25,7 +25,15 @@ export default function AdminOrderPage() {
   // --- DATA FETCHING ---
   const fetchOrders = useCallback(async () => {
     try {
-      const res = await fetch(`${API_URL}/users`);
+      // FIX: Get Token
+      const token = localStorage.getItem("token");
+      if (!token) throw new Error("No token found");
+
+      // FIX: Attach Token
+      const res = await fetch(`${API_URL}/users`, {
+          headers: { "Authorization": `Bearer ${token}` }
+      });
+
       let data = await res.json();
       if (!Array.isArray(data)) data = [];
       setUsers(data);
@@ -60,9 +68,14 @@ export default function AdminOrderPage() {
     }
 
     try {
+      const token = localStorage.getItem("token"); // FIX: Get Token
+
       await fetch(`${API_URL}/orders/resale-approve`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: { 
+            "Content-Type": "application/json",
+            "Authorization": `Bearer ${token}` // FIX: Attach Header
+        },
         body: JSON.stringify({
           order_id: orderId,
           approve,
@@ -87,9 +100,14 @@ export default function AdminOrderPage() {
 
   const handleApproveRefund = async (userId, orderId, approve) => {
     try {
+      const token = localStorage.getItem("token"); // FIX: Get Token
+
       await fetch(`${API_URL}/orders/refund-approve`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: { 
+            "Content-Type": "application/json",
+            "Authorization": `Bearer ${token}` // FIX: Attach Header
+        },
         body: JSON.stringify({ order_id: orderId, approve }),
       });
       await fetchOrders();

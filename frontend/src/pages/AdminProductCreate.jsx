@@ -1,9 +1,9 @@
-// src/pages/AdminProductCreate.jsx
+//src>pages>AdminProductCreate.jsx
 
 import React, { useState } from 'react';
-import { createProduct } from '../utils/api';
 import { FaPlus, FaTrash, FaSave, FaImage, FaBoxOpen, FaListUl, FaDollarSign, FaTimes } from 'react-icons/fa';
 import { toast } from 'react-toastify';
+import { API_BASE_URL } from '../config'; // FIX: Import Base URL directly
 
 export default function AdminProductCreate() {
   const [loading, setLoading] = useState(false);
@@ -13,18 +13,14 @@ export default function AdminProductCreate() {
     title: '',
     description: '',
     price: '',
-    // [REMOVED] min_order - We now rely on Price Tiers for this
     stock: 5000,
     discount: 0,
     brand: '',
     supplier: 'Direct Factory',
     country: 'China',
     factory_url: '',
-    
-    // [NEW] Added color_input
     size_input: '', 
     color_input: '', 
-    
     rating: 4.8,
     review_count: 120 
   });
@@ -73,7 +69,11 @@ export default function AdminProductCreate() {
     setLoading(true);
 
     try {
-      // 1. Transform Sizes
+      // 1. Get Token
+      const token = localStorage.getItem("token");
+      if (!token) throw new Error("Authentication missing. Please login.");
+
+      // 2. Transform Data
       let sizeJson = [];
       if (formData.size_input) {
         sizeJson = formData.size_input.split(',').map(s => ({ 
@@ -84,27 +84,30 @@ export default function AdminProductCreate() {
         sizeJson = [{ name: "One Size", price_adjust: 0 }];
       }
 
-      // 2. Transform Colors
       let colorJson = [];
       if (formData.color_input) {
         colorJson = formData.color_input.split(',').map(c => ({ 
             name: c.trim(), 
-            // We link the color to the first image as a placeholder
             image: images[0] || "" 
         }));
       } else {
         colorJson = [{ name: "Standard", image: images[0] || "" }];
       }
 
-      // 3. Transform Specs
       const attributesJson = specs.map(s => ({ [s.label]: s.value }));
 
-      // 4. Prepare Payload
+      // --- FIX: Sort Tiers & Calculate Min Order ---
+      // 1. Define sortedTiers (This was missing!)
+      const sortedTiers = [...tiers].sort((a, b) => a.min - b.min);
+
+      // 2. Calculate Min Order using the first item of the sorted list
+      const calculatedMinOrder = sortedTiers.length > 0 ? sortedTiers[0].min : 1;
+
+      // 3. Prepare Payload
       const payload = {
         title: formData.title,
         description: formData.description,
         price: parseFloat(formData.price),
-        // [REMOVED] min_order: parseInt(formData.min_order),
         stock: parseInt(formData.stock),
         discount: parseFloat(formData.discount),
         brand: formData.brand || 'OEM',
@@ -112,12 +115,14 @@ export default function AdminProductCreate() {
         country: formData.country, 
         factory_url: formData.factory_url,
         
+        min_order: calculatedMinOrder,
+        price_tiers: sortedTiers, // <--- Now this variable exists!
+        
         images: images,
         gallery: images, 
         size: sizeJson,
         color: colorJson, 
         key_attributes: attributesJson,
-        price_tiers: tiers, // This is now the source of truth for Min Order
         
         rating: parseFloat(formData.rating),
         review_count: parseInt(formData.review_count),
@@ -126,7 +131,20 @@ export default function AdminProductCreate() {
         reviews: null
       };
 
-      await createProduct(payload);
+      // 4. Send Request
+      const res = await fetch(`${API_BASE_URL}/products`, {
+        method: "POST",
+        headers: {
+            "Content-Type": "application/json",
+            "Authorization": `Bearer ${token}`
+        },
+        body: JSON.stringify(payload)
+      });
+
+      if (!res.ok) {
+          const errData = await res.json();
+          throw new Error(errData.error || "Failed to create product");
+      }
 
       toast.success("Product Created Successfully!");
       
@@ -134,12 +152,17 @@ export default function AdminProductCreate() {
       setImages([]);
       setSpecs([]);
       setTiers([]);
-      // Keep handy fields for next entry
-      setFormData({ ...formData, title: '', price: '' });
+      setFormData({ 
+        ...formData, 
+        title: '', 
+        price: '', 
+        description: '', 
+        factory_url: '' 
+      });
 
     } catch (err) {
       console.error(err);
-      toast.error("Error: " + err.message);
+      toast.error(err.message);
     } finally {
       setLoading(false);
     }
@@ -159,7 +182,7 @@ export default function AdminProductCreate() {
         <button 
           onClick={handleSubmit} 
           disabled={loading}
-          className="bg-[#17604e] hover:bg-[#0f4638] text-white px-6 py-3 rounded-lg font-bold flex items-center gap-2 shadow-lg shadow-emerald-900/20 transition-all"
+          className="bg-[#17604e] hover:bg-[#0f4638] text-white px-6 py-3 rounded-lg font-bold flex items-center gap-2 shadow-lg shadow-emerald-900/20 transition-all disabled:opacity-50"
         >
           {loading ? "Processing..." : <><FaSave /> PUBLISH TO MARKET</>}
         </button>
@@ -246,21 +269,19 @@ export default function AdminProductCreate() {
           <div className="bg-white p-6 rounded-xl shadow-sm border border-slate-200 space-y-4">
               <h3 className="font-bold text-slate-700 uppercase text-xs tracking-wider border-b pb-2">Financials</h3>
               
-              {/* [REMOVED MOQ INPUT HERE] */}
-              
               <div>
-                 <label className="block text-xs font-bold text-slate-500 mb-1">Base Price ($)</label>
-                 <input type="number" name="price" value={formData.price} onChange={handleChange} className="w-full p-2 border rounded-md font-mono" placeholder="0.00" />
+                  <label className="block text-xs font-bold text-slate-500 mb-1">Base Price ($)</label>
+                  <input type="number" name="price" value={formData.price} onChange={handleChange} className="w-full p-2 border rounded-md font-mono" placeholder="0.00" />
               </div>
               
               <div>
-                 <label className="block text-xs font-bold text-slate-500 mb-1">Total Stock</label>
-                 <input type="number" name="stock" value={formData.stock} onChange={handleChange} className="w-full p-2 border rounded-md font-mono" />
+                  <label className="block text-xs font-bold text-slate-500 mb-1">Total Stock</label>
+                  <input type="number" name="stock" value={formData.stock} onChange={handleChange} className="w-full p-2 border rounded-md font-mono" />
               </div>
 
               <div>
-                 <label className="block text-xs font-bold text-slate-500 mb-1">Discount Label (%)</label>
-                 <input type="number" name="discount" value={formData.discount} onChange={handleChange} className="w-full p-2 border rounded-md font-mono" />
+                  <label className="block text-xs font-bold text-slate-500 mb-1">Discount Label (%)</label>
+                  <input type="number" name="discount" value={formData.discount} onChange={handleChange} className="w-full p-2 border rounded-md font-mono" />
               </div>
 
               <div className="grid grid-cols-2 gap-4 pt-2 border-t border-slate-100">
@@ -279,25 +300,25 @@ export default function AdminProductCreate() {
           <div className="bg-white p-6 rounded-xl shadow-sm border border-slate-200 space-y-4">
               <h3 className="font-bold text-slate-700 uppercase text-xs tracking-wider border-b pb-2">Sourcing</h3>
               <div>
-                 <label className="block text-xs font-bold text-slate-500 mb-1">Factory Link (Hidden)</label>
-                 <input name="factory_url" value={formData.factory_url} onChange={handleChange} className="w-full p-2 border rounded-md text-xs text-slate-400" placeholder="https://alibaba.com/..." />
+                  <label className="block text-xs font-bold text-slate-500 mb-1">Factory Link (Hidden)</label>
+                  <input name="factory_url" value={formData.factory_url} onChange={handleChange} className="w-full p-2 border rounded-md text-xs text-slate-400" placeholder="https://alibaba.com/..." />
               </div>
               <div>
-                 <label className="block text-xs font-bold text-slate-500 mb-1">Supplier Name</label>
-                 <input name="supplier" value={formData.supplier} onChange={handleChange} className="w-full p-2 border rounded-md" />
+                  <label className="block text-xs font-bold text-slate-500 mb-1">Supplier Name</label>
+                  <input name="supplier" value={formData.supplier} onChange={handleChange} className="w-full p-2 border rounded-md" />
               </div>
               
               {/* Sizes */}
               <div className="pt-2">
-                 <label className="block text-xs font-bold text-slate-500 mb-1">Sizes (Comma Separated)</label>
-                 <input name="size_input" value={formData.size_input} onChange={handleChange} className="w-full p-2 border rounded-md" placeholder="S, M, L, XL" />
+                  <label className="block text-xs font-bold text-slate-500 mb-1">Sizes (Comma Separated)</label>
+                  <input name="size_input" value={formData.size_input} onChange={handleChange} className="w-full p-2 border rounded-md" placeholder="S, M, L, XL" />
               </div>
 
               {/* Colors Input */}
               <div>
-                 <label className="block text-xs font-bold text-slate-500 mb-1">Colors (Comma Separated)</label>
-                 <input name="color_input" value={formData.color_input} onChange={handleChange} className="w-full p-2 border rounded-md" placeholder="Red, Blue, Matte Black" />
-                 <p className="text-[10px] text-slate-400 mt-1">We will auto-format this.</p>
+                  <label className="block text-xs font-bold text-slate-500 mb-1">Colors (Comma Separated)</label>
+                  <input name="color_input" value={formData.color_input} onChange={handleChange} className="w-full p-2 border rounded-md" placeholder="Red, Blue, Matte Black" />
+                  <p className="text-[10px] text-slate-400 mt-1">We will auto-format this.</p>
               </div>
           </div>
 
@@ -313,8 +334,8 @@ export default function AdminProductCreate() {
               <div className="grid grid-cols-3 gap-2 mt-2">
                 {images.map((url, i) => (
                   <div key={i} className="relative group aspect-square bg-slate-100 rounded overflow-hidden border">
-                     <img src={url} alt="preview" className="w-full h-full object-cover" />
-                     <button type="button" onClick={() => removeImage(i)} className="absolute top-0 right-0 bg-red-500 text-white w-5 h-5 flex items-center justify-center text-xs opacity-0 group-hover:opacity-100 transition">×</button>
+                      <img src={url} alt="preview" className="w-full h-full object-cover" />
+                      <button type="button" onClick={() => removeImage(i)} className="absolute top-0 right-0 bg-red-500 text-white w-5 h-5 flex items-center justify-center text-xs opacity-0 group-hover:opacity-100 transition">×</button>
                   </div>
                 ))}
               </div>

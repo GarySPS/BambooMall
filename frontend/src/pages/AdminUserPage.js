@@ -1,4 +1,4 @@
-// src/pages/AdminUserPage.js
+//src>pages>AdminUserPage.js
 
 import React, { useEffect, useState, useMemo } from "react";
 import { 
@@ -29,7 +29,16 @@ export default function AdminUserPage() {
     async function fetchUsers() {
       setLoading(true);
       try {
-        const res = await fetch(`${API_URL}/users`);
+        // FIX: Must include token
+        const token = localStorage.getItem("token");
+        if (!token) throw new Error("No token found");
+
+        const res = await fetch(`${API_URL}/users`, {
+            headers: { "Authorization": `Bearer ${token}` }
+        });
+
+        if (!res.ok) throw new Error("Failed to fetch users");
+        
         let data = await res.json();
         if (!Array.isArray(data)) data = [];
         setUsers(data);
@@ -46,7 +55,14 @@ export default function AdminUserPage() {
   const handleDeleteUser = async (userId) => {
     if (!window.confirm("Are you sure to delete this user and all related data? This cannot be undone.")) return;
     try {
-        await fetch(`${API_URL}/users/${userId}`, { method: "DELETE" });
+        const token = localStorage.getItem("token");
+        const res = await fetch(`${API_URL}/users/${userId}`, { 
+            method: "DELETE",
+            headers: { "Authorization": `Bearer ${token}` } // FIX: Include token
+        });
+
+        if (!res.ok) throw new Error("Failed to delete");
+        
         setUsers((prev) => prev.filter((u) => u.id !== userId));
     } catch (error) {
         alert("Failed to delete user");
@@ -58,7 +74,9 @@ export default function AdminUserPage() {
     return users.filter((u) => {
       // 1. Status Filter
       if (statusFilter !== "all") {
-        const kyc = u.kycStatus || "unverified";
+        // FIX: Database uses 'kyc_status', not 'kycStatus'
+        const kyc = u.kyc_status || "unverified";
+        
         if (statusFilter === "verified" && kyc !== "approved") return false;
         if (statusFilter === "pending" && kyc !== "pending") return false;
         if (statusFilter === "unverified" && (kyc === "approved" || kyc === "pending")) return false;
@@ -236,13 +254,13 @@ export default function AdminUserPage() {
                         {/* 3. Balance */}
                         <td className="px-4 py-4 align-top">
                            <div className="bg-emerald-50 text-emerald-700 px-3 py-1 rounded-lg border border-emerald-100 font-mono font-bold w-fit">
-                              ${u.balance !== undefined ? Number(u.balance).toLocaleString('en-US', { minimumFractionDigits: 2 }) : "0.00"}
+                             ${u.balance !== undefined ? Number(u.balance).toLocaleString('en-US', { minimumFractionDigits: 2 }) : "0.00"}
                            </div>
                         </td>
 
-                        {/* 4. KYC Status */}
+                        {/* 4. KYC Status (Fixed Prop Name) */}
                         <td className="px-4 py-4 align-top">
-                           <KYCBadge status={u.kycStatus} />
+                           <KYCBadge status={u.kyc_status} /> 
                         </td>
 
                         {/* 5. Signup Date */}

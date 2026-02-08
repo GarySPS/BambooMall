@@ -230,16 +230,23 @@ export default function CartPage() {
                            <div className="w-16 h-16 bg-white rounded-lg border border-slate-200 p-1 flex-shrink-0">
                               <img src={getProductImage(order.product)} alt="asset" className="w-full h-full object-cover mix-blend-multiply"/>
                            </div>
-                           <div className="flex flex-col gap-1">
-                              <Link to={`/products/${order.product_id}`} className="font-bold text-slate-800 text-base leading-tight line-clamp-2">
-                                 {order.product?.title || "Allocated Inventory Lot"}
-                              </Link>
-                              {order.details && order.details.size && (
-                                 <span className="self-start inline-flex px-1.5 py-0.5 rounded text-[9px] font-bold bg-slate-100 text-slate-500 border border-slate-200 uppercase tracking-wide">
-                                    CFG: {order.details.size}
-                                 </span>
-                              )}
-                           </div>
+<div className="flex flex-col gap-1">
+  {order.product_id ? (
+    <Link to={`/products/${order.product_id}`} className="font-bold text-slate-800 text-base leading-tight line-clamp-2">
+      {order.product?.title || "Allocated Inventory Lot"}
+    </Link>
+  ) : (
+    <span className="font-bold text-slate-800 text-base leading-tight line-clamp-2 cursor-not-allowed opacity-75" title="Manifest Not Available">
+      {order.product?.title || "Allocated Inventory Lot (Locked)"}
+    </span>
+  )}
+  
+  {order.details && order.details.size && (
+    <span className="self-start inline-flex px-1.5 py-0.5 rounded text-[9px] font-bold bg-slate-100 text-slate-500 border border-slate-200 uppercase tracking-wide">
+       CFG: {order.details.size}
+    </span>
+  )}
+</div>
                         </div>
 
                         <div className="grid grid-cols-2 gap-3 bg-slate-50 rounded-lg p-3">
@@ -310,23 +317,31 @@ export default function CartPage() {
                                     </div>
                                  </td>
                                  
-                                 <td className="px-8 py-6 align-middle">
-                                    <div className="flex flex-col gap-1">
-                                       <span className="font-mono text-xs text-slate-400 font-semibold tracking-wide">
-                                             BATCH-CN-{shortId}
-                                       </span>
-                                       <Link to={`/products/${order.product_id}`} className="text-lg font-bold text-slate-800 hover:text-blue-700 transition-colors line-clamp-1">
-                                          {order.product?.title || "Allocated Inventory Lot"}
-                                       </Link>
-                                       {order.details && order.details.size && (
-                                          <div className="mt-1">
-                                             <span className="inline-flex items-center px-2 py-1 rounded text-[10px] font-bold bg-slate-100 text-slate-600 border border-slate-200 uppercase tracking-wide">
-                                                CONFIG: {order.details.size}
-                                             </span>
-                                          </div>
-                                       )}
-                                    </div>
-                                 </td>
+<td className="px-8 py-6 align-middle">
+   <div className="flex flex-col gap-1">
+      <span className="font-mono text-xs text-slate-400 font-semibold tracking-wide">
+         BATCH-CN-{shortId}
+      </span>
+      
+      {order.product_id ? (
+        <Link to={`/products/${order.product_id}`} className="text-lg font-bold text-slate-800 hover:text-blue-700 transition-colors line-clamp-1">
+           {order.product?.title || "Allocated Inventory Lot"}
+        </Link>
+      ) : (
+        <span className="text-lg font-bold text-slate-500 cursor-not-allowed line-clamp-1" title="Manifest Not Available">
+           {order.product?.title || "Allocated Inventory Lot (Locked)"}
+        </span>
+      )}
+
+      {order.details && order.details.size && (
+         <div className="mt-1">
+            <span className="inline-flex items-center px-2 py-1 rounded text-[10px] font-bold bg-slate-100 text-slate-600 border border-slate-200 uppercase tracking-wide">
+               CONFIG: {order.details.size}
+            </span>
+         </div>
+      )}
+   </div>
+</td>
 
                                  <td className="px-8 py-6 align-middle text-center">
                                     <div className="font-mono text-base text-slate-600 font-medium">{qty}</div>

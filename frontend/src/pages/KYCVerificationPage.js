@@ -146,18 +146,40 @@ export default function KYCVerificationPage() {
     } 
   };
 
-  // --- STATE: PENDING AUDIT ---
+  // --- STATE: PENDING VERIFICATION ---
   if (user?.kyc_status === 'pending') {
     return (
       <div className="min-h-screen bg-slate-50 flex flex-col items-center justify-center p-6 text-center">
-        <div className="w-20 h-20 bg-amber-50 text-amber-500 rounded-full flex items-center justify-center mb-6 animate-pulse border-4 border-amber-100">
-          <FaClock size={32} />
+        {/* Changed to Blue/Slate for a calmer, more secure feel */}
+        <div className="w-20 h-20 bg-blue-50 text-blue-600 rounded-full flex items-center justify-center mb-6 border-4 border-blue-100 animate-pulse">
+          <FaUserShield size={32} />
         </div>
-        <h1 className="text-xl font-bold text-slate-800 tracking-wide uppercase">Audit in Progress</h1>
-        <p className="text-slate-500 max-w-xs mx-auto text-sm mt-3 leading-relaxed">
-          Security clearance pending. Credentials are being verified against international watchlists.
-        </p>
-         <button onClick={() => window.location.href = '/profile'} className="mt-8 text-xs font-bold text-blue-900 uppercase tracking-wide hover:underline">
+        
+        <h1 className="text-xl font-bold text-slate-800 tracking-wide uppercase">Verification in Progress</h1>
+        
+        <div className="max-w-xs mx-auto mt-4 space-y-4">
+          <p className="text-slate-500 text-sm leading-relaxed">
+            Your documents have been encrypted and are currently under review in accordance with our <strong>Registration Policy</strong>. 
+          </p>
+          
+          {/* Privacy Reassurance */}
+          <div className="bg-white border border-slate-200 p-3 rounded-lg shadow-sm">
+             <div className="flex items-center gap-2 justify-center text-xs font-bold text-slate-700 mb-1">
+                <FaLock size={10} className="text-emerald-500" /> Secure Submission
+             </div>
+             <p className="text-[10px] text-slate-400 leading-tight">
+               Your information is strictly private and never shared externally.
+             </p>
+          </div>
+
+          {/* Time Expectation */}
+          <div className="flex items-center justify-center gap-2 text-xs font-medium text-slate-500 bg-slate-100 py-2 rounded-full">
+            <FaClock size={12} />
+            <span>Estimated wait: <strong>15 mins - 1 hour</strong></span>
+          </div>
+        </div>
+
+        <button onClick={() => window.location.href = '/profile'} className="mt-8 text-xs font-bold text-blue-900 uppercase tracking-wide hover:underline">
           Return to Profile
         </button>
       </div>

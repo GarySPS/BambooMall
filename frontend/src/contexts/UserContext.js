@@ -1,5 +1,8 @@
+// src/contexts/UserContext.js
+
 import React, { createContext, useContext, useState, useEffect, useCallback } from "react";
 import { API_BASE_URL } from "../config";
+import { fetchWalletBalance } from "../utils/api"; // <--- IMPORT ADDED
 
 const UserContext = createContext();
 
@@ -30,16 +33,26 @@ export function UserProvider({ children }) {
   }, [user]);
 
   useEffect(() => {
-    // Only persist wallet for UI caching; real value comes from API
     localStorage.setItem("bamboomall_wallet", JSON.stringify(wallet));
   }, [wallet]);
+
+  // --- Helpers ---
+  
+  // Internal helper to get fresh wallet data
+  const _syncWallet = async () => {
+    try {
+      const freshData = await fetchWalletBalance();
+      setWallet(prev => ({ ...prev, ...freshData }));
+    } catch (err) {
+      console.error("Context: Failed to sync wallet", err);
+    }
+  };
 
   // --- Actions ---
 
   const logout = useCallback(() => {
     setUser(null);
     setWallet({ balance: 0 });
-    // SECURITY: Wipe the keys
     localStorage.removeItem("bamboomall_user");
     localStorage.removeItem("bamboomall_wallet");
     localStorage.removeItem("token"); 
@@ -48,16 +61,16 @@ export function UserProvider({ children }) {
 
   const login = useCallback((userObj) => {
     setUser(userObj);
-    // Note: Token is saved by the LoginPage before calling this
+    // FIX: Immediately fetch wallet upon login so Home Page is ready
+    _syncWallet();
   }, []);
 
   const updateWallet = useCallback((newData) => {
     setWallet((prev) => ({ ...prev, ...newData }));
   }, []);
 
-  // --- SECURE REFRESH (Uses Token, not ID) ---
+  // --- SECURE REFRESH (Runs on F5/Reload) ---
   const refreshUser = useCallback(async () => {
-    // 1. Get the Key
     const token = localStorage.getItem("token");
     
     // If we have a user in state but no token, they are de-authenticated.
@@ -67,21 +80,22 @@ export function UserProvider({ children }) {
     }
 
     try {
-      // 2. Fetch Profile (No ID in URL anymore)
+      // A. Fetch User Profile
       const res = await fetch(`${API_BASE_URL}/users/profile`, {
         headers: {
             "Content-Type": "application/json",
-            "Authorization": `Bearer ${token}` // <--- THE BADGE
+            "Authorization": `Bearer ${token}` 
         }
       });
 
       if (res.ok) {
         const data = await res.json();
-        // Update state with fresh data from server
         if (data.user) setUser(prev => ({ ...prev, ...data.user }));
-        if (data.wallet) setWallet(data.wallet);
+        
+        // B. Fetch Wallet (FIX: Explicitly call wallet endpoint on refresh)
+        await _syncWallet();
+
       } else if (res.status === 401 || res.status === 403) {
-         // Token expired or invalid
          logout();
       }
     } catch (error) {
@@ -89,8 +103,9 @@ export function UserProvider({ children }) {
     }
   }, [user, logout]); 
 
-  // 3. Force Sync on Load
+  // 3. Force Sync on App Load
   useEffect(() => {
+    // Only refresh if we have a user (or think we do)
     if (user) {
        refreshUser(); 
     }

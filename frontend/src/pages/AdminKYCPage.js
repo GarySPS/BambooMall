@@ -1,3 +1,5 @@
+//src>pages>AdminKYCPage.js
+
 import React, { useEffect, useState, useMemo } from "react";
 import { 
   FaShieldAlt, 
@@ -30,17 +32,28 @@ export default function AdminKYCPage() {
     async function fetchKYC() {
       setLoading(true);
       try {
-        const res = await fetch(`${API_URL}/users`);
+        const token = localStorage.getItem("token"); // <--- GET TOKEN
+        if (!token) throw new Error("No admin token found");
+
+        // 1. Fetch Users with Token
+        const res = await fetch(`${API_URL}/users`, {
+            headers: { "Authorization": `Bearer ${token}` } // <--- ATTACH HEADERS
+        });
+        
+        if (!res.ok) throw new Error("Failed to fetch users");
+        
         let usersData = await res.json();
         if (!Array.isArray(usersData)) usersData = [];
 
+        // 2. Fetch Docs for each user with Token
         const usersWithKYC = await Promise.all(
           usersData.map(async (u) => {
             let kycDocs = [];
-            // FIX: Changed kycStatus to kyc_status (Database format)
             if (u.kyc_status === "pending" || u.kyc_status === "approved") {
               try {
-                const r = await fetch(`${KYC_API_URL}?short_id=${u.short_id}`);
+                const r = await fetch(`${KYC_API_URL}?short_id=${u.short_id}`, {
+                    headers: { "Authorization": `Bearer ${token}` } // <--- ATTACH HEADERS
+                });
                 const d = await r.json();
                 kycDocs = Array.isArray(d.kyc_docs)
                   ? d.kyc_docs.map(doc => ({
@@ -69,10 +82,17 @@ export default function AdminKYCPage() {
 
   // --- HANDLERS ---
   const handleApproveKYC = async (userId, approve) => {
+    if(!window.confirm(`Are you sure you want to ${approve ? 'APPROVE' : 'REJECT'} this user?`)) return;
+
     try {
+      const token = localStorage.getItem("token"); // <--- GET TOKEN
+
       const res = await fetch(`${API_URL}/kyc-approve`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: { 
+            "Content-Type": "application/json",
+            "Authorization": `Bearer ${token}` // <--- ATTACH HEADERS
+        },
         body: JSON.stringify({ user_id: userId, approve }),
       });
       
@@ -81,7 +101,6 @@ export default function AdminKYCPage() {
       setUsers((prev) =>
         prev.map((u) =>
           u.id === userId
-            // FIX: Update local state to match DB snake_case
             ? { ...u, kyc_status: approve ? "approved" : "rejected" }
             : u
         )
@@ -97,7 +116,6 @@ export default function AdminKYCPage() {
     return users.filter((u) => {
       // 1. Status Filter
       if (statusFilter !== "all") {
-        // FIX: kyc_status
         const status = u.kyc_status || "unverified";
         if (statusFilter === "pending" && status !== "pending") return false;
         if (statusFilter === "approved" && status !== "approved") return false;
@@ -269,7 +287,7 @@ export default function AdminKYCPage() {
                           )}
                         </td>
 
-                        {/* 3. Status - FIX: kyc_status */}
+                        {/* 3. Status */}
                         <td className="px-4 py-4 align-top">
                           <StatusBadge status={u.kyc_status} />
                         </td>
@@ -297,7 +315,7 @@ export default function AdminKYCPage() {
                           </div>
                         </td>
 
-                        {/* 5. Action - FIX: kyc_status */}
+                        {/* 5. Action */}
                         <td className="px-4 py-4 align-middle text-center">
                           {u.kyc_status === "pending" ? (
                             <div className="flex flex-col gap-2 max-w-[120px] mx-auto">

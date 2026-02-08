@@ -17,7 +17,6 @@ import ProductsPage from "./pages/ProductsPage";
 import ProductDetailPage from "./pages/ProductDetailPage";
 
 // --- LAZY LOAD (Client Portal) ---
-// Auth
 const LoginPage = lazy(() => import("./pages/LoginPage"));
 const SignupPage = lazy(() => import("./pages/SignupPage"));
 const OTPPage = lazy(() => import("./pages/OTPPage"));
@@ -29,7 +28,6 @@ const BalancePage = lazy(() => import("./pages/BalancePage"));
 const HistoryPage = lazy(() => import("./pages/HistoryPage"));
 const KYCVerificationPage = lazy(() => import("./pages/KYCVerificationPage"));
 const ProfilePage = lazy(() => import("./pages/ProfilePage"));
-// NEW IMPORT:
 const ChangePasswordPage = lazy(() => import("./pages/ChangePasswordPage")); 
 const MembershipPage = lazy(() => import("./pages/MembershipPage"));
 const NewsPage = lazy(() => import("./pages/NewsPage"));
@@ -48,6 +46,7 @@ const AdminOrderPage = lazy(() => import("./pages/AdminOrderPage"));
 const AdminDepositPage = lazy(() => import("./pages/AdminDepositPage"));
 const AdminWithdrawPage = lazy(() => import("./pages/AdminWithdrawPage"));
 const AdminKYCPage = lazy(() => import("./pages/AdminKYCPage"));
+const AdminProductsPage = lazy(() => import("./pages/AdminProductsPage")); 
 const AdminProductCreate = lazy(() => import("./pages/AdminProductCreate"));
 
 // --- UI COMPONENTS ---
@@ -96,6 +95,9 @@ function AppContent() {
               <Route path="deposits" element={<AdminDepositPage />} />
               <Route path="withdrawals" element={<AdminWithdrawPage />} />
               <Route path="kyc" element={<AdminKYCPage />} />
+              
+              <Route path="products" element={<AdminProductsPage />} /> 
+              <Route path="products/create" element={<AdminProductCreate />} />
               <Route path="create-product" element={<AdminProductCreate />} />
           </Route>
 
@@ -120,9 +122,7 @@ function AppContent() {
                <Route path="/history" element={<HistoryPage />} />
                <Route path="/profile" element={<ProfilePage />} />
                
-               {/* NEW ROUTE ADDED HERE */}
                <Route path="/change-password" element={<ChangePasswordPage />} />
-               
                <Route path="/kyc-verification" element={<KYCVerificationPage />} />
                <Route path="/membership" element={<MembershipPage />} />
             </Route>
@@ -139,7 +139,19 @@ export default function App() {
   return (
     <UserProvider>
       <Router>
-        <ToastContainer position="bottom-right" theme="colored" autoClose={3000} hideProgressBar={true} />
+        {/* UPDATED TOAST CONFIGURATION:
+           1. theme="light": Allows our custom HTML in ProductsPage to control colors (white/amber).
+           2. style={{ width: "auto" }}: Allows the toast to expand to our custom 600px width.
+           3. limit={3}: Prevents spamming the user screen.
+        */}
+        <ToastContainer 
+          position="bottom-right" // Default for standard messages
+          theme="light"           // CHANGED: Use light theme to support custom rich-content cards
+          autoClose={3000} 
+          hideProgressBar={true}
+          limit={3}
+          style={{ width: "auto", minWidth: "320px" }} 
+        />
         <AppContent />
       </Router>
     </UserProvider>

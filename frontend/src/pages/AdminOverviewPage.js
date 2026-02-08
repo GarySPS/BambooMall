@@ -1,4 +1,4 @@
-// src/pages/AdminOverviewPage.js
+//src>pages>AdminOverviewPage.js
 
 import React, { useEffect, useState, useMemo } from "react";
 import { Link } from "react-router-dom";
@@ -30,7 +30,15 @@ export default function AdminOverviewPage() {
   useEffect(() => {
     async function fetchStats() {
       try {
-        const res = await fetch(`${API_URL}/users`);
+        // FIX: Get Token
+        const token = localStorage.getItem("token");
+        if (!token) throw new Error("No token found");
+
+        // FIX: Attach Token to Request
+        const res = await fetch(`${API_URL}/users`, {
+            headers: { "Authorization": `Bearer ${token}` }
+        });
+
         let users = await res.json();
         if (!Array.isArray(users)) users = [];
 
@@ -65,7 +73,7 @@ export default function AdminOverviewPage() {
 
         setStats({
           totalUsers: users.length,
-          pendingKYC: users.filter(u => u.kycStatus === 'pending').length,
+          pendingKYC: users.filter(u => u.kyc_status === 'pending').length, // FIX: kyc_status (DB field name)
           pendingDeposits: pendingDep,
           pendingWithdraws: pendingWd,
           pendingResales: pendingResale,

@@ -1,4 +1,4 @@
-// src/pages/AdminDepositPage.js
+//src>pages>AdminDepositPage.js
 
 import React, { useEffect, useState, useMemo } from "react";
 import { 
@@ -27,7 +27,15 @@ export default function AdminDepositPage() {
     async function fetchData() {
       setLoading(true);
       try {
-        const res = await fetch(`${API_URL}/users`);
+        // FIX: Get Token
+        const token = localStorage.getItem("token");
+        if (!token) throw new Error("No token found");
+
+        // FIX: Attach Token to Request
+        const res = await fetch(`${API_URL}/users`, {
+            headers: { "Authorization": `Bearer ${token}` }
+        });
+
         let data = await res.json();
         if (!Array.isArray(data)) data = [];
         setUsers(data);
@@ -62,9 +70,16 @@ export default function AdminDepositPage() {
     );
 
     try {
+      // FIX: Get Token
+      const token = localStorage.getItem("token");
+      
+      // FIX: Attach Token to Request
       const res = await fetch(`${API_URL}/tx-approve`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: { 
+            "Content-Type": "application/json",
+            "Authorization": `Bearer ${token}`
+        },
         body: JSON.stringify({ tx_id: txId, approve }),
       });
 
@@ -282,7 +297,7 @@ export default function AdminDepositPage() {
                 </button>
               </div>
               <div className="bg-slate-100 rounded-lg p-2 w-full flex justify-center mb-4">
-                 <img src={modal.img} alt="Proof" className="max-h-[60vh] object-contain rounded-md" />
+                  <img src={modal.img} alt="Proof" className="max-h-[60vh] object-contain rounded-md" />
               </div>
               <div className="flex gap-2 w-full">
                 <button 

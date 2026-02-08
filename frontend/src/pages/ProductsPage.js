@@ -2,11 +2,11 @@
 
 import React, { useEffect, useState, useMemo } from "react";
 import { Link } from "react-router-dom";
+import { toast } from "react-toastify"; // <--- Added for notification
 import { 
   FaSearch, 
   FaFilter, 
   FaSpinner, 
-  FaFilePdf, 
   FaLayerGroup,
   FaChevronRight,
   FaGlobeAsia
@@ -29,7 +29,7 @@ const getGradeStyles = (grade) => {
   if (normalized === "a" || normalized.includes("grade a")) {
     return { 
       label: "GRADE A", 
-      style: "bg-emerald-100 text-emerald-800 border-emerald-200", // Darker text for readability
+      style: "bg-emerald-100 text-emerald-800 border-emerald-200", 
       dot: "bg-emerald-600" 
     };
   }
@@ -66,25 +66,81 @@ export default function ProductsPage() {
       });
   }, []);
 
-  // 1. Process data: Just add the Batch ID. 
   const processedProducts = useMemo(() => {
-    return products.map((p, i) => ({
-      ...p,
-      batchId: `BATCH-CN-${202600 + i}` 
-    }));
+    // Filter out products with missing IDs to prevent the "undefined" 404 error
+    return products
+      .filter((p) => p.id)
+      .map((p, i) => ({
+        ...p,
+        batchId: `BATCH-CN-${202600 + i}` 
+      }));
   }, [products]);
 
-  // 2. Filter using the NEW processed list
   const filteredProducts = useMemo(() => {
     return processedProducts.filter((p) =>
       p.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
       (p.id && p.id.toString().includes(searchTerm)) ||
-      p.batchId.toLowerCase().includes(searchTerm.toLowerCase()) // Now searchable
+      p.batchId.toLowerCase().includes(searchTerm.toLowerCase())
     );
   }, [processedProducts, searchTerm]);
 
-  // Total Volume for Header
   const totalVolume = products.reduce((acc, curr) => acc + (curr.stock || 0), 0);
+
+  // --- NEW HANDLER: PROFESSIONAL SYSTEM NOTIFICATION ---
+  const handleNextPage = () => {
+    toast.info(
+      <div className="flex flex-col gap-4 p-1">
+        
+        {/* HEADER: Title & ID */}
+        <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+           <div className="flex items-center gap-3">
+             <span className="font-bold text-slate-800 text-sm md:text-base uppercase tracking-widest">
+               Logistics Notice
+             </span>
+             <span className="hidden md:inline-block h-4 w-px bg-slate-300"></span>
+             <span className="text-slate-500 text-xs font-mono font-medium">BATCH-CN-26</span>
+           </div>
+           <span className="text-[10px] text-slate-400 font-mono bg-slate-50 px-2 py-1 rounded border border-slate-100">
+             MSG-992
+           </span>
+        </div>
+
+        {/* BODY: Main Message */}
+        <div className="text-slate-600 text-sm md:text-base leading-relaxed">
+          Next consignment manifest is scheduled for arrival on:
+          <div className="mt-1 text-slate-900 font-bold text-lg md:text-xl tracking-tight">
+            February 20, 2026
+          </div>
+        </div>
+
+        {/* FOOTER: Priority Note */}
+        <div className="bg-amber-50 border-l-4 border-amber-400 p-3 md:p-4 rounded-r-md flex flex-col md:flex-row gap-2 md:gap-4 items-start md:items-center">
+           <span className="bg-amber-100 text-amber-800 text-[10px] font-bold uppercase tracking-wider px-2 py-1 rounded shrink-0">
+             High Priority
+           </span>
+           <span className="text-xs md:text-sm text-amber-900 leading-snug">
+             Current operational priority is clearing remaining <strong>Shenzhen warehouse inventory</strong>.
+           </span>
+        </div>
+
+      </div>,
+      {
+        icon: false, // We use our own layout, disable default icon to save space
+        position: "top-center",
+        autoClose: 8000,
+        hideProgressBar: true, // Hide bar for a cleaner "modal" look
+        closeOnClick: true,
+        pauseOnHover: true,
+        draggable: true,
+        theme: "light",
+        // STYLING:
+        // 1. md:w-[600px] -> Wide on desktop
+        // 2. w-[90vw] -> Full width on mobile (prevents squashing)
+        // 3. text-left -> Ensures easy reading
+        className: "md:w-[600px] w-[90vw] !p-6 shadow-2xl border border-slate-200 rounded-xl mt-16 font-sans cursor-default"
+      }
+    );
+  };
 
   if (loading) {
     return (
@@ -98,7 +154,7 @@ export default function ProductsPage() {
   return (
     <div className="space-y-8 animate-fade-in pb-12 max-w-[1600px] mx-auto">
       
-      {/* 1. DASHBOARD HEADER (Larger & clearer) */}
+      {/* 1. DASHBOARD HEADER */}
       <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 pt-4 px-1">
          <div>
             <h2 className="text-3xl font-bold text-slate-900 flex items-center gap-4">
@@ -117,13 +173,9 @@ export default function ProductsPage() {
             </div>
          </div>
 
-         {/* Metrics (Big & Bold) */}
          <div className="flex gap-4 w-full md:w-auto">
-            {/* Total Lots removed */}
-            
             <div className="bg-white px-6 py-3 rounded-xl border border-slate-200 shadow-sm w-full md:min-w-[200px]">
                <div className="text-xs uppercase text-slate-400 font-bold tracking-wider mb-1">Active Vol</div>
-               {/* Fixed: text-xl on mobile to prevent overflow, text-3xl on desktop */}
                <div className="text-xl md:text-3xl font-mono font-bold text-slate-800 truncate">
                  {formatNumber(totalVolume)}
                </div>
@@ -131,7 +183,7 @@ export default function ProductsPage() {
          </div>
       </div>
 
-      {/* 2. CONTROL BAR (Taller inputs) */}
+      {/* 2. CONTROL BAR */}
       <div className="bg-white p-2 rounded-xl shadow-sm border border-slate-200 flex flex-col md:flex-row gap-3">
          <div className="relative flex-1">
            <FaSearch className="absolute left-5 top-1/2 -translate-y-1/2 text-slate-400 text-lg" />
@@ -149,18 +201,16 @@ export default function ProductsPage() {
          </button>
       </div>
 
-      {/* 3. DATA DISPLAY (Responsive Switch) */}
+      {/* 3. DATA DISPLAY */}
       <RestrictedContent>
         
-        {/* === A. MOBILE CARD VIEW (Visible on < md screens) === */}
+        {/* === A. MOBILE CARD VIEW === */}
         <div className="md:hidden grid gap-4">
           {filteredProducts.map((product, index) => {
             const gradeInfo = getGradeStyles(product.grade);
             
             return (
               <div key={product.id || index} className="bg-white rounded-xl border border-slate-200 shadow-sm p-4 flex flex-col gap-4">
-                
-                {/* Card Header: Batch & Location */}
                 <div className="flex justify-between items-start border-b border-slate-100 pb-3">
                   <span className="font-mono text-xs text-slate-400 font-semibold tracking-wide bg-slate-50 px-2 py-1 rounded">
                     {product.batchId}
@@ -170,7 +220,6 @@ export default function ProductsPage() {
                   </div>
                 </div>
 
-                {/* Main Content: Image & Title */}
                 <div className="flex gap-4">
                   <div className="w-20 h-20 bg-white rounded-lg border border-slate-200 p-1 flex-shrink-0">
                     <img 
@@ -183,7 +232,6 @@ export default function ProductsPage() {
                     <Link to={`/products/${product.id}`} className="font-bold text-slate-800 text-lg leading-tight line-clamp-2">
                       {product.title}
                     </Link>
-                    {/* Grade Pill */}
                     <span className={`self-start inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-[10px] font-bold uppercase tracking-wide border ${gradeInfo.style}`}>
                       <span className={`w-1.5 h-1.5 rounded-full ${gradeInfo.dot}`}></span>
                       {gradeInfo.label}
@@ -191,7 +239,6 @@ export default function ProductsPage() {
                   </div>
                 </div>
 
-                {/* Metrics Grid */}
                 <div className="grid grid-cols-2 gap-3 bg-slate-50 rounded-lg p-3">
                   <div>
                     <div className="text-[10px] text-slate-400 uppercase font-bold">Ask Price</div>
@@ -203,7 +250,6 @@ export default function ProductsPage() {
                   </div>
                 </div>
 
-                {/* Action Button */}
                 <Link 
                   to={`/products/${product.id}`}
                   className="w-full py-3 bg-white border-2 border-slate-200 text-slate-700 font-bold rounded-lg flex items-center justify-center gap-2 hover:border-blue-600 hover:text-blue-700 transition-colors"
@@ -215,13 +261,18 @@ export default function ProductsPage() {
             );
           })}
 
-          {/* Mobile Pagination Placeholder */}
-          <div className="text-center py-4 text-xs text-slate-400 font-mono uppercase">
-             Showing {filteredProducts.length} Records
+          {/* Mobile Footer with Load More */}
+          <div className="flex flex-col gap-3 mt-4">
+              <div className="text-center text-xs text-slate-400 font-mono uppercase">
+                  Displaying {filteredProducts.length} Records
+              </div>
+              <button onClick={handleNextPage} className="w-full py-3 bg-white border border-slate-300 text-slate-600 font-bold rounded-lg text-xs uppercase shadow-sm active:bg-slate-50">
+                  Load Next Batch
+              </button>
           </div>
         </div>
 
-        {/* === B. DESKTOP TABLE VIEW (Hidden on Mobile) === */}
+        {/* === B. DESKTOP TABLE VIEW === */}
         <div className="hidden md:block bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
           <div className="overflow-x-auto">
             <table className="w-full text-left">
@@ -243,8 +294,6 @@ export default function ProductsPage() {
 
                   return (
                     <tr key={product.id || index} className="hover:bg-blue-50/50 transition-colors group">
-                      
-                      {/* Image */}
                       <td className="px-8 py-6 align-middle w-[120px]">
                         <div className="w-20 h-20 bg-white rounded-lg border border-slate-200 p-1 shadow-sm">
                            <img 
@@ -255,7 +304,6 @@ export default function ProductsPage() {
                         </div>
                       </td>
 
-                      {/* Description */}
                       <td className="px-8 py-6 align-middle">
                           <div className="flex flex-col gap-1">
                             <span className="font-mono text-xs text-slate-400 font-semibold tracking-wide">
@@ -271,7 +319,6 @@ export default function ProductsPage() {
                           </div>
                       </td>
 
-                      {/* Grade */}
                       <td className="px-8 py-6 align-middle">
                           <span className={`inline-flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-bold uppercase tracking-wide border ${gradeInfo.style}`}>
                             <span className={`w-2 h-2 rounded-full ${gradeInfo.dot}`}></span>
@@ -279,7 +326,6 @@ export default function ProductsPage() {
                           </span>
                       </td>
 
-                      {/* Stock */}
                       <td className="px-8 py-6 align-middle text-right">
                           <div className="font-mono text-base text-slate-600 font-medium">
                             {formatNumber(product.stock || 500)}
@@ -287,7 +333,6 @@ export default function ProductsPage() {
                           <div className="text-[10px] text-slate-400 uppercase font-bold mt-0.5">Units</div>
                       </td>
 
-                      {/* Price */}
                       <td className="px-8 py-6 align-middle text-right">
                           <div className="font-mono text-xl font-bold text-slate-900">
                             {formatCurrency(product.price)}
@@ -295,7 +340,6 @@ export default function ProductsPage() {
                           <div className="text-[10px] text-slate-400 uppercase font-bold mt-0.5">Per Unit</div>
                       </td>
 
-                      {/* Discount */}
                       <td className="px-8 py-6 align-middle text-center">
                           {product.discount ? (
                             <span className="inline-block bg-rose-100 text-rose-700 border border-rose-200 px-3 py-1 rounded-lg text-xs font-bold whitespace-nowrap">
@@ -306,7 +350,6 @@ export default function ProductsPage() {
                           )}
                       </td>
 
-                      {/* Action */}
                       <td className="px-8 py-6 align-middle text-right">
                           <Link 
                             to={`/products/${product.id}`}
@@ -327,7 +370,8 @@ export default function ProductsPage() {
               <span className="font-medium">DISPLAYING {filteredProducts.length} RECORDS</span>
               <div className="flex gap-3">
                  <button disabled className="px-4 py-2 bg-white border border-slate-300 rounded hover:bg-slate-50 text-slate-400 font-bold text-xs uppercase cursor-not-allowed">Previous</button>
-                 <button className="px-4 py-2 bg-white border border-slate-300 rounded hover:bg-slate-100 hover:border-slate-400 text-slate-700 font-bold text-xs uppercase shadow-sm">Next Page</button>
+                 {/* Updated Button with Handler */}
+                 <button onClick={handleNextPage} className="px-4 py-2 bg-white border border-slate-300 rounded hover:bg-slate-100 hover:border-slate-400 text-slate-700 font-bold text-xs uppercase shadow-sm">Next Page</button>
               </div>
           </div>
         </div>
