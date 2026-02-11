@@ -129,16 +129,20 @@ export default function SignupPage() {
 
     setLoading(true);
     try {
+      // 1. Sanitize the email to prevent case/space mismatch bugs
+      const cleanEmail = email.toLowerCase().trim();
+
       const res = await fetch(`${API_BASE_URL}/auth/register`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ username, email, password }),
+        body: JSON.stringify({ username, email: cleanEmail, password }),
       });
       const data = await res.json();
       
       if (!res.ok) throw new Error(data.error || "Application failed");
       
-      navigate("/otp", { state: { email } });
+      // 3. Pass the clean email to the OTP page
+      navigate("/otp", { state: { email: cleanEmail } });
       
     } catch (err) {
       setError(err.message);

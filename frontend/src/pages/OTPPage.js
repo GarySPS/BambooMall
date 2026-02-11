@@ -139,9 +139,6 @@ export default function OTPPage() {
          login(data.user, data.token);
          navigate("/");    
       } else {
-         // Safety: If backend verifies OTP but doesn't return a token,
-         // we must force a manual login to avoid "Zombie State" (User exists but no token).
-         console.warn("OTP Success but no token received. Redirecting to login.");
          navigate("/login");
       }
 

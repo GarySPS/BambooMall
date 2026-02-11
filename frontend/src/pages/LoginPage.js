@@ -146,16 +146,14 @@ export default function LoginPage() {
         throw new Error(data.error || `Server Error: ${res.statusText}`);
       }
       
-      // --- SECURITY FIX START ---
       // We must save the token so api.js can use it for requests
       if (data.token) {
         localStorage.setItem("token", data.token);
       } else {
         console.warn("Security Warning: No token received from backend.");
       }
-      // --- SECURITY FIX END ---
 
-      login(data.user);
+      login(data.user, data.token);
       
     } catch (err) {
       if (err.message === "Failed to fetch" || err.message.includes("NetworkError")) {
