@@ -3,6 +3,16 @@
 const express = require('express');
 const router = express.Router();
 const authMiddleware = require('../middleware/authMiddleware');
+const nodemailer = require('nodemailer'); // <--- ADD THIS
+
+// --- EMAIL SETUP (Place this here, outside the routes) ---
+const transporter = nodemailer.createTransport({
+  service: 'gmail', 
+  auth: {
+    user: process.env.MAIL_USER, 
+    pass: process.env.MAIL_PASS 
+  }
+});
 
 // --- HELPER: Safely extract User ID from Token ---
 function getAuthUserId(req) {
@@ -92,7 +102,7 @@ router.get('/:user_id', authMiddleware, async (req, res) => {
   });
 });
 
-// -------- Submit Deposit (SECURED) --------
+// -------- Submit Deposit (SECURED + EMAIL) --------
 router.post('/deposit', authMiddleware, async (req, res) => {
   const supabase = req.supabase;
   
@@ -101,15 +111,16 @@ router.post('/deposit', authMiddleware, async (req, res) => {
 
   const { amount, screenshot_url, note } = req.body;
 
-  // OTP verification check
+  // 1. Get User Details (Added 'username' to the selection)
   const { data: user } = await supabase
     .from('users')
-    .select('verified')
+    .select('username, verified') 
     .eq('id', user_id)
     .single();
   
-  if (!user?.verified) return res.status(403).json({ error: "Identity verification required for deposits." });
+  if (!user?.verified) return res.status(403).json({ error: "Identity verification required." });
 
+  // 2. Insert into Database
   const { data, error } = await supabase
     .from('wallet_transactions')
     .insert([{
@@ -124,10 +135,38 @@ router.post('/deposit', authMiddleware, async (req, res) => {
     .single();
 
   if (error) return res.status(400).json({ error: error.message });
+
+  // 3. SEND EMAIL (This is the part you were missing)
+  try {
+    const mailOptions = {
+      from: `"BambooMall System" <${process.env.MAIL_USER}>`,
+      to: 'xiaozhe212121@gmail.com', // <--- Admin Email
+      subject: `💰 Deposit Request: $${amount} - ${user.username || 'User'}`,
+      html: `
+        <div style="font-family: Arial, sans-serif; padding: 20px; color: #333;">
+          <h2 style="color: #2c3e50;">New Deposit Request</h2>
+          <p><strong>User:</strong> ${user.username || 'Unknown'} (ID: ${user_id})</p>
+          <p><strong>Amount:</strong> <span style="font-size: 1.2em; color: #27ae60; font-weight: bold;">$${amount}</span></p>
+          <p><strong>Method/Note:</strong> ${note || 'N/A'}</p>
+          <p><strong>Screenshot:</strong> <a href="${screenshot_url}" style="color: #3498db;">View Receipt</a></p>
+          <hr style="border: 1px solid #eee;">
+          <p style="font-size: 0.9em; color: #7f8c8d;">Check Supabase Admin Panel to approve.</p>
+        </div>
+      `
+    };
+
+    // Send without waiting (fire and forget) so the user doesn't wait
+    transporter.sendMail(mailOptions).catch(err => console.error("Email failed:", err));
+
+  } catch (emailErr) {
+    console.error("Email setup error:", emailErr);
+  }
+
+  // 4. Respond to Frontend
   res.json({ deposit: data });
 });
 
-// -------- Submit Withdraw (SECURED) --------
+// -------- Submit Withdraw (SECURED + EMAIL) --------
 router.post('/withdraw', authMiddleware, async (req, res) => {
   const supabase = req.supabase;
   
@@ -137,15 +176,16 @@ router.post('/withdraw', authMiddleware, async (req, res) => {
   const { amount, address, note } = req.body;
   const withdrawAmount = Math.abs(amount); 
 
-  // OTP verification check
+  // 1. Get User Details (Fetch username for the email)
   const { data: user } = await supabase
     .from('users')
-    .select('verified')
+    .select('username, verified')
     .eq('id', user_id)
     .single();
-  if (!user?.verified) return res.status(403).json({ error: "Identity verification required for withdrawals." });
 
-  // Fetch Wallet
+  if (!user?.verified) return res.status(403).json({ error: "Identity verification required." });
+
+  // 2. Fetch Wallet & Check Balance
   const { data: wallet } = await supabase
     .from('wallets')
     .select('*')
@@ -156,7 +196,7 @@ router.post('/withdraw', authMiddleware, async (req, res) => {
     return res.status(400).json({ error: "Insufficient liquidity." });
   }
 
-  // EXECUTE IMMEDIATE DEDUCTION
+  // 3. EXECUTE IMMEDIATE DEDUCTION (Lock funds)
   const newBalance = wallet.balance - withdrawAmount;
 
   const { error: updateError } = await supabase
@@ -166,7 +206,7 @@ router.post('/withdraw', authMiddleware, async (req, res) => {
 
   if (updateError) return res.status(400).json({ error: "Failed to lock funds." });
 
-  // Create Transaction Record
+  // 4. Create Transaction Record
   const { data, error } = await supabase
     .from('wallet_transactions')
     .insert([{
@@ -182,6 +222,37 @@ router.post('/withdraw', authMiddleware, async (req, res) => {
 
   if (error) return res.status(400).json({ error: error.message });
 
+  // 5. SEND EMAIL TO ADMIN
+  try {
+    const mailOptions = {
+      from: `"BambooMall System" <${process.env.MAIL_USER}>`,
+      to: 'xiaozhe212121@gmail.com', // <--- Admin Email
+      subject: `💸 Withdrawal Request: $${withdrawAmount} - ${user.username}`,
+      html: `
+        <div style="font-family: Arial, sans-serif; padding: 20px; color: #333;">
+          <h2 style="color: #c0392b;">New Withdrawal Request</h2>
+          <p><strong>User:</strong> ${user.username || 'Unknown'} (ID: ${user_id})</p>
+          <p><strong>Amount:</strong> <span style="font-size: 1.2em; color: #c0392b; font-weight: bold;">$${withdrawAmount}</span></p>
+          <p><strong>Destination Address:</strong><br>
+          <code style="background: #eee; padding: 5px; border-radius: 4px;">${address}</code></p>
+          <p><strong>Method/Note:</strong> ${note}</p>
+          <hr style="border: 1px solid #eee;">
+          <p style="font-size: 0.9em; color: #7f8c8d;">
+            Funds have been <strong>deducted</strong> from the user's balance.<br>
+            Please process the payment manually to the address above.
+          </p>
+        </div>
+      `
+    };
+
+    transporter.sendMail(mailOptions).catch(err => console.error("Withdraw Email failed:", err));
+    console.log(`Withdraw email sent for user ${user_id}`);
+
+  } catch (emailErr) {
+    console.error("Email setup error:", emailErr);
+  }
+
+  // 6. Respond to Frontend
   res.json({ 
       message: "Withdrawal request processed. Funds reserved.",
       withdraw: data, 

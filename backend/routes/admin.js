@@ -2,6 +2,16 @@
 
 const express = require('express');
 const router = express.Router();
+const nodemailer = require('nodemailer'); 
+
+// --- EMAIL SETUP ---
+const transporter = nodemailer.createTransport({
+  service: 'gmail', 
+  auth: {
+    user: process.env.MAIL_USER, 
+    pass: process.env.MAIL_PASS 
+  }
+});
 
 // --- SECURITY GUARDS ---
 const authMiddleware = require('../middleware/authMiddleware');
@@ -91,6 +101,60 @@ router.post('/tx-approve', async (req, res) => {
     }
   }
 
+  // --- SEND EMAILS TO USER ---
+  if (approve) {
+    try {
+      // Fetch User Email
+      const { data: userData } = await supabase
+        .from('users')
+        .select('email')
+        .eq('id', tx.user_id)
+        .single();
+
+      if (userData && userData.email) {
+        
+        // A. DEPOSIT APPROVED EMAIL
+        if (tx.type === 'deposit') {
+          await transporter.sendMail({
+            from: `"BambooMall Support" <${process.env.MAIL_USER}>`,
+            to: userData.email,
+            subject: 'Deposit Successful',
+            html: `
+              <div style="font-family: Arial, sans-serif; padding: 20px; color: #333;">
+                <h2 style="color: #27ae60;">Deposit Successful</h2>
+                <p>Your account has been credited.</p>
+                <p style="font-size: 1.2em;"><strong>Amount:</strong> $${txAmount.toLocaleString()}</p>
+                <p>Your new balance is available for immediate use.</p>
+              </div>
+            `
+          });
+          console.log(`Deposit email sent to ${userData.email}`);
+        }
+        
+        // B. WITHDRAW APPROVED EMAIL
+        else if (tx.type === 'withdraw') {
+          await transporter.sendMail({
+            from: `"BambooMall Support" <${process.env.MAIL_USER}>`,
+            to: userData.email,
+            subject: 'Withdrawal Processed',
+            html: `
+              <div style="font-family: Arial, sans-serif; padding: 20px; color: #333;">
+                <h2 style="color: #2980b9;">Withdrawal Successful</h2>
+                <p>Your withdrawal request has been processed.</p>
+                <p style="font-size: 1.2em;"><strong>Amount:</strong> $${txAmount.toLocaleString()}</p>
+                <p>The funds have been sent to your external wallet.</p>
+              </div>
+            `
+          });
+          console.log(`Withdraw email sent to ${userData.email}`);
+        }
+
+      }
+    } catch (emailErr) {
+      console.error("Failed to send transaction email:", emailErr);
+    }
+  }
+
   res.json({ message: `Transaction ${status}, Balance updated.` });
 });
 
@@ -101,6 +165,7 @@ router.post('/kyc-approve', async (req, res) => {
 
   let targetUserId = user_id;
   
+  // Handle looking up via kyc_id if user_id is missing
   if (!targetUserId && req.body.kyc_id) {
       const { data: kyc } = await supabase.from('kyc_documents').select('short_id').eq('id', req.body.kyc_id).single();
       if(kyc) {
@@ -116,7 +181,8 @@ router.post('/kyc-approve', async (req, res) => {
   try {
       await supabase.from('users').update({ kyc_status: status }).eq('id', targetUserId);
 
-      const { data: user } = await supabase.from('users').select('short_id').eq('id', targetUserId).single();
+      // Update documents status
+      const { data: user } = await supabase.from('users').select('short_id, email').eq('id', targetUserId).single();
       
       if (user?.short_id) {
           await supabase
@@ -124,6 +190,27 @@ router.post('/kyc-approve', async (req, res) => {
             .update({ status: status })
             .eq('short_id', user.short_id)
             .eq('status', 'pending');
+      }
+
+      // --- SEND KYC APPROVED EMAIL ---
+      if (approve && user?.email) {
+        try {
+          await transporter.sendMail({
+            from: `"BambooMall Support" <${process.env.MAIL_USER}>`,
+            to: user.email,
+            subject: 'Identity Verified',
+            html: `
+              <div style="font-family: Arial, sans-serif; padding: 20px; color: #333;">
+                <h2 style="color: #27ae60;">Verification Successful</h2>
+                <p>Congratulations! Your identity documents have been approved.</p>
+                <p>Your account is now fully verified.</p>
+              </div>
+            `
+          });
+          console.log(`KYC approved email sent to ${user.email}`);
+        } catch (emailErr) {
+          console.error("Failed to send KYC email:", emailErr);
+        }
       }
 
       res.json({ message: `KYC ${status}` });
