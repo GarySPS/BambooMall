@@ -51,7 +51,13 @@ export default function CartPage() {
     setLoading(true);
     fetchCartOrders(user.id)
       .then((data) => {
-        const active = data.filter(o => o.status !== 'cancelled'); 
+        // UPDATED FILTER: Only keep active items (selling) and pending refunds.
+        // Remove 'sold', 'refunded', and 'cancelled'.
+        const active = data.filter(o => 
+          o.status !== 'cancelled' && 
+          o.status !== 'sold' && 
+          o.status !== 'refunded'
+        ); 
         setOrders(active);
         setLoading(false);
       })
