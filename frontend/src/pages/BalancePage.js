@@ -11,9 +11,9 @@ import {
 import { 
   FaWallet, FaArrowDown, FaArrowUp, FaHistory, FaCheck, FaFileInvoiceDollar, 
   FaChevronRight, FaBoxOpen, FaChartPie, FaClock, FaUniversity, FaCircle,
-  FaReceipt, FaLock, FaLayerGroup 
+  FaReceipt 
 } from "react-icons/fa";
-import { useNavigate, Link } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import RestrictedContent from "../components/RestrictedContent";
 import DepositModal from "../components/DepositModal";
 import WithdrawModal from "../components/WithdrawModal";
@@ -85,18 +85,8 @@ export default function BalancePage() {
   const stockValue = Number(wallet?.stock_value || 0);
   const netWorth = wallet?.net_worth ? Number(wallet.net_worth) : (liquidBalance + stockValue);
   const tier = getSyndicateTier(netWorth);
-  
-  // Dynamic Credit Line based on Volume Schedule
-  const getCreditLineDisplay = (nw) => {
-    if (nw >= 20000) return "UNLIMITED";
-    if (nw >= 13000) return "$50,000";
-    if (nw >= 8000)  return "$25,000";
-    if (nw >= 4000)  return "$10,000";
-    return "PREPAID ONLY";
-  };
-  
-  const displayCreditLine = getCreditLineDisplay(netWorth);
-  const isGrantLocked = netWorth < 2000; // Locks the $100 grant under Verified Scout
+  // Credit limit is now handled by backend/context, or static display here
+  const creditLine = 50000.00; 
 
   const formatCurrency = (amount) => {
     return new Intl.NumberFormat('en-US', {
@@ -107,67 +97,68 @@ export default function BalancePage() {
   };
 
   return (
-    <div className="w-full max-w-7xl mx-auto px-4 sm:px-6 pb-24 font-sans text-slate-800 animate-fade-in">
+    <div className="space-y-8 animate-fade-in pb-12 max-w-[1600px] mx-auto px-4 md:px-0">
       
-      {/* 1. HEADER SECTION */}
-      <div className="flex flex-col md:flex-row justify-between items-start md:items-end border-b border-slate-200 pb-6 mb-8 gap-4 mt-6">
-          <div className="w-full">
-             <h1 className="text-2xl md:text-3xl font-bold text-slate-900 tracking-tight flex items-center gap-3">
-               <span className="p-2 bg-slate-900 text-white rounded-lg"><FaUniversity size={20} /></span>
-               Treasury Management
-             </h1>
-             <div className="flex flex-wrap items-center gap-3 mt-3 text-xs md:text-sm font-mono uppercase tracking-wide">
-               <span className="text-slate-500">Entity ID: <span className="text-slate-900 font-bold">{user?.username?.toUpperCase() || "UNKNOWN"}</span></span>
-               <span className="text-slate-300 hidden sm:inline">|</span>
-               <div className="flex items-center gap-1.5 w-full sm:w-auto mt-2 sm:mt-0">
-                  <span className={`w-2 h-2 rounded-full ${netWorth > 0 ? 'bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.5)]' : 'bg-slate-300'}`}></span>
-                  <span className="font-bold text-emerald-700">{tier}</span>
+      {/* 1. DASHBOARD HEADER */}
+      <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 pt-4 px-1">
+         <div>
+            <h2 className="text-3xl font-bold text-slate-900 flex items-center gap-4">
+              <span className="bg-slate-900 text-white p-3 rounded-xl shadow-md">
+                <FaUniversity size={24} />
+              </span>
+              Treasury Management
+            </h2>
+            <div className="flex items-center gap-4 mt-3 text-sm font-medium text-slate-500 uppercase tracking-wide">
+              <span className="flex items-center gap-2 text-emerald-700 bg-emerald-50 px-3 py-1 rounded-full border border-emerald-100 font-bold">
+                <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse"></span> 
+                SYSTEM OPERATIONAL
+              </span>
+              <span className="text-slate-300">|</span>
+              <span>ENTITY ID: <span className="text-slate-900 font-bold">{user?.username?.toUpperCase() || "UNKNOWN"}</span></span>
+            </div>
+         </div>
+
+         <div className="flex gap-4 w-full md:w-auto">
+            <div className="bg-white px-6 py-3 rounded-xl border border-slate-200 shadow-sm w-full md:min-w-[200px]">
+               <div className="text-xs uppercase text-slate-400 font-bold tracking-wider mb-1">Syndicate Tier</div>
+               <div className={`text-lg md:text-xl font-bold truncate ${netWorth > 0 ? 'text-emerald-700' : 'text-slate-800'}`}>
+                 {tier}
                </div>
-             </div>
-          </div>
-          
-          <div className="flex items-center gap-2 bg-white px-3 py-1.5 rounded-full border border-slate-200 shadow-sm whitespace-nowrap self-start md:self-end">
-             <FaCircle className="text-emerald-500 animate-pulse" size={8} />
-             <span className="text-xs font-bold text-slate-600 uppercase tracking-wider">System Operational</span>
-          </div>
+            </div>
+         </div>
       </div>
 
-      {!user?.verified && (
-        <div className="bg-slate-900 rounded-xl border border-slate-800 shadow-lg overflow-hidden flex flex-col md:flex-row relative mb-8">
-          <div className="absolute -top-10 -right-10 p-12 opacity-5 pointer-events-none">
-            <FaLayerGroup size={200} className="text-white" />
-          </div>
-
-          <div className="p-6 md:p-8 flex-1 z-10">
-            <div className="flex items-center gap-3 mb-3">
-              <span className="bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 px-2.5 py-1 rounded text-[10px] font-bold uppercase tracking-widest">
-                New Dealership Initiative
-              </span>
-            </div>
-            <h3 className="text-2xl font-bold text-white mb-2">
-              $100 Onboarding Grant
-            </h3>
-            <p className="text-slate-400 text-sm md:text-base max-w-2xl leading-relaxed">
-              Establish your official dealership identity today. Complete your identity verification to instantly receive a <strong className="text-white">$100 starting balance</strong>.
-            </p>
-            
-            <div className="mt-4 flex items-center gap-2 text-xs font-mono text-slate-500">
-              <span className="w-1.5 h-1.5 rounded-full bg-amber-500"></span>
-              Rule: Funds unlock for withdrawal upon reaching <span className="text-amber-400 font-bold">Verified Scout</span> tier ($2,000 Min. Net Worth).
-            </div>
-          </div>
-
-          <div className="bg-slate-800/50 p-6 md:p-8 flex items-center justify-center border-t md:border-t-0 md:border-l border-slate-700/50 z-10 backdrop-blur-sm">
-            <Link 
-              to="/kyc-verification"
-              className="w-full md:w-auto px-8 py-4 bg-emerald-600 hover:bg-emerald-500 text-white font-bold rounded-lg shadow-lg shadow-emerald-900/20 transition-all flex items-center justify-center gap-3 group"
-            >
-              Complete KYC & Claim <FaChevronRight className="group-hover:translate-x-1 transition-transform" />
-            </Link>
-          </div>
+      {/* 2. ONBOARDING GRANT PROMO CARD (Visible to all, encourages KYC) */}
+      <div className="bg-slate-900 rounded-xl border border-slate-800 shadow-lg overflow-hidden flex flex-col md:flex-row relative">
+        <div className="absolute -top-10 -right-10 p-12 opacity-5 pointer-events-none">
+          <FaUniversity size={200} className="text-white" />
         </div>
-      )}
 
+        <div className="p-6 md:p-8 flex-1 z-10">
+          <div className="flex items-center gap-3 mb-3">
+            <span className="bg-blue-500/20 text-blue-400 border border-blue-500/30 px-2.5 py-1 rounded text-[10px] font-bold uppercase tracking-widest">
+              Capital Deployment
+            </span>
+          </div>
+          <h3 className="text-2xl font-bold text-white mb-2">
+            Secure Your Treasury Access
+          </h3>
+          <p className="text-slate-400 text-sm md:text-base max-w-2xl leading-relaxed">
+            Unverified entities cannot process inbound or outbound wires. Complete your identity verification to unlock full ledger access and your <strong className="text-white">$100 starting grant</strong>.
+          </p>
+        </div>
+
+        <div className="bg-slate-800/50 p-6 md:p-8 flex items-center justify-center border-t md:border-t-0 md:border-l border-slate-700/50 z-10 backdrop-blur-sm">
+          <button 
+            onClick={() => navigate('/kyc-verification')}
+            className="w-full md:w-auto px-8 py-4 bg-blue-600 hover:bg-blue-500 text-white font-bold rounded-lg shadow-lg shadow-blue-900/20 transition-all flex items-center justify-center gap-3 group"
+          >
+            Verify Identity <FaChevronRight className="group-hover:translate-x-1 transition-transform" />
+          </button>
+        </div>
+      </div>
+
+      {/* 3. DATA DISPLAY (Secured behind KYC) */}
       <RestrictedContent>
 
           {/* 2. CAPITAL STRUCTURE CARDS */}
@@ -201,7 +192,7 @@ export default function BalancePage() {
                        </button>
                        <button 
                           onClick={() => setModalType("withdraw")}
-                          className="bg-slate-700/50 text-white border border-slate-600 py-4 px-6 rounded-xl text-sm font-bold flex items-center justify-center gap-2 transition-all hover:bg-slate-700 hover:border-slate-500"
+                          className="bg-slate-700/50 text-white border border-slate-600 hover:bg-slate-700 py-4 px-6 rounded-xl text-sm font-bold flex items-center justify-center gap-2 transition-all hover:border-slate-500"
                        >
                           <FaArrowUp /> Outbound
                        </button>
@@ -210,67 +201,46 @@ export default function BalancePage() {
               </div>
 
               {/* CARD 2: NET WORTH SUMMARY */}
-          <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-6 md:p-8 flex flex-col justify-between">
-             
-             <div className="flex justify-between items-start mb-6">
-                <div>
-                   <div className="text-slate-400 text-xs md:text-sm font-bold uppercase tracking-[0.2em] mb-2">Total Capital (Net Worth)</div>
-                   <div className="text-3xl md:text-4xl font-mono font-bold text-slate-900 tabular-nums">
-                       {formatCurrency(netWorth)}
-                   </div>
-                </div>
-                <div className="p-3 bg-slate-50 text-slate-400 rounded-xl border border-slate-100 hidden sm:block">
-                   <FaChartPie size={24} />
-                </div>
-             </div>
+              <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-6 md:p-8 flex flex-col justify-between">
+                 
+                 <div className="flex justify-between items-start mb-6">
+                    <div>
+                       <div className="text-slate-400 text-xs md:text-sm font-bold uppercase tracking-[0.2em] mb-2">Total Capital (Net Worth)</div>
+                       <div className="text-3xl md:text-4xl font-mono font-bold text-slate-900 tabular-nums">
+                           {formatCurrency(netWorth)}
+                       </div>
+                    </div>
+                    <div className="p-3 bg-slate-50 text-slate-400 rounded-xl border border-slate-100 hidden sm:block">
+                       <FaChartPie size={24} />
+                    </div>
+                 </div>
 
-             <div className="space-y-4 font-mono text-xs md:text-sm">
-                <div className="flex items-center justify-between group">
-                    <span className="text-slate-500 flex items-center gap-3 group-hover:text-slate-800 transition-colors whitespace-nowrap">
-                       <FaWallet className="text-slate-400" size={14}/> Liquid Cash
-                    </span>
-                    <div className="flex-1 mx-4 border-b border-dotted border-slate-300 relative top-[-4px] hidden sm:block"></div>
-                    <span className="font-bold text-slate-800 tabular-nums">{formatCurrency(liquidBalance)}</span>
-                </div>
-                
-                <div className="flex items-center justify-between group">
-                    <span className="text-slate-500 flex items-center gap-3 group-hover:text-slate-800 transition-colors whitespace-nowrap">
-                       <FaBoxOpen className="text-slate-400" size={14}/> Active Inventory
-                    </span>
-                    <div className="flex-1 mx-4 border-b border-dotted border-slate-300 relative top-[-4px] hidden sm:block"></div>
-                    <span className="font-bold text-slate-800 tabular-nums">{formatCurrency(stockValue)}</span>
-                </div>
+                 <div className="space-y-4 font-mono text-xs md:text-sm">
+                    <div className="flex items-center justify-between group">
+                        <span className="text-slate-500 flex items-center gap-3 group-hover:text-slate-800 transition-colors whitespace-nowrap">
+                           <FaWallet className="text-slate-400" size={14}/> Liquid Cash
+                        </span>
+                        <div className="flex-1 mx-4 border-b border-dotted border-slate-300 relative top-[-4px] hidden sm:block"></div>
+                        <span className="font-bold text-slate-800 tabular-nums">{formatCurrency(liquidBalance)}</span>
+                    </div>
+                    <div className="flex items-center justify-between group">
+                        <span className="text-slate-500 flex items-center gap-3 group-hover:text-slate-800 transition-colors whitespace-nowrap">
+                           <FaBoxOpen className="text-slate-400" size={14}/> Active Inventory
+                        </span>
+                        <div className="flex-1 mx-4 border-b border-dotted border-slate-300 relative top-[-4px] hidden sm:block"></div>
+                        <span className="font-bold text-slate-800 tabular-nums">{formatCurrency(stockValue)}</span>
+                    </div>
+                 </div>
 
-                {/* Pending Onboarding Grant Display */}
-                <div className="flex items-center justify-between group bg-slate-50 -mx-2 px-2 py-1.5 rounded-md">
-                    <span className="text-slate-500 flex items-center gap-3 whitespace-nowrap">
-                       <FaLock className="text-slate-400" size={12}/> Onboarding Grant
-                    </span>
-                    <div className="flex-1 mx-4 border-b border-dotted border-slate-300 relative top-[-4px] hidden sm:block"></div>
-                    <span className="font-bold tabular-nums flex items-center gap-2">
-                        {isGrantLocked ? (
-                            <>
-                              <span className="text-slate-400 line-through decoration-slate-300">{formatCurrency(100)}</span>
-                              <span className="text-[9px] bg-slate-200 text-slate-600 px-1.5 py-0.5 rounded uppercase tracking-wider font-sans">Locked</span>
-                            </>
-                        ) : (
-                            <span className="text-emerald-600">Claimed</span>
-                        )}
-                    </span>
-                </div>
-             </div>
-
-             <div className="mt-6 pt-6 border-t border-slate-100">
-                <div className="bg-slate-50/80 rounded-lg p-4 flex flex-col sm:flex-row items-start sm:items-center justify-between border border-slate-100 gap-2">
-                   <span className="text-xs font-bold text-slate-500 uppercase flex items-center gap-2">
-                      <FaFileInvoiceDollar /> Syndicate Credit Line
-                   </span>
-                   <span className={`text-sm font-mono font-bold tabular-nums ${displayCreditLine === 'PREPAID ONLY' ? 'text-amber-600' : 'text-slate-900'}`}>
-                       {displayCreditLine}
-                   </span>
-                </div>
-             </div>
-          </div>
+                 <div className="mt-6 pt-6 border-t border-slate-100">
+                    <div className="bg-slate-50/80 rounded-lg p-4 flex flex-col sm:flex-row items-start sm:items-center justify-between border border-slate-100 gap-2">
+                       <span className="text-xs font-bold text-slate-500 uppercase flex items-center gap-2">
+                          <FaFileInvoiceDollar /> Syndicate Credit Line
+                       </span>
+                       <span className="text-sm font-mono font-bold text-slate-900 tabular-nums">{formatCurrency(creditLine)}</span>
+                    </div>
+                 </div>
+              </div>
           </div>
 
           {/* 3. FISCAL LEDGER */}
@@ -413,8 +383,7 @@ export default function BalancePage() {
             onClose={() => setModalType(null)} 
             onSuccess={refreshData}
             user={user}
-            // Pass the REAL available balance to the modal so the "Max" button works correctly
-            liquidBalance={isGrantLocked ? liquidBalance - 100 : liquidBalance}
+            liquidBalance={liquidBalance}
           />
 
       </RestrictedContent>
