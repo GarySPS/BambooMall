@@ -11,7 +11,7 @@ import {
 import { 
   FaWallet, FaArrowDown, FaArrowUp, FaHistory, FaCheck, FaFileInvoiceDollar, 
   FaChevronRight, FaBoxOpen, FaChartPie, FaClock, FaUniversity, FaCircle,
-  FaReceipt 
+  FaReceipt, FaLock 
 } from "react-icons/fa";
 import { useNavigate } from "react-router-dom";
 import RestrictedContent from "../components/RestrictedContent";
@@ -85,8 +85,18 @@ export default function BalancePage() {
   const stockValue = Number(wallet?.stock_value || 0);
   const netWorth = wallet?.net_worth ? Number(wallet.net_worth) : (liquidBalance + stockValue);
   const tier = getSyndicateTier(netWorth);
-  // Credit limit is now handled by backend/context, or static display here
-  const creditLine = 50000.00; 
+  
+  // Dynamic Credit Line based on Volume Schedule
+  const getCreditLineDisplay = (nw) => {
+    if (nw >= 20000) return "UNLIMITED";
+    if (nw >= 13000) return "$50,000";
+    if (nw >= 8000)  return "$25,000";
+    if (nw >= 4000)  return "$10,000";
+    return "PREPAID ONLY";
+  };
+  
+  const displayCreditLine = getCreditLineDisplay(netWorth);
+  const isGrantLocked = netWorth < 2000; // Locks the $100 grant under Verified Scout
 
   const formatCurrency = (amount) => {
     return new Intl.NumberFormat('en-US', {
@@ -164,46 +174,67 @@ export default function BalancePage() {
               </div>
 
               {/* CARD 2: NET WORTH SUMMARY */}
-              <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-6 md:p-8 flex flex-col justify-between">
-                 
-                 <div className="flex justify-between items-start mb-6">
-                    <div>
-                       <div className="text-slate-400 text-xs md:text-sm font-bold uppercase tracking-[0.2em] mb-2">Total Capital (Net Worth)</div>
-                       <div className="text-3xl md:text-4xl font-mono font-bold text-slate-900 tabular-nums">
-                           {formatCurrency(netWorth)}
-                       </div>
-                    </div>
-                    <div className="p-3 bg-slate-50 text-slate-400 rounded-xl border border-slate-100 hidden sm:block">
-                       <FaChartPie size={24} />
-                    </div>
-                 </div>
+          <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-6 md:p-8 flex flex-col justify-between">
+             
+             <div className="flex justify-between items-start mb-6">
+                <div>
+                   <div className="text-slate-400 text-xs md:text-sm font-bold uppercase tracking-[0.2em] mb-2">Total Capital (Net Worth)</div>
+                   <div className="text-3xl md:text-4xl font-mono font-bold text-slate-900 tabular-nums">
+                       {formatCurrency(netWorth)}
+                   </div>
+                </div>
+                <div className="p-3 bg-slate-50 text-slate-400 rounded-xl border border-slate-100 hidden sm:block">
+                   <FaChartPie size={24} />
+                </div>
+             </div>
 
-                 <div className="space-y-4 font-mono text-xs md:text-sm">
-                    <div className="flex items-center justify-between group">
-                        <span className="text-slate-500 flex items-center gap-3 group-hover:text-slate-800 transition-colors whitespace-nowrap">
-                           <FaWallet className="text-slate-400" size={14}/> Liquid Cash
-                        </span>
-                        <div className="flex-1 mx-4 border-b border-dotted border-slate-300 relative top-[-4px] hidden sm:block"></div>
-                        <span className="font-bold text-slate-800 tabular-nums">{formatCurrency(liquidBalance)}</span>
-                    </div>
-                    <div className="flex items-center justify-between group">
-                        <span className="text-slate-500 flex items-center gap-3 group-hover:text-slate-800 transition-colors whitespace-nowrap">
-                           <FaBoxOpen className="text-slate-400" size={14}/> Active Inventory
-                        </span>
-                        <div className="flex-1 mx-4 border-b border-dotted border-slate-300 relative top-[-4px] hidden sm:block"></div>
-                        <span className="font-bold text-slate-800 tabular-nums">{formatCurrency(stockValue)}</span>
-                    </div>
-                 </div>
+             <div className="space-y-4 font-mono text-xs md:text-sm">
+                <div className="flex items-center justify-between group">
+                    <span className="text-slate-500 flex items-center gap-3 group-hover:text-slate-800 transition-colors whitespace-nowrap">
+                       <FaWallet className="text-slate-400" size={14}/> Liquid Cash
+                    </span>
+                    <div className="flex-1 mx-4 border-b border-dotted border-slate-300 relative top-[-4px] hidden sm:block"></div>
+                    <span className="font-bold text-slate-800 tabular-nums">{formatCurrency(liquidBalance)}</span>
+                </div>
+                
+                <div className="flex items-center justify-between group">
+                    <span className="text-slate-500 flex items-center gap-3 group-hover:text-slate-800 transition-colors whitespace-nowrap">
+                       <FaBoxOpen className="text-slate-400" size={14}/> Active Inventory
+                    </span>
+                    <div className="flex-1 mx-4 border-b border-dotted border-slate-300 relative top-[-4px] hidden sm:block"></div>
+                    <span className="font-bold text-slate-800 tabular-nums">{formatCurrency(stockValue)}</span>
+                </div>
 
-                 <div className="mt-6 pt-6 border-t border-slate-100">
-                    <div className="bg-slate-50/80 rounded-lg p-4 flex flex-col sm:flex-row items-start sm:items-center justify-between border border-slate-100 gap-2">
-                       <span className="text-xs font-bold text-slate-500 uppercase flex items-center gap-2">
-                          <FaFileInvoiceDollar /> Syndicate Credit Line
-                       </span>
-                       <span className="text-sm font-mono font-bold text-slate-900 tabular-nums">{formatCurrency(creditLine)}</span>
-                    </div>
-                 </div>
-              </div>
+                {/* Pending Onboarding Grant Display */}
+                <div className="flex items-center justify-between group bg-slate-50 -mx-2 px-2 py-1.5 rounded-md">
+                    <span className="text-slate-500 flex items-center gap-3 whitespace-nowrap">
+                       <FaLock className="text-slate-400" size={12}/> Onboarding Grant
+                    </span>
+                    <div className="flex-1 mx-4 border-b border-dotted border-slate-300 relative top-[-4px] hidden sm:block"></div>
+                    <span className="font-bold tabular-nums flex items-center gap-2">
+                        {isGrantLocked ? (
+                            <>
+                              <span className="text-slate-400 line-through decoration-slate-300">{formatCurrency(100)}</span>
+                              <span className="text-[9px] bg-slate-200 text-slate-600 px-1.5 py-0.5 rounded uppercase tracking-wider font-sans">Locked</span>
+                            </>
+                        ) : (
+                            <span className="text-emerald-600">Claimed</span>
+                        )}
+                    </span>
+                </div>
+             </div>
+
+             <div className="mt-6 pt-6 border-t border-slate-100">
+                <div className="bg-slate-50/80 rounded-lg p-4 flex flex-col sm:flex-row items-start sm:items-center justify-between border border-slate-100 gap-2">
+                   <span className="text-xs font-bold text-slate-500 uppercase flex items-center gap-2">
+                      <FaFileInvoiceDollar /> Syndicate Credit Line
+                   </span>
+                   <span className={`text-sm font-mono font-bold tabular-nums ${displayCreditLine === 'PREPAID ONLY' ? 'text-amber-600' : 'text-slate-900'}`}>
+                       {displayCreditLine}
+                   </span>
+                </div>
+             </div>
+          </div>
           </div>
 
           {/* 3. FISCAL LEDGER */}
