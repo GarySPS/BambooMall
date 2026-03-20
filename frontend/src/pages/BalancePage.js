@@ -11,7 +11,7 @@ import {
 import { 
   FaWallet, FaArrowDown, FaArrowUp, FaHistory, FaCheck, FaFileInvoiceDollar, 
   FaChevronRight, FaBoxOpen, FaChartPie, FaClock, FaUniversity, FaCircle,
-  FaReceipt 
+  FaReceipt, FaLock
 } from "react-icons/fa";
 import { useNavigate } from "react-router-dom";
 import RestrictedContent from "../components/RestrictedContent";
@@ -128,7 +128,7 @@ export default function BalancePage() {
          </div>
       </div>
 
-      {/* 2. ONBOARDING GRANT PROMO CARD (Visible to all, encourages KYC) */}
+      {/* 2. ONBOARDING GRANT PROMO CARD (Adapts to KYC Status) */}
       <div className="bg-slate-900 rounded-xl border border-slate-800 shadow-lg overflow-hidden flex flex-col md:flex-row relative">
         <div className="absolute -top-10 -right-10 p-12 opacity-5 pointer-events-none">
           <FaUniversity size={200} className="text-white" />
@@ -136,25 +136,47 @@ export default function BalancePage() {
 
         <div className="p-6 md:p-8 flex-1 z-10">
           <div className="flex items-center gap-3 mb-3">
-            <span className="bg-blue-500/20 text-blue-400 border border-blue-500/30 px-2.5 py-1 rounded text-[10px] font-bold uppercase tracking-widest">
+            <span className={`px-2.5 py-1 rounded text-[10px] font-bold uppercase tracking-widest border ${
+               user?.kyc_status === 'approved' ? 'bg-emerald-500/20 text-emerald-400 border-emerald-500/30' :
+               user?.kyc_status === 'pending' ? 'bg-amber-500/20 text-amber-400 border-amber-500/30' :
+               'bg-blue-500/20 text-blue-400 border-blue-500/30'
+            }`}>
               Capital Deployment
             </span>
           </div>
           <h3 className="text-2xl font-bold text-white mb-2">
-            Secure Your Treasury Access
+            {user?.kyc_status === 'approved' 
+              ? "Treasury Access Unlocked" 
+              : user?.kyc_status === 'pending'
+              ? "Compliance Review Active"
+              : "Secure Your Treasury Access"}
           </h3>
           <p className="text-slate-400 text-sm md:text-base max-w-2xl leading-relaxed">
-            Unverified entities cannot process inbound or outbound wires. Complete your identity verification to unlock full ledger access and your <strong className="text-white">$100 starting grant</strong>.
+            {user?.kyc_status === 'approved' 
+              ? "Your dealership identity is verified. You now have full clearance for inbound wires, outbound settlements, and unrestricted ledger operations." 
+              : user?.kyc_status === 'pending'
+              ? "Your documentation has been received and is under priority review. Operations will unlock upon final compliance approval."
+              : <>Unverified entities cannot process inbound or outbound wires. Complete your identity verification to unlock full ledger access and your <strong className="text-white">$100 starting grant</strong>.</>}
           </p>
         </div>
 
         <div className="bg-slate-800/50 p-6 md:p-8 flex items-center justify-center border-t md:border-t-0 md:border-l border-slate-700/50 z-10 backdrop-blur-sm">
-          <button 
-            onClick={() => navigate('/kyc-verification')}
-            className="w-full md:w-auto px-8 py-4 bg-blue-600 hover:bg-blue-500 text-white font-bold rounded-lg shadow-lg shadow-blue-900/20 transition-all flex items-center justify-center gap-3 group"
-          >
-            Verify Identity <FaChevronRight className="group-hover:translate-x-1 transition-transform" />
-          </button>
+          {user?.kyc_status === 'approved' ? (
+            <button disabled className="w-full md:w-auto px-8 py-4 bg-slate-800/50 text-emerald-500 border border-emerald-500/20 font-bold rounded-lg flex items-center justify-center gap-3 cursor-not-allowed">
+               <FaLock /> Verified Identity
+            </button>
+          ) : user?.kyc_status === 'pending' ? (
+            <button disabled className="w-full md:w-auto px-8 py-4 bg-slate-800/50 text-amber-500 border border-amber-500/20 font-bold rounded-lg flex items-center justify-center gap-3 cursor-not-allowed">
+               <FaClock className="animate-pulse" /> Audit Pending
+            </button>
+          ) : (
+            <button 
+              onClick={() => navigate('/kyc-verification')}
+              className="w-full md:w-auto px-8 py-4 bg-blue-600 hover:bg-blue-500 text-white font-bold rounded-lg shadow-lg shadow-blue-900/20 transition-all flex items-center justify-center gap-3 group"
+            >
+              Verify Identity <FaChevronRight className="group-hover:translate-x-1 transition-transform" />
+            </button>
+          )}
         </div>
       </div>
 

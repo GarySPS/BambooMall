@@ -2,14 +2,17 @@
 
 import React, { useEffect, useState, useMemo } from "react";
 import { Link } from "react-router-dom";
-import { toast } from "react-toastify"; // <--- Added for notification
+import { toast } from "react-toastify";
+import { useUser } from "../contexts/UserContext";
 import { 
   FaSearch, 
   FaFilter, 
   FaSpinner, 
   FaLayerGroup,
   FaChevronRight,
-  FaGlobeAsia
+  FaGlobeAsia,
+  FaLock,
+  FaClock
 } from "react-icons/fa";
 import { fetchProducts } from "../utils/api";
 import { getProductImage } from "../utils/image";
@@ -48,6 +51,7 @@ const getGradeStyles = (grade) => {
 };
 
 export default function ProductsPage() {
+  const { user } = useUser();
   const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
@@ -201,7 +205,7 @@ export default function ProductsPage() {
          </button>
       </div>
 
-      {/* ONBOARDING GRANT PROMO CARD */}
+      {/* ONBOARDING GRANT PROMO CARD (Adapts to KYC Status) */}
       <div className="bg-slate-900 rounded-xl border border-slate-800 shadow-lg overflow-hidden flex flex-col md:flex-row relative">
         {/* Decorative Background Icon */}
         <div className="absolute -top-10 -right-10 p-12 opacity-5 pointer-events-none">
@@ -211,31 +215,55 @@ export default function ProductsPage() {
         {/* Promo Content */}
         <div className="p-6 md:p-8 flex-1 z-10">
           <div className="flex items-center gap-3 mb-3">
-            <span className="bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 px-2.5 py-1 rounded text-[10px] font-bold uppercase tracking-widest">
+            <span className={`px-2.5 py-1 rounded text-[10px] font-bold uppercase tracking-widest border ${
+               user?.kyc_status === 'approved' ? 'bg-emerald-500/20 text-emerald-400 border-emerald-500/30' :
+               user?.kyc_status === 'pending' ? 'bg-amber-500/20 text-amber-400 border-amber-500/30' :
+               'bg-emerald-500/20 text-emerald-400 border-emerald-500/30'
+            }`}>
               New Dealership Initiative
             </span>
           </div>
           <h3 className="text-2xl font-bold text-white mb-2">
-            $100 Onboarding Grant
+            {user?.kyc_status === 'approved' 
+              ? "Manifest Access Unlocked" 
+              : user?.kyc_status === 'pending'
+              ? "Compliance Review Active"
+              : "$100 Onboarding Grant"}
           </h3>
           <p className="text-slate-400 text-sm md:text-base max-w-2xl leading-relaxed">
-            Establish your official dealership identity today. Complete your identity verification to instantly receive a <strong className="text-white">$100 starting balance</strong>.
+            {user?.kyc_status === 'approved' 
+              ? "Your dealership identity is verified. You now have full clearance to view wholesale pricing, live inventory, and secure active allocations." 
+              : user?.kyc_status === 'pending'
+              ? "Your documentation has been received and is under priority review. Live manifest access will unlock upon final compliance approval."
+              : <>Establish your official dealership identity today. Complete your identity verification to instantly receive a <strong className="text-white">$100 starting balance</strong>.</>}
           </p>
           
-          <div className="mt-4 flex items-center gap-2 text-xs font-mono text-slate-500">
-            <span className="w-1.5 h-1.5 rounded-full bg-amber-500"></span>
-            Rule: Funds unlock for withdrawal upon reaching <span className="text-amber-400 font-bold">Verified Scout</span> tier ($2,000 Min. Net Worth).
-          </div>
+          {user?.kyc_status !== 'approved' && user?.kyc_status !== 'pending' && (
+            <div className="mt-4 flex items-center gap-2 text-xs font-mono text-slate-500">
+              <span className="w-1.5 h-1.5 rounded-full bg-amber-500"></span>
+              Rule: Funds unlock for withdrawal upon reaching <span className="text-amber-400 font-bold">Verified Scout</span> tier ($2,000 Min. Net Worth).
+            </div>
+          )}
         </div>
 
         {/* Action Button */}
         <div className="bg-slate-800/50 p-6 md:p-8 flex items-center justify-center border-t md:border-t-0 md:border-l border-slate-700/50 z-10 backdrop-blur-sm">
-          <Link 
-            to="/kyc-verification"
-            className="w-full md:w-auto px-8 py-4 bg-emerald-600 hover:bg-emerald-500 text-white font-bold rounded-lg shadow-lg shadow-emerald-900/20 transition-all flex items-center justify-center gap-3 group"
-          >
-            Complete KYC & Claim <FaChevronRight className="group-hover:translate-x-1 transition-transform" />
-          </Link>
+          {user?.kyc_status === 'approved' ? (
+            <button disabled className="w-full md:w-auto px-8 py-4 bg-slate-800/50 text-emerald-500 border border-emerald-500/20 font-bold rounded-lg flex items-center justify-center gap-3 cursor-not-allowed">
+               <FaLock /> Verified Identity
+            </button>
+          ) : user?.kyc_status === 'pending' ? (
+            <button disabled className="w-full md:w-auto px-8 py-4 bg-slate-800/50 text-amber-500 border border-amber-500/20 font-bold rounded-lg flex items-center justify-center gap-3 cursor-not-allowed">
+               <FaClock className="animate-pulse" /> Audit Pending
+            </button>
+          ) : (
+            <Link 
+              to="/kyc-verification"
+              className="w-full md:w-auto px-8 py-4 bg-emerald-600 hover:bg-emerald-500 text-white font-bold rounded-lg shadow-lg shadow-emerald-900/20 transition-all flex items-center justify-center gap-3 group"
+            >
+              Complete KYC & Claim <FaChevronRight className="group-hover:translate-x-1 transition-transform" />
+            </Link>
+          )}
         </div>
       </div>
 
