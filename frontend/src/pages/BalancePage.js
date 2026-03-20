@@ -132,7 +132,8 @@ export default function BalancePage() {
           </div>
       </div>
 
-      {!user?.verified && (
+      {/* ONBOARDING GRANT PROMO CARD */}
+      {isGrantLocked && (
         <div className="bg-slate-900 rounded-xl border border-slate-800 shadow-lg overflow-hidden flex flex-col md:flex-row relative mb-8">
           <div className="absolute -top-10 -right-10 p-12 opacity-5 pointer-events-none">
             <FaLayerGroup size={200} className="text-white" />
