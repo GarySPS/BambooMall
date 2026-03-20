@@ -185,17 +185,37 @@ router.post('/withdraw', authMiddleware, async (req, res) => {
 
   if (!user?.verified) return res.status(403).json({ error: "Identity verification required." });
 
-  // 2. Fetch Wallet & Check Balance
+  // 2. Fetch Wallet & Calculate Total Net Worth
   const { data: wallet } = await supabase
     .from('wallets')
     .select('*')
     .eq('user_id', user_id)
     .single();
 
-  if (!wallet || (wallet.balance || 0) < withdrawAmount) {
-    return res.status(400).json({ error: "Insufficient liquidity." });
-  }
+  // Get Active Inventory Value to calculate Net Worth
+  const { data: stockData } = await supabase
+    .from('orders')
+    .select('amount')
+    .eq('user_id', user_id)
+    .eq('status', 'selling');
 
+  const stockValue = stockData?.reduce((sum, order) => sum + Number(order.amount || 0), 0) || 0;
+  const netWorth = (wallet?.balance || 0) + stockValue;
+
+  // --- THE ONBOARDING GRANT LOCK LOGIC ---
+  const lockedGrantAmount = netWorth < 2000 ? 100 : 0; 
+  const availableToWithdraw = (wallet?.balance || 0) - lockedGrantAmount;
+
+  // Check if they are trying to withdraw the locked grant
+  if (withdrawAmount > availableToWithdraw) {
+      if (withdrawAmount <= (wallet?.balance || 0)) {
+          // They have the balance, but it includes the locked $100
+          return res.status(403).json({ 
+              error: `Withdrawal exceeds available funds. $100 grant is locked until Verified Scout tier ($2,000 Net Worth).` 
+          });
+      }
+      return res.status(400).json({ error: "Insufficient liquidity." });
+  }
   // 3. EXECUTE IMMEDIATE DEDUCTION (Lock funds)
   const newBalance = wallet.balance - withdrawAmount;
 
