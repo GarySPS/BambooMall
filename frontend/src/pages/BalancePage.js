@@ -165,7 +165,7 @@ export default function BalancePage() {
                        </button>
                        <button 
                           onClick={() => setModalType("withdraw")}
-                          className="bg-slate-700/50 text-white border border-slate-600 hover:bg-slate-700 py-4 px-6 rounded-xl text-sm font-bold flex items-center justify-center gap-2 transition-all hover:border-slate-500"
+                          className="bg-slate-700/50 text-white border border-slate-600 py-4 px-6 rounded-xl text-sm font-bold flex items-center justify-center gap-2 transition-all hover:bg-slate-700 hover:border-slate-500"
                        >
                           <FaArrowUp /> Outbound
                        </button>
@@ -377,7 +377,8 @@ export default function BalancePage() {
             onClose={() => setModalType(null)} 
             onSuccess={refreshData}
             user={user}
-            liquidBalance={liquidBalance}
+            // Pass the REAL available balance to the modal so the "Max" button works correctly
+            liquidBalance={isGrantLocked ? liquidBalance - 100 : liquidBalance}
           />
 
       </RestrictedContent>
