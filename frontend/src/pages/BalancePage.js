@@ -11,7 +11,7 @@ import {
 import { 
   FaWallet, FaArrowDown, FaArrowUp, FaHistory, FaCheck, FaFileInvoiceDollar, 
   FaChevronRight, FaBoxOpen, FaChartPie, FaClock, FaUniversity, FaCircle,
-  FaReceipt, FaLock
+  FaReceipt, FaLock, FaCreditCard
 } from "react-icons/fa";
 import { useNavigate } from "react-router-dom";
 import RestrictedContent from "../components/RestrictedContent";
@@ -150,11 +150,25 @@ export default function BalancePage() {
                           </div>
                        </div>
                     </div>
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                       <button onClick={() => { setModalType("deposit"); }} className="bg-white text-slate-900 hover:bg-slate-50 py-4 px-6 rounded-xl text-sm font-bold flex items-center justify-center gap-2 transition-all shadow-lg transform hover:-translate-y-0.5 active:translate-y-0">
-                          <FaArrowDown className="text-emerald-600" /> Inbound Wire
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                       {/* 1. Existing Manual Transfer */}
+                       <button onClick={() => { setModalType("deposit"); }} className="bg-white/10 text-white hover:bg-white/20 border border-white/10 py-4 px-6 rounded-xl text-sm font-bold flex items-center justify-center gap-2 transition-all shadow-lg transform hover:-translate-y-0.5 active:translate-y-0">
+                          <FaArrowDown className="text-emerald-400" /> Inbound Wire
                        </button>
-                       <button onClick={() => setModalType("withdraw")} className="bg-slate-700/50 text-white border border-slate-600 hover:bg-slate-700 py-4 px-6 rounded-xl text-sm font-bold flex items-center justify-center gap-2 transition-all hover:border-slate-500">
+
+                       {/* 2. NEW Premium Direct Fiat-to-Crypto Button */}
+                       <button 
+                          onClick={() => { window.open("https://buy.moonpay.com?currencyCode=usdc_base&walletAddress=0x833589fcd6edb6e08f4c7c32d4f71b54bda02913", "_blank"); }} 
+                          className="relative overflow-hidden group bg-gradient-to-r from-blue-600 to-indigo-600 text-white py-4 px-6 rounded-xl text-sm font-bold flex items-center justify-center gap-2 transition-all shadow-[0_0_20px_rgba(79,70,229,0.3)] transform hover:-translate-y-0.5 active:translate-y-0 hover:shadow-[0_0_25px_rgba(79,70,229,0.5)] border border-blue-400/30"
+                       >
+                          {/* Shine Effect */}
+                          <div className="absolute inset-0 -translate-x-full group-hover:animate-[shimmer_1.5s_infinite] bg-gradient-to-r from-transparent via-white/20 to-transparent skew-x-12 pointer-events-none"></div>
+                          <FaCreditCard className="text-blue-100" size={16} /> 
+                          <span>Buy with Card <span className="text-[10px] uppercase font-bold text-blue-200 ml-1 bg-blue-900/40 px-1.5 py-0.5 rounded">Fast</span></span>
+                       </button>
+
+                       {/* 3. Existing Outbound */}
+                       <button onClick={() => setModalType("withdraw")} className="bg-slate-800/50 text-slate-300 border border-slate-700 hover:bg-slate-800 hover:text-white py-4 px-6 rounded-xl text-sm font-bold flex items-center justify-center gap-2 transition-all hover:border-slate-600">
                           <FaArrowUp /> Outbound
                        </button>
                     </div>
