@@ -113,7 +113,7 @@ export default function ProductsPage() {
         <div className="text-slate-600 text-sm md:text-base leading-relaxed">
           Next consignment manifest is scheduled for arrival on:
           <div className="mt-1 text-slate-900 font-bold text-lg md:text-xl tracking-tight">
-            February 20, 2026
+            April 20, 2026
           </div>
         </div>
 

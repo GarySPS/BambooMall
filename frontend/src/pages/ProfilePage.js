@@ -113,8 +113,7 @@ export default function ProfilePage() {
   
   const [localWallet, setLocalWallet] = useState(null);
   const [apiKey, setApiKey] = useState("sk_live_************************");
-  const [licenseFile, setLicenseFile] = useState(null);
-  const [uploadStatus, setUploadStatus] = useState("idle");
+
 
   // Fetch Wallet Data (SECURED)
   useEffect(() => {
@@ -139,14 +138,6 @@ export default function ProfilePage() {
     setApiKey(`sk_live_${Math.random().toString(36).substring(2, 24).toUpperCase()}`);
   };
 
-  const handleUpload = (e) => {
-    e.preventDefault();
-    setUploadStatus("uploading");
-    setTimeout(() => {
-      setUploadStatus("success");
-      alert("Document submitted to Compliance Dept for review (Ref: DOC-9920)");
-    }, 2000);
-  };
 
   if (!user) return <div className="flex h-screen items-center justify-center text-xs uppercase tracking-widest font-bold text-slate-400">Secure Handshake...</div>;
 
@@ -272,43 +263,7 @@ export default function ProfilePage() {
                     </div>
                 </div>
 
-                {/* Compliance / Docs Section */}
-                <div className="bg-white shadow-sm border border-slate-200 rounded-xl overflow-hidden">
-                    <div className="px-6 py-5 border-b border-slate-100 flex justify-between items-center bg-slate-50">
-                        <h3 className="text-sm font-black text-slate-800 uppercase tracking-widest flex items-center gap-3">
-                           <FileText size={18} className="text-slate-400"/> Documents
-                        </h3>
-                    </div>
-                    <div className="p-6 md:p-8">
-                       {!licenseFile && uploadStatus !== 'success' && (
-                         <div className="mb-6 flex items-start gap-4 p-4 bg-amber-50 border-l-4 border-amber-400 rounded-r-md text-amber-900 shadow-sm">
-                            <AlertTriangle size={20} className="mt-0.5 shrink-0"/>
-                            <div className="text-sm font-medium leading-relaxed">
-                               <strong>Requirement:</strong> Upload Certificate of Incorporation to unlock Tier 2.
-                            </div>
-                         </div>
-                       )}
-
-                       <div className="flex flex-col md:flex-row items-center gap-4 bg-slate-50 p-6 rounded-lg border-2 border-slate-200 border-dashed hover:border-slate-300 transition-colors">
-                          <div className="flex-1 w-full">
-                             <input 
-                                type="file" 
-                                accept=".pdf,.jpg,.png"
-                                onChange={(e) => setLicenseFile(e.target.files[0])}
-                                className="w-full text-sm text-slate-500 file:mr-4 file:py-2.5 file:px-5 file:rounded-md file:border-0 file:text-xs file:font-black file:uppercase file:bg-slate-800 file:text-white hover:file:bg-slate-700 transition-all cursor-pointer"
-                              />
-                          </div>
-                          <button 
-                             onClick={handleUpload}
-                             disabled={!licenseFile || uploadStatus !== 'idle'}
-                             className="w-full md:w-auto bg-slate-900 text-white px-8 py-3 rounded-md text-xs font-black uppercase tracking-wider hover:bg-slate-800 disabled:opacity-50 transition-all shadow-md flex items-center justify-center gap-3"
-                          >
-                             {uploadStatus === 'uploading' ? 'Transmitting...' : uploadStatus === 'success' ? 'Verified' : <><UploadCloud size={16}/> Submit Docs</>}
-                          </button>
-                       </div>
-                    </div>
                 </div>
-             </div>
 
              {/* 4. RIGHT COL: Developer & Security */}
              <div className="space-y-8">
