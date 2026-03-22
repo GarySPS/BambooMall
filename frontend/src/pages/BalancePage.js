@@ -230,6 +230,16 @@ export default function BalancePage() {
                   ? "Your documentation has been received and is under priority review. Operations will unlock upon final compliance approval."
                   : <>Unverified entities cannot process inbound or outbound wires. Complete your identity verification to unlock full ledger access and your <strong className="text-white">$100 starting grant</strong>.</>}
               </p>
+
+              {/* --- NEW WELCOME BONUS NOTE --- */}
+              <div className="mt-4 bg-blue-900/30 border border-blue-800/50 rounded-lg p-3 flex items-start gap-3 max-w-2xl">
+                <FaLock className="text-blue-400 mt-0.5 flex-shrink-0" size={14} />
+                <p className="text-blue-200 text-xs md:text-sm leading-relaxed">
+                  <strong className="text-blue-300">Bonus Notice:</strong> The $100 agent welcome bonus is locked and can only be withdrawn once you reach the <strong className="text-white">Verified Scout</strong> partnership tier.
+                </p>
+              </div>
+              {/* ------------------------------ */}
+
             </div>
             <div className="bg-slate-800/50 p-6 md:p-8 flex items-center justify-center border-t md:border-t-0 md:border-l border-slate-700/50 z-10 backdrop-blur-sm">
               {user?.kyc_status === 'approved' ? (
