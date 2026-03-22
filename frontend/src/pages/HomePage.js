@@ -85,6 +85,29 @@ export default function HomePage() {
         </div>
       </div>
 
+      {/* --- QUICK ACTIONS --- */}
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-6 pt-2 mb-2">
+         <Link to="/products" className="bg-blue-700 hover:bg-blue-600 active:scale-95 text-white p-4 lg:p-6 rounded-xl flex flex-col items-center justify-center gap-2 text-center shadow-lg shadow-blue-900/20 transition-all">
+            <Package className="text-2xl md:text-4xl text-blue-100" />
+            <span className="text-xs md:text-base font-bold uppercase tracking-wide">Browse Manifests</span>
+         </Link>
+
+         <Link to="/balance" className="bg-emerald-700 hover:bg-emerald-600 active:scale-95 text-white p-4 lg:p-6 rounded-xl flex flex-col items-center justify-center gap-2 text-center shadow-lg shadow-emerald-900/20 transition-all">
+            <DollarSign className="text-2xl md:text-4xl text-emerald-100" />
+            <span className="text-xs md:text-base font-bold uppercase tracking-wide">Add Funds</span>
+         </Link>
+
+         <Link to="/compliance" className="bg-white border border-slate-200 hover:border-slate-300 hover:bg-slate-50 active:scale-95 text-slate-700 p-4 lg:p-6 rounded-xl flex flex-col items-center justify-center gap-2 text-center transition-all shadow-sm">
+            <FileText className="text-2xl md:text-4xl text-slate-400" />
+            <span className="text-xs md:text-base font-bold uppercase tracking-wide">Shipping Policy</span>
+         </Link>
+
+         <Link to="/profile" className="bg-white border border-slate-200 hover:border-slate-300 hover:bg-slate-50 active:scale-95 text-slate-700 p-4 lg:p-6 rounded-xl flex flex-col items-center justify-center gap-2 text-center transition-all shadow-sm">
+            <LineChart className="text-2xl md:text-4xl text-slate-400" />
+            <span className="text-xs md:text-base font-bold uppercase tracking-wide">My Stats</span>
+         </Link>
+      </div>
+
       {/* --- KPI GRID --- */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 lg:gap-6">
         
@@ -161,28 +184,6 @@ export default function HomePage() {
          </div>
       </div>
 
-      {/* --- FOOTER ACTIONS --- */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-6 pt-4">
-         <Link to="/products" className="bg-blue-700 hover:bg-blue-600 active:scale-95 text-white p-4 lg:p-6 rounded-xl flex flex-col items-center justify-center gap-2 text-center shadow-lg shadow-blue-900/20 transition-all">
-            <Package className="text-2xl md:text-4xl text-blue-100" />
-            <span className="text-xs md:text-base font-bold uppercase tracking-wide">Browse Manifests</span>
-         </Link>
-
-         <Link to="/balance" className="bg-emerald-700 hover:bg-emerald-600 active:scale-95 text-white p-4 lg:p-6 rounded-xl flex flex-col items-center justify-center gap-2 text-center shadow-lg shadow-emerald-900/20 transition-all">
-            <DollarSign className="text-2xl md:text-4xl text-emerald-100" />
-            <span className="text-xs md:text-base font-bold uppercase tracking-wide">Add Funds</span>
-         </Link>
-
-         <Link to="/compliance" className="bg-white border border-slate-200 hover:border-slate-300 hover:bg-slate-50 active:scale-95 text-slate-700 p-4 lg:p-6 rounded-xl flex flex-col items-center justify-center gap-2 text-center transition-all shadow-sm">
-            <FileText className="text-2xl md:text-4xl text-slate-400" />
-            <span className="text-xs md:text-base font-bold uppercase tracking-wide">Shipping Policy</span>
-         </Link>
-
-         <Link to="/profile" className="bg-white border border-slate-200 hover:border-slate-300 hover:bg-slate-50 active:scale-95 text-slate-700 p-4 lg:p-6 rounded-xl flex flex-col items-center justify-center gap-2 text-center transition-all shadow-sm">
-            <LineChart className="text-2xl md:text-4xl text-slate-400" />
-            <span className="text-xs md:text-base font-bold uppercase tracking-wide">My Stats</span>
-         </Link>
-      </div>
     </div>
   );
 }
