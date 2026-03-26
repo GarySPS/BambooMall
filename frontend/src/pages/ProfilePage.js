@@ -8,7 +8,7 @@ import { API_BASE_URL } from "../config";
 import { 
   Building2, CheckCircle2, Globe, Server, Lock, UploadCloud,
   Fingerprint, Copy, ShieldCheck, CreditCard, Briefcase,
-  AlertTriangle, TrendingUp, Activity, FileText, Landmark, ArrowRight
+  AlertTriangle, TrendingUp, Activity, FileText, Landmark, ArrowRight, MessageCircle
 } from "lucide-react";
 
 // --- HELPER: CURRENCY FORMATTER ---
@@ -330,6 +330,30 @@ export default function ProfilePage() {
                           <span className="flex items-center gap-3 uppercase tracking-wide"><CreditCard size={16}/> Change PIN</span>
                           <ArrowRight size={16} className="text-slate-400 group-hover:text-slate-900"/>
                       </button>
+                   </div>
+                </div>
+
+                {/* 5. SUPPORT & CONCIERGE */}
+                <div className="bg-slate-900 p-6 md:p-8 rounded-xl shadow-lg border border-slate-800 relative overflow-hidden group mt-8">
+                   <div className="absolute -right-4 -top-4 text-slate-800 opacity-30 group-hover:scale-110 transition-transform duration-700">
+                      <MessageCircle size={120} strokeWidth={1} />
+                   </div>
+                   <div className="relative z-10">
+                      <h3 className="text-xs font-black text-white uppercase tracking-widest mb-2 flex items-center gap-3">
+                         <MessageCircle size={16} className="text-emerald-400"/> Priority Support
+                      </h3>
+                      <p className="text-xs text-slate-400 mb-6 font-mono">
+                         Encrypted comms channel for Verified Entities.
+                      </p>
+                      <a 
+                         href="https://t.me/bamboomallsupport" 
+                         target="_blank" 
+                         rel="noopener noreferrer"
+                         className="w-full flex items-center justify-between px-4 py-3 bg-emerald-500 hover:bg-emerald-400 text-slate-900 text-xs font-black uppercase tracking-widest rounded-md transition-all shadow-[0_0_15px_rgba(16,185,129,0.15)] hover:shadow-[0_0_25px_rgba(16,185,129,0.3)]"
+                      >
+                         <span className="flex items-center gap-2">Initialize Contact</span>
+                         <ArrowRight size={16} strokeWidth={3} />
+                      </a>
                    </div>
                 </div>
 
