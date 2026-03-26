@@ -308,7 +308,14 @@ export default function ProductsPage() {
                 <div className="grid grid-cols-2 gap-3 bg-slate-50 rounded-lg p-3">
                   <div>
                     <div className="text-[10px] text-slate-400 uppercase font-bold">Ask Price</div>
-                    <div className="font-mono text-lg font-bold text-slate-900">{formatCurrency(product.price)}</div>
+                    <div className="flex items-center gap-2">
+                      <span className="font-mono text-lg font-bold text-slate-900">{formatCurrency(product.price)}</span>
+                      {product.discount && (
+                        <span className="bg-rose-100 text-rose-700 border border-rose-200 px-1.5 py-0.5 rounded text-[10px] font-bold whitespace-nowrap">
+                          {product.discount}% OFF
+                        </span>
+                      )}
+                    </div>
                   </div>
                   <div className="text-right">
                     <div className="text-[10px] text-slate-400 uppercase font-bold">Volume</div>
